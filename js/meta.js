@@ -5,7 +5,8 @@ var E = V.E, el = V.el, fmt = V.fmt;
 var GN = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
 function pct(v) { return (Math.round(v * 1000) / 10).toString().replace('.', ',') + ' %'; }
 function isEmpire() { return V.S.mode === 'empire'; }
-function tierMin() { return E.TIERS[V.S.unlocked].min; }
+/* Maßstab für Chip-Belohnungen: Karriere und Imperium nach höchster Stufe, Sandbox nach aktuellem Raum */
+function tierMin() { return E.TIERS[V.isCareer() ? V.S.unlocked : V.S.room].min; }
 
 /* ================= Level ================= */
 /* XP, um von Level L auf L+1 zu kommen (Version 2: deutlich steiler) */
@@ -56,7 +57,7 @@ function perk(id) { var t = T_BY[id], l = tl(id); return t && l ? t.vals[l - 1] 
 function pointsTotal() { return V.S.level - 1 + V.S.bonusTp; }
 function pointsSpent() { var n = 0; TALENTS.forEach(function (t) { n += tl(t.id); }); return n; }
 function pointsFree() { return Math.max(0, pointsTotal() - pointsSpent()); }
-function respecCost() { return E.TIERS[V.isCareer() ? V.S.unlocked : V.S.room].min * 200; }
+function respecCost() { return tierMin() * 200; }
 /* Vorgänger im Ast: muss mindestens Stufe 1 haben */
 function parentOf(t) { var list = activeTalents(t.br), i = list.indexOf(t); return i > 0 ? list[i - 1] : null; }
 function unlockedNode(t) { var p = parentOf(t); return !p || tl(p.id) > 0; }
@@ -229,12 +230,12 @@ function ensureQuests() {
   var S = V.S;
   ['daily', 'weekly'].forEach(function (kind) {
     var K = KIND[kind], key = K.key(), cur = S.quests[kind];
-    if (cur && cur.key === key && cur.list && cur.list.length) { if (cur.swaps === undefined) cur.swaps = 1; return; }
+    if (cur && cur.key === key && cur.list && cur.list.length) { if (cur.swaps === undefined) cur.swaps = 1; rescale(cur); return; }
     var r = rng(hash(kind + key + '|' + (V.slotId || '')));
     var pool = K.tpl.filter(allowed);
     var list = [];
     while (list.length < 3 && pool.length) list.push(makeQuest(pool.splice(Math.floor(r() * pool.length), 1)[0], r, K));
-    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1 };
+    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1, scale: tierMin() };
   });
 }
 function claimQuest(kind, i) {
@@ -248,6 +249,25 @@ function claimQuest(kind, i) {
   if (kind === 'daily') { S.qstats.dailies++; progress({ dailyDone: true }, ['weekly']); }
   V.hud(); V.side.refresh(); V.save();
 }
+/* Stufe oder (Sandbox) Raum gewechselt: offene Quests auf den neuen Maßstab umrechnen.
+   Belohnung und Einsatz-Ziele wachsen mit, der Fortschritt in Prozent bleibt gleich. */
+function rescale(st) {
+  var now = tierMin();
+  /* Ältere Quests wurden nach der höchsten Stufe erzeugt */
+  if (!st.scale) st.scale = E.TIERS[V.S.unlocked].min;
+  if (st.scale === now) return;
+  var k = now / st.scale;
+  st.list.forEach(function (q) {
+    if (q.claimed) return;
+    q.chips = Math.round(q.chips * k);
+    if (q.id === 'wager') {
+      q.n = Math.round(q.n * k); q.p = Math.min(q.n, Math.round(q.p * k));
+      q.text = 'Setze insgesamt ' + fmt(q.n) + ' Chips';
+    }
+  });
+  st.scale = now;
+}
+
 /* Eine offene Quest gegen eine andere tauschen (1-mal pro Tag bzw. Woche) */
 function swapQuest(kind, i) {
   var S = V.S, K = KIND[kind], st = S.quests[kind], q = st.list[i];
