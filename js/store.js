@@ -10,6 +10,7 @@ var ACTIVE = 'chip-empire-active';
 var MAX_SLOTS = 3;
 var MODES = {
   career: { name: 'Karriere', desc: 'Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele und Räume schaltest du dir nach und nach frei.' },
+  empire: { name: 'Imperium', desc: 'Karriere plus Geschäfte: Kauf Läden bis zum eigenen Casino. Sie verdienen auch offline.' },
   sandbox: { name: 'Sandbox', desc: 'Alles offen, unbegrenzt Nachschub. Zum Ausprobieren ohne Druck.' }
 };
 var ns = GUEST, broken = false;
@@ -56,7 +57,8 @@ function summary(st) {
   st = st || {};
   return {
     balance: Math.round((st.balance || 0) + (st.escrow || 0)), room: st.room || 0, unlocked: st.unlocked || 0,
-    playMs: st.playMs || 0, wagered: Math.round(st.wagered || 0)
+    playMs: st.playMs || 0, wagered: Math.round(st.wagered || 0),
+    worth: Math.round((st.balance || 0) + (st.escrow || 0) + (st.bizSpent || 0))
   };
 }
 function makeSlot(name, mode, state) {

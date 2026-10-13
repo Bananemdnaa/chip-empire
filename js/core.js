@@ -52,16 +52,18 @@ function emptyG() { return { r: 0, w: 0, ret: 0 }; }
 function fresh(mode) {
   var career = mode !== 'sandbox', start = career ? CAREER.start : 10000;
   return {
-    mode: career ? 'career' : 'sandbox',
+    mode: mode === 'empire' ? 'empire' : career ? 'career' : 'sandbox',
     balance: start, escrow: 0, wagered: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
     comps: 0, compsClaimed: 0, room: 0, unlocked: career ? 0 : 5, aff: [0, 0, 0, 0, 0, 0], tips: 0,
     hist: [], series: [start], gst: { slots: emptyG(), roulette: emptyG(), bj: emptyG(), crash: emptyG() },
     sound: true, hint: true, game: 'slots', bets: { slots: 100, bj: 100, crash: 100 }, rchip: 100,
     rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
-    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'imperium',
+    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'quests',
     bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0,
     xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0,
-    missions: { day: '', list: [], bonus: false }, turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0
+    quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
+    qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, miles: {}, init: 0 },
+    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0
   };
 }
 var S = fresh('career');
@@ -82,7 +84,7 @@ function load(id) {
       else if (a && typeof a === 'object') { if (b && typeof b === 'object') f[k] = Object.assign({}, a, b); }
     });
   }
-  f.mode = slot.mode === 'sandbox' ? 'sandbox' : 'career';
+  f.mode = slot.mode === 'sandbox' || slot.mode === 'empire' ? slot.mode : 'career';
   f.escrow = 0;
   if (f.aff.length !== 6) f.aff = [0, 0, 0, 0, 0, 0];
   f.aff = f.aff.map(function (x) { return isNum(x) ? clamp(x, 0, 100) : 0; });
@@ -94,7 +96,7 @@ function load(id) {
   f.room = clamp(f.room, 0, f.unlocked);
   if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
   if (!GAME_TIER.hasOwnProperty(f.game)) f.game = 'slots';
-  if (['imperium', 'talente', 'auftraege', 'stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0) f.sideTab = 'imperium';
+  if (['imperium', 'talente', 'quests', 'stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
   S = f;
   if (!d) save();
   return true;
@@ -133,7 +135,8 @@ function lock(n) { locked += n; save(); }
 function refund(n) { S.balance += n; S.escrow -= n; }
 
 /* ---------- Karriere: Freischaltungen, Notgroschen, Tagesbonus ---------- */
-function isCareer() { return S.mode === 'career'; }
+/* Karriere-Regeln gelten auch im Imperium-Modus */
+function isCareer() { return S.mode !== 'sandbox'; }
 function gameOpen(id) { return !isCareer() || S.unlocked >= GAME_TIER[id]; }
 function gamesAt(t) { return Object.keys(GAME_TIER).filter(function (g) { return GAME_TIER[g] === t; }); }
 function isBroke() { return S.balance + S.escrow < E.TIERS[0].min; }

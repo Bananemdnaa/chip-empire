@@ -7,12 +7,12 @@ Ein Browser-Casinospiel mit Spielgeld: Slots, Roulette, Blackjack und Crash. Ste
 ## Spielmodi
 
 - **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Bronze: Roulette, Silver: Crash, Gold: Blackjack). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie.
+- **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert.
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
 
-**Fortschritt (in beiden Modi):**
-- **Level und Talente**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Drei Zweige (Glück, Taktik, Business), Umverteilen kostet Chips.
-- **Imperium**: Geschäfte vom Kiosk bis zum eigenen Casino kaufen und ausbauen. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor.
-- **Tägliche Aufträge**: drei Aufgaben pro Tag, bei allen dreien gibt es eine Bonus-Truhe mit einem extra Talentpunkt.
+**Fortschritt (in allen Modi):**
+- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Drei Äste (Glück, Taktik, Business), jedes Talent braucht das vorherige im Ast. Neu verteilen kostet Chips.
+- **Quests**: drei Daily Quests pro Tag, drei Weekly Quests pro Woche (Truhe mit Talentpunkt) und dauerhafte Meilensteine in Stufen.
 
 Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
@@ -24,7 +24,7 @@ Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel ze
 ## Online-Konten (Supabase)
 
 Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenliste für den Karriere-Modus.
-Das Datenbank-Schema liegt in `supabase/migrations/` und wird einmal im SQL-Editor von Supabase ausgeführt.
+Das Datenbank-Schema liegt in `supabase/migrations/`. Jede Datei wird einmal (in Reihenfolge) im SQL-Editor von Supabase ausgeführt.
 In Supabase muss unter Authentication der E-Mail-Login an und „Confirm email“ aus sein.
 
 ## Lokal starten
@@ -45,7 +45,7 @@ py -3 -m http.server 8765
 | `css/style.css` | Grund-Styling der Spiele und Seitenfenster |
 | `css/games.css` | Slot-Automat, Tastenkürzel, Tasten-Hilfe |
 | `css/tables.css` | Blackjack-Tisch, Roulette-Rad und -Chips, Crash-Himmel |
-| `css/meta.css` | Talente, Imperium, Aufträge, Hinweis-Punkte |
+| `css/meta.css` | Talentbaum, Quests, Imperium, Hinweis-Punkte |
 | `css/host.css` | Gastgeberin rechts: Porträt, Chat-Blase, Beziehung, Aufregung, Raum |
 | `css/shell.css` | Rahmen: Titelbildschirm, Spiel-HUD, Seitenleiste, Fenster |
 | `js/engine.js` | Reine Spiellogik (Zufall, Stufen, Slots, Roulette, Blackjack, Crash, Profil) |
@@ -54,7 +54,7 @@ py -3 -m http.server 8765
 | `js/store.js` | Spielstände (Slots) im Browser-Speicher |
 | `js/cloud.js` | Online-Konten, Cloud-Spielstände und Bestenliste über Supabase |
 | `js/core.js` | Zustand, Speichern, Karriere-Regeln, Ton, HUD, Gastgeberin, Einsatz-Steuerung |
-| `js/meta.js` | Level, Talente, Imperium, tägliche Aufträge |
+| `js/meta.js` | Level, Talentbaum, Quests, Imperium |
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js` | Die vier Spiele |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
 | `js/menu.js` | Hauptmenü |

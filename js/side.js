@@ -6,7 +6,7 @@ var E = V.E, A = V.A, el = V.el, fmt = V.fmt, short = V.short;
 var tabsEl, body, confirmReset = false;
 var EDGE = { slots: 0.04, roulette: 1 / 37, bj: 0.005, crash: 0.01 };
 var GNAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
-var TABS = [{ id: 'imperium', label: 'Imperium' }, { id: 'talente', label: 'Talente' }, { id: 'auftraege', label: 'Aufträge' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Hinter den Kulissen' }];
+var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Hinter den Kulissen' }];
 
 function build() {
   var host = V.$('#side');
@@ -19,6 +19,8 @@ function build() {
 function refresh() {
   if (!body) return;
   var S = V.S;
+  var TABS = TABS_ALL.filter(function (t) { return !t.empire || S.mode === 'empire'; });
+  if (S.sideTab === 'imperium' && S.mode !== 'empire') S.sideTab = 'quests';
   V.tabs(tabsEl, TABS, S.sideTab, function (id) { S.sideTab = id; confirmReset = false; V.Snd.click(); V.save(); refresh(); });
   body.innerHTML = '';
   if (V.meta.tabs[S.sideTab]) V.meta.tabs[S.sideTab](body);

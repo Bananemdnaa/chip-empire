@@ -3,7 +3,9 @@
 'use strict';
 var $ = V.$, $$ = V.$$;
 var GAMES = [{ id: 'slots', label: 'Slots' }, { id: 'roulette', label: 'Roulette' }, { id: 'bj', label: 'Blackjack' }, { id: 'crash', label: 'Crash' }];
-var SIDE = [{ id: 'imperium', label: 'Imperium' }, { id: 'talente', label: 'Talente' }, { id: 'auftraege', label: 'Aufträge' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Kulissen' }];
+var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Kulissen' }];
+var SIDE = SIDE_ALL;
+function sideItems() { return SIDE_ALL.filter(function (t) { return !t.empire || V.S.mode === 'empire'; }); }
 
 function lockedMsg(id) {
   return V.GAME_NAME[id] + ' wird in der ' + V.E.TIERS[V.GAME_TIER[id]].name + ' freigeschaltet.';
@@ -44,6 +46,7 @@ function renderNav() {
   renderBadges();
 }
 function renderSideNav() {
+  SIDE = sideItems();
   var box = $('#sideNav');
   box.innerHTML = '';
   SIDE.forEach(function (t) {
@@ -67,7 +70,7 @@ function renderBadges() {
   if (more) more.classList.toggle('dot', any);
 }
 /* ---------- Tastatur ---------- */
-var GLOBAL_KEYS = [['1 – 4', 'Spiel wechseln'], ['I', 'Imperium'], ['G', 'Talente'], ['O', 'Aufträge'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
+var GLOBAL_KEYS = [['1 – 4', 'Spiel wechseln'], ['Q', 'Quests'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
 function keyList(title, list) {
   var dl = V.el('dl');
   list.forEach(function (k) { dl.appendChild(V.el('dt', {}, V.el('kbd', { text: k[0] }))); dl.appendChild(V.el('dd', { text: k[1] })); });
@@ -96,7 +99,8 @@ function onKeyDown(e) {
   if (e.key === '?') { e.preventDefault(); openKeys(); return; }
   if (/^[1-4]$/.test(e.key)) { e.preventDefault(); V.Snd.click(); showGame(GAMES[Number(e.key) - 1].id); return; }
   if (e.key === 'm' || e.key === 'M') { $('#sndBtn').click(); return; }
-  var SK = { i: 'imperium', g: 'talente', o: 'auftraege' };
+  var SK = { q: 'quests', g: 'talente' };
+  if (V.S.mode === 'empire') SK.i = 'imperium';
   if (SK[e.key.toLowerCase()]) { e.preventDefault(); V.Snd.click(); openSide(SK[e.key.toLowerCase()]); return; }
   var g = null;
   V.games.forEach(function (x) { if (x.id === V.S.game) g = x; });
@@ -171,7 +175,7 @@ async function startGame(id) {
   showGame(V.S.game);
   V.say('greet', true);
   V.meta.migrate();
-  V.meta.ensureMissions();
+  V.meta.ensureQuests();
   V.hud();
   if (V.dailyAvailable()) {
     setTimeout(function () {

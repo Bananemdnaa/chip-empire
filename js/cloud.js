@@ -40,6 +40,7 @@ function errText(err) {
   if (/email logins are disabled|signups not allowed|provider is not enabled/i.test(m)) return 'Registrierung ist in Supabase noch nicht freigeschaltet (E-Mail-Login aus).';
   if (/email not confirmed/i.test(m)) return 'In Supabase ist „Confirm email“ noch an. Bitte ausschalten.';
   if (/maximal 3/i.test(m)) return 'Du hast schon 3 Spielstände in deinem Konto.';
+  if (/saves_mode_check|violates check constraint/i.test(m)) return 'Für den Imperium-Modus fehlt noch das Datenbank-Update (SQL in Supabase ausführen).';
   if (/failed to fetch|network/i.test(m)) return 'Keine Verbindung zum Server.';
   if (/could not find the (function|table)|schema cache|does not exist/i.test(m)) return 'Die Datenbank ist noch nicht eingerichtet.';
   return m;
@@ -69,8 +70,9 @@ async function signOut() {
 
 /* ---------- Spielstände ---------- */
 function columns(state) {
-  var s = Store.summary(state);
-  return { balance: s.balance, unlocked: s.unlocked, wagered: s.wagered, play_ms: Math.round(s.playMs) };
+  var s = Store.summary(state), empire = state && state.mode === 'empire';
+  /* Im Imperium-Modus zählt der Imperiumswert für die Bestenliste */
+  return { balance: empire ? s.worth : s.balance, unlocked: s.unlocked, wagered: s.wagered, play_ms: Math.round(s.playMs) };
 }
 function rowToSlot(r) {
   var t = Date.parse(r.updated_at) || Date.now();
@@ -168,9 +170,12 @@ function flushOnLeave() {
 Store.hooks.put = schedule;
 
 /* ---------- Bestenliste ---------- */
-async function leaderboard(n) {
+async function leaderboard(n, mode) {
   if (!sb) return [];
-  return check(await sb.rpc('leaderboard', { lim: n || 20 })) || [];
+  var r = await sb.rpc('leaderboard', { lim: n || 20, md: mode || 'career' });
+  /* Alte Datenbank ohne Modus-Parameter: Karriere geht trotzdem */
+  if (r.error && (mode || 'career') === 'career') r = await sb.rpc('leaderboard', { lim: n || 20 });
+  return check(r) || [];
 }
 
 return {

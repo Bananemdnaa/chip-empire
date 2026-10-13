@@ -3,7 +3,7 @@ var Menu = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
 var root, inner, onStart, view = 'slots', confirmDel = null, newMode = 'career';
-var status = '', busy = false, board = null, boardErr = '';
+var status = '', busy = false, board = null, boardErr = '', boardMode = 'career';
 var CHIP_COLORS = ['#8E0E2B', '#1E5E8E', '#1A1418', '#5B2A8E', '#C79A3A', '#0F6A4A'];
 
 function when(t) {
@@ -90,7 +90,7 @@ function loginForm() {
 function vipCard(s) {
   var m = Store.MODES[s.mode] || Store.MODES.career, sum = s.sum || {};
   var t = Math.min(5, sum.unlocked || 0), T = E.TIERS[t], next = E.TIERS[t + 1];
-  var career = s.mode === 'career';
+  var career = s.mode !== 'sandbox';
   var tierBox;
   if (career && next) {
     var p = Math.max(0, Math.min(1, ((sum.wagered || 0) - T.wager) / (next.wager - T.wager)));
@@ -127,14 +127,14 @@ function vipCard(s) {
     el('div', { class: 'vip-name', text: s.name }),
     el('div', { class: 'vip-bal' }, chipImg(), fmt(sum.balance || 0)),
     tierBox,
-    el('div', { class: 'vip-meta' }, el('span', { text: '⏱ ' + V.clock(sum.playMs || 0) }), el('span', { text: 'Zuletzt ' + when(s.updated) })),
+    el('div', { class: 'vip-meta' }, s.mode === 'empire' ? el('span', { text: '🏛️ Wert ' + V.short(sum.worth || sum.balance || 0) }) : null, el('span', { text: '⏱ ' + V.clock(sum.playMs || 0) }), el('span', { text: 'Zuletzt ' + when(s.updated) })),
     actions);
 }
 
 function newForm() {
   var input = el('input', { class: 'name-in', type: 'text', maxlength: '20', placeholder: 'z.B. Mein Imperium', 'aria-label': 'Name des Spielstands', autocomplete: 'off' });
   var modes = el('div', { class: 'modes', role: 'radiogroup', 'aria-label': 'Spielmodus' });
-  var ICON = { career: 'stufen', sandbox: 'slots' };
+  var ICON = { career: 'stufen', empire: 'imperium', sandbox: 'slots' };
   Object.keys(Store.MODES).forEach(function (k) {
     var M = Store.MODES[k];
     modes.appendChild(el('button', { class: 'mode', type: 'button', role: 'radio', 'aria-checked': String(newMode === k),
@@ -184,9 +184,15 @@ function guestImport(full) {
 function boardBox() {
   if (!Cloud.available()) return null;
   var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' }, el('h3', { class: 'menu-h', text: 'Bestenliste' }));
+  var seg = el('div', { class: 'qseg board-seg', role: 'tablist' });
+  [['career', 'Karriere'], ['empire', 'Imperium']].forEach(function (x) {
+    seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(boardMode === x[0]), text: x[1],
+      onclick: function () { if (boardMode === x[0]) return; boardMode = x[0]; board = null; boardErr = ''; V.Snd.click(); render(); loadBoard(); } }));
+  });
+  box.appendChild(seg);
   if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return box; }
   if (!board) { box.appendChild(el('p', { class: 'fine', text: 'Lade …' })); return box; }
-  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: 'Noch niemand hier. Leg einen Karriere-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
+  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
   var me = account(), myName = me ? me.username : null;
   var pod = el('div', { class: 'podium' });
   [1, 0, 2].forEach(function (i) {
@@ -210,13 +216,14 @@ function boardBox() {
     });
     box.appendChild(ol);
   }
-  box.appendChild(el('p', { class: 'fine', text: 'Karriere-Spielstände nach Chips.' }));
+  box.appendChild(el('p', { class: 'fine', text: boardMode === 'empire' ? 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).' : 'Karriere-Spielstände nach Chips.' }));
   return box;
 }
 function loadBoard() {
   if (!Cloud.available()) return;
-  Cloud.leaderboard(20).then(function (rows) { board = rows; boardErr = ''; render(); })
-    .catch(function (e) { boardErr = 'Bestenliste nicht verfügbar: ' + (e.message || e); render(); });
+  var mode = boardMode;
+  Cloud.leaderboard(20, mode).then(function (rows) { if (mode !== boardMode) return; board = rows; boardErr = ''; render(); })
+    .catch(function (e) { if (mode !== boardMode) return; boardErr = mode === 'empire' ? 'Die Imperium-Bestenliste braucht noch das Datenbank-Update.' : 'Bestenliste nicht verfügbar: ' + (e.message || e); render(); });
 }
 
 /* ---------- Aufbau ---------- */
