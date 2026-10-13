@@ -550,12 +550,15 @@ function betControl(key, onChange) {
   }
   render();
   return {
-    el: wrap, render: render,
+    el: wrap, render: render, step: step,
+    isOff: function () { return wrap.dataset.off === '1'; },
     disable: function (off) { wrap.dataset.off = off ? '1' : '0'; render(); }
   };
 }
 
 /* ---------- Tabs ---------- */
+/* Kleine Plakette mit dem Tastenkürzel auf einem Knopf (nur mit Maus/Tastatur sichtbar) */
+function kbd(key) { return el('kbd', { class: 'kb', text: key }); }
 function tabs(container, items, current, onPick) {
   container.innerHTML = '';
   var btns = items.map(function (it) {
@@ -571,7 +574,7 @@ return {
   get S() { return S; }, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
   toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
-  needChips: needChips, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
+  needChips: needChips, kbd: kbd, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
   resetState: function () { S = fresh(S.mode); locked = 0; save(); },
   get slotId() { return slotId; }, get slotName() { return slotName; },

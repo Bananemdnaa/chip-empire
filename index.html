@@ -10,8 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/shell.css?v=9">
+<link rel="stylesheet" href="css/games.css?v=9">
+<link rel="stylesheet" href="css/tables.css?v=9">
 </head>
 <body>
 <main id="menu" class="menu">
@@ -38,6 +40,7 @@
       <div class="bal-box" title="Deine Chips"><img src="favicon.svg" alt=""><b id="bal" class="num">0</b></div>
       <div class="comp-box"><span class="lbl">Comps</span><b id="comp" class="num">0</b><button id="claimComp" class="btn ghost xs" type="button">Einlösen</button></div>
       <button id="reload" class="btn gold sm" type="button"></button>
+      <button id="keysBtn" class="icon-btn only-fine" type="button" aria-label="Tastenkürzel" title="Tastenkürzel (?)">⌨</button>
       <button id="sndBtn" class="icon-btn" type="button" aria-pressed="true" aria-label="Ton an/aus" title="Ton an/aus">🔊</button>
     </div>
   </header>
@@ -83,6 +86,16 @@
     <p class="foot">Spielgeld ohne Wert, kein echtes Glücksspiel · Alle Figuren sind frei erfunden</p>
   </aside>
 
+  <div id="keysDlg" class="drawer" hidden>
+    <div class="drawer-panel keys-panel" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
+      <header class="drawer-h">
+        <h2 id="keysTitle">Tastenkürzel</h2>
+        <button id="keysClose" class="icon-btn" type="button" aria-label="Schließen">✕</button>
+      </header>
+      <section id="keysBody" class="side keys-list"></section>
+    </div>
+  </div>
+
   <div id="drawer" class="drawer" hidden>
     <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
       <header class="drawer-h">
@@ -97,19 +110,19 @@
 <div id="banner" class="banner" hidden role="status"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
-<script src="js/engine.js"></script>
-<script src="js/art.js"></script>
+<script src="js/engine.js?v=9"></script>
+<script src="js/art.js?v=9"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-<script src="js/store.js"></script>
-<script src="js/cloud.js"></script>
-<script src="js/icons.js"></script>
-<script src="js/core.js"></script>
-<script src="js/slots.js"></script>
-<script src="js/roulette.js"></script>
-<script src="js/blackjack.js"></script>
-<script src="js/crash.js"></script>
-<script src="js/side.js"></script>
-<script src="js/menu.js"></script>
-<script src="js/main.js"></script>
+<script src="js/store.js?v=9"></script>
+<script src="js/cloud.js?v=9"></script>
+<script src="js/icons.js?v=9"></script>
+<script src="js/core.js?v=9"></script>
+<script src="js/slots.js?v=9"></script>
+<script src="js/roulette.js?v=9"></script>
+<script src="js/blackjack.js?v=9"></script>
+<script src="js/crash.js?v=9"></script>
+<script src="js/side.js?v=9"></script>
+<script src="js/menu.js?v=9"></script>
+<script src="js/main.js?v=9"></script>
 </body>
 </html>

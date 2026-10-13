@@ -1,0 +1,96 @@
+/* Chip Empire – Tische: Blackjack-Filz, Roulette-Rad und -Chips, Crash-Sternenhimmel */
+
+/* ---------- Gemeinsam: dunkler Raum um die Tische ---------- */
+#g-bj.game, #g-roulette.game, #g-crash.game { background: radial-gradient(120% 90% at 50% 0%, #2A1420, #12070B 75%); }
+
+/* ---------- Blackjack-Tisch ---------- */
+#g-bj .bj-table { position: relative; margin: 8px 12px 20px; padding: 14px 18px 22px; min-height: 0; gap: 6px;
+  border-radius: 24px 24px 50% 50% / 24px 24px 30% 30%;
+  background: radial-gradient(ellipse 80% 70% at 50% 25%, #1B8A60, #0F5A3E 55%, #083A27);
+  box-shadow: 0 0 0 12px #4A2410, 0 0 0 13px #2A1208, 0 0 0 15px var(--gold-lo), 0 0 0 16px #2A1208, inset 0 0 70px rgba(0,0,0,.55), 0 24px 50px rgba(0,0,0,.6); }
+#g-bj .bj-table::before { content: none; }
+#g-bj .bj-table::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: .5;
+  background: repeating-radial-gradient(circle at 30% 20%, rgba(255,255,255,.025) 0 1px, transparent 1px 3px); }
+.bj-arc { order: 1; margin: -4px auto -18px; width: min(430px, 100%); pointer-events: none; }
+.bj-arc svg { display: block; width: 100%; height: auto; overflow: visible; }
+.bj-arc .a1 { font-family: var(--f-display); font-size: 25px; letter-spacing: .08em; fill: rgba(242,214,142,.8); text-transform: uppercase; }
+.bj-arc .a2 { font-family: var(--f-body); font-weight: 700; font-size: 13px; letter-spacing: .22em; fill: rgba(244,235,219,.45); text-transform: uppercase; }
+.shoe-box { position: absolute; right: 22px; top: 16px; width: 54px; height: 72px; border-radius: 6px 14px 6px 6px; transform: rotate(8deg);
+  background: linear-gradient(135deg, #3A1A0C, #1A0A04); box-shadow: 0 6px 12px rgba(0,0,0,.5), inset 0 0 0 2px var(--gold-lo); }
+.shoe-box::before { content: ""; position: absolute; left: 7px; right: 7px; top: 7px; height: 46px; border-radius: 4px;
+  background: repeating-linear-gradient(45deg, #8E0E2B 0 4px, #6A0A1E 4px 8px); box-shadow: 0 0 0 2px #F4EBDB, 3px 3px 0 0 #F4EBDB, 3px 3px 0 2px #CFC3AA; }
+.bet-spot { position: absolute; left: 12%; bottom: 46px; width: 82px; height: 82px; border-radius: 50%; display: grid; place-items: end center; padding-bottom: 6px;
+  border: 2px solid rgba(242,214,142,.55); box-shadow: inset 0 0 0 6px rgba(0,0,0,.12); }
+.bet-spot.empty::after { content: "Einsatz"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(242,214,142,.5); }
+.bet-spot .stack { position: absolute; left: 50%; top: 18px; width: 42px; height: 30px; margin-left: -21px; }
+.bet-spot .stack i { position: absolute; left: 0; width: 42px; height: 16px; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 45%, #C4203F 0 40%, transparent 41%), repeating-conic-gradient(#C4203F 0 20deg, #F4EBDB 20deg 32deg);
+  box-shadow: 0 3px 0 #6A0A1E, 0 4px 6px rgba(0,0,0,.5); }
+.bet-spot b { position: relative; font: 600 12px var(--f-mono); color: var(--gold-hi); text-shadow: 0 1px 2px #000; }
+#g-bj .bj-msg { position: relative; z-index: 2; justify-self: center; }
+#g-bj .bj-msg:not(:empty) { padding: 3px 16px; border-radius: 999px; background: rgba(6,20,14,.78); box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.bj-shoe { position: absolute; right: 18px; top: 96px; max-width: 9em; margin: 0; text-align: right; font-size: 11px; }
+
+/* Karten mit Ecken wie echte Spielkarten */
+.pcard { width: 70px; height: 98px; border-radius: 8px; background: linear-gradient(160deg, #FFFFFF, #F4ECDC); box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.08); border: 0; }
+.pcard .cr { left: 6px; top: 5px; font-size: 17px; }
+.pcard .cs { left: 7px; top: 24px; font-size: 14px; }
+.pcard .cmid { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 36px; line-height: 1; }
+.pcard .cbr { position: absolute; right: 6px; bottom: 5px; display: grid; justify-items: center; line-height: 1; transform: rotate(180deg); }
+.pcard .cbr b { font: 600 17px var(--f-mono); } .pcard .cbr i { font-style: normal; font-size: 14px; }
+.pcard.back { background: radial-gradient(circle at 50% 50%, #B3203F 0 18%, transparent 19%), repeating-linear-gradient(45deg, #8E0E2B 0 5px, #6A0A1E 5px 10px); border: 4px solid #F4EBDB; }
+.pcard.back::after { inset: 5px; border-color: var(--gold-hi); }
+.hand-cards .pcard + .pcard { margin-left: -30px; }
+.hand.active { border-color: var(--gold-hi); background: rgba(0,0,0,.18); box-shadow: 0 0 0 3px rgba(242,214,142,.18), 0 0 26px rgba(242,214,142,.2); }
+
+/* ---------- Roulette ---------- */
+.wheel { isolation: isolate; margin-top: 6%; margin-bottom: 4%; }
+.wheel::before { content: ""; position: absolute; inset: -5%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, transparent 60%, #2A1208 61%, #7A4220 70%, #4A2410 82%, #1A0A04 100%);
+  box-shadow: 0 18px 40px rgba(0,0,0,.6), inset 0 0 0 2px var(--gold-lo); }
+.rscroll { padding: 10px; border-radius: 14px; background: radial-gradient(ellipse at 50% 30%, #157552, #0D4A34 70%);
+  box-shadow: 0 0 0 6px #4A2410, 0 0 0 7px var(--gold-lo), inset 0 0 40px rgba(0,0,0,.45); }
+.rboard { min-width: 490px; gap: 0; border: 2px solid rgba(244,235,219,.75); border-radius: 6px; overflow: hidden; }
+.rcell { border-radius: 0; border: 1px solid rgba(244,235,219,.6); box-shadow: inset 0 0 12px rgba(0,0,0,.25); }
+.rcell.red { background: radial-gradient(circle, #C21A34, #8E0E26); }
+.rcell.black { background: radial-gradient(circle, #2A2228, #0E090C); }
+.rcell.green { background: radial-gradient(circle, #14855C, #0A4E36); }
+.rcell.out { background: transparent; color: #F4EBDB; letter-spacing: .02em; }
+.rcell:hover:not(:disabled) { filter: none; box-shadow: inset 0 0 0 2px var(--gold-hi), inset 0 0 18px rgba(242,214,142,.35); }
+/* Casino-Chips mit Randstreifen */
+.chip { --cc: #8E0E2B; }
+.chip.c2 { --cc: #1E5E8E; } .chip.c3 { --cc: #1A1418; } .chip.c4 { --cc: #5B2A8E; } .chip.c5 { --cc: #C79A3A; color: #fff; } .chip.c6, .chip.c7 { --cc: #3A8A5A; color: #fff; }
+.chip { border: 0; text-shadow: 0 1px 2px rgba(0,0,0,.8);
+  background: radial-gradient(circle, var(--cc) 0 47%, rgba(255,255,255,.85) 48% 50%, var(--cc) 51% 58%, transparent 59%), repeating-conic-gradient(var(--cc) 0 30deg, #F4EBDB 30deg 45deg);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 3px 0 rgba(0,0,0,.45), 0 5px 8px rgba(0,0,0,.4); transition: transform .15s; }
+.chip:hover:not(:disabled) { transform: translateY(-2px); }
+.chip[aria-pressed="true"] { transform: translateY(-5px); box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 0 0 3px var(--gold-hi), 0 8px 12px rgba(0,0,0,.5); }
+.rchip { min-width: 30px; height: 30px; border-radius: 50%; border: 0; color: #fff; font-size: 9.5px; text-shadow: 0 1px 1px #000; right: 50%; bottom: 50%; transform: translate(50%, 50%);
+  background: radial-gradient(circle, #C79A3A 0 50%, transparent 51%), repeating-conic-gradient(#C79A3A 0 30deg, #F4EBDB 30deg 45deg);
+  box-shadow: 0 2px 0 #5C4318, 0 3px 6px rgba(0,0,0,.6); animation: chipDrop .2s ease-out; }
+@keyframes chipDrop { from { transform: translate(50%, 20%) scale(1.3); opacity: 0; } }
+
+/* ---------- Crash: Sternenhimmel ---------- */
+.crash-stage { background:
+    radial-gradient(1px 1px at 12% 22%, #fff 99%, transparent), radial-gradient(1px 1px at 38% 12%, #fff 99%, transparent),
+    radial-gradient(1.5px 1.5px at 66% 30%, #fff 99%, transparent), radial-gradient(1px 1px at 84% 16%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 22% 62%, rgba(255,255,255,.7) 99%, transparent), radial-gradient(1.5px 1.5px at 52% 48%, rgba(255,255,255,.8) 99%, transparent),
+    radial-gradient(1px 1px at 76% 70%, rgba(255,255,255,.7) 99%, transparent), radial-gradient(1px 1px at 92% 52%, #fff 99%, transparent),
+    radial-gradient(ellipse at 80% 110%, rgba(196,32,63,.25), transparent 60%), linear-gradient(180deg, #060B18, #0B1630 60%, #121A2E);
+  background-size: 260px 200px, 260px 200px, 260px 200px, 260px 200px, 260px 200px, 260px 200px, 260px 200px, 260px 200px, 100% 100%, 100% 100%;
+  border: 1px solid #22304F; box-shadow: inset 0 0 50px rgba(0,0,0,.6); }
+.crash-stage.flying { animation: stars 6s linear infinite; }
+@keyframes stars { to { background-position: -260px 200px, -260px 200px, -260px 200px, -260px 200px, -260px 200px, -260px 200px, -260px 200px, -260px 200px, 0 0, 0 0; } }
+
+@media (max-width: 720px) {
+  #g-bj .bj-table { margin: 6px 4px 18px; padding: 12px 8px 28px; box-shadow: 0 0 0 7px #4A2410, 0 0 0 8px var(--gold-lo), inset 0 0 50px rgba(0,0,0,.55); }
+  .shoe-box { width: 38px; height: 52px; right: 10px; top: 10px; }
+  .shoe-box::before { height: 30px; }
+  .bet-spot { left: 4%; bottom: 30px; width: 64px; height: 64px; transform: scale(.85); }
+  .bj-shoe { display: none; }
+  .bj-arc .a2 { display: none; }
+  .pcard { width: 54px; height: 76px; }
+  .pcard .cmid { font-size: 26px; } .pcard .cr { font-size: 14px; } .pcard .cbr b { font-size: 13px; }
+  .pcard .cbr i, .pcard .cs { font-size: 11px; } .pcard .cs { top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .crash-stage.flying { animation: none; } }

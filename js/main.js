@@ -51,6 +51,41 @@ function renderSideNav() {
     box.appendChild(b);
   });
 }
+/* ---------- Tastatur ---------- */
+var GLOBAL_KEYS = [['1 – 4', 'Spiel wechseln'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
+function keyList(title, list) {
+  var dl = V.el('dl');
+  list.forEach(function (k) { dl.appendChild(V.el('dt', {}, V.el('kbd', { text: k[0] }))); dl.appendChild(V.el('dd', { text: k[1] })); });
+  return V.el('div', {}, V.el('h3', { text: title }), dl);
+}
+function openKeys() {
+  var body = $('#keysBody');
+  body.innerHTML = '';
+  body.appendChild(keyList('Überall', GLOBAL_KEYS));
+  V.games.forEach(function (g) { if (g.keys) body.appendChild(keyList(V.GAME_NAME[g.id], g.keys)); });
+  body.appendChild(V.el('p', { class: 'fine', text: 'Alles geht auch mit Maus oder Finger. Die Kürzel stehen außerdem klein auf den Knöpfen.' }));
+  lastFocus = document.activeElement;
+  $('#keysDlg').hidden = false;
+  $('#keysClose').focus();
+}
+function closeKeys() { if ($('#keysDlg').hidden) return; $('#keysDlg').hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+function onKeyDown(e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  var tag = (e.target && e.target.tagName) || '';
+  if (e.key === 'Escape') { closeKeys(); closeSide(); return; }
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
+  if (!$('#keysDlg').hidden || !$('#drawer').hidden) { if (e.key === '?') { e.preventDefault(); closeKeys(); } return; }
+  /* Enter auf einem fokussierten Knopf bleibt ein normaler Klick; die Leertaste gehört immer dem Spiel */
+  if (e.key === 'Enter' && tag === 'BUTTON') return;
+  if (e.key === ' ' && tag === 'BUTTON') e.target.blur();
+  if (e.key === '?') { e.preventDefault(); openKeys(); return; }
+  if (/^[1-4]$/.test(e.key)) { e.preventDefault(); V.Snd.click(); showGame(GAMES[Number(e.key) - 1].id); return; }
+  if (e.key === 'm' || e.key === 'M') { $('#sndBtn').click(); return; }
+  var g = null;
+  V.games.forEach(function (x) { if (x.id === V.S.game) g = x; });
+  if (g && g.onKey && g.onKey(e)) { e.preventDefault(); V.Snd.ensure(); }
+}
+
 var lastFocus = null;
 function openSide(tab) {
   V.S.sideTab = tab;
@@ -104,7 +139,10 @@ async function startGame(id) {
   renderSideNav();
   $('#drawerClose').addEventListener('click', closeSide);
   $('#drawer').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSide(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSide(); });
+  $('#keysBtn').addEventListener('click', openKeys);
+  $('#keysClose').addEventListener('click', closeKeys);
+  $('#keysDlg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeKeys(); });
+  document.addEventListener('keydown', onKeyDown);
   $('#reload').addEventListener('click', V.walletAction);
   $('#claimComp').addEventListener('click', V.claimComps);
   $('#tipBtn').addEventListener('click', V.tip);

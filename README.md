@@ -11,6 +11,11 @@ Ein Browser-Casinospiel mit Spielgeld: Slots, Roulette, Blackjack und Crash. Ste
 
 Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
+## Steuerung
+
+Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel zeigt alle Kürzel:
+`1`–`4` Spiel wechseln, `Leertaste` drehen/austeilen/einsteigen, `↑`/`↓` Einsatz, Blackjack mit `K` Karte, `H` Halten, `V` Verdoppeln, `T` Teilen, `A` Aufgeben.
+
 ## Online-Konten (Supabase)
 
 Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenliste für den Karriere-Modus.
@@ -32,7 +37,9 @@ py -3 -m http.server 8765
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Grundgerüst der Seite |
-| `css/style.css` | Styling der Spiele (Slots, Roulette, Blackjack, Crash, Seitenfenster) |
+| `css/style.css` | Grund-Styling der Spiele und Seitenfenster |
+| `css/games.css` | Slot-Automat, Tastenkürzel, Tasten-Hilfe |
+| `css/tables.css` | Blackjack-Tisch, Roulette-Rad und -Chips, Crash-Himmel |
 | `css/shell.css` | Rahmen: Titelbildschirm, Spiel-HUD, Seitenleiste, Fenster |
 | `js/engine.js` | Reine Spiellogik (Zufall, Stufen, Slots, Roulette, Blackjack, Crash, Profil) |
 | `js/art.js` | Hostessen-Porträts als SVG |

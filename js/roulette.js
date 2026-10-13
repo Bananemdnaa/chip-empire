@@ -86,13 +86,13 @@ function build() {
 
   /* Steuerung */
   chipsRow = el('div', { class: 'chips', role: 'group', 'aria-label': 'Chipwert' });
-  neighBtn = el('button', { class: 'chipbtn', type: 'button', 'aria-pressed': 'false', text: 'Nachbarn ±2', title: 'Setzt auf die Zahl und die je zwei Nachbarn im Kessel',
-    onclick: function () { neigh = !neigh; neighBtn.setAttribute('aria-pressed', String(neigh)); neighBtn.classList.toggle('on', neigh); V.Snd.click(); } });
-  undoBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Zurück', onclick: undo });
-  clearBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Leeren', onclick: clearAll });
-  rebetBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Wiederholen', onclick: rebet });
-  dblBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Verdoppeln', onclick: dbl });
-  spinBtn = el('button', { class: 'btn gold big', type: 'button', text: 'Kugel rollen lassen', onclick: spin });
+  neighBtn = el('button', { class: 'chipbtn', type: 'button', 'aria-pressed': 'false', title: 'Setzt auf die Zahl und die je zwei Nachbarn im Kessel',
+    onclick: function () { neigh = !neigh; neighBtn.setAttribute('aria-pressed', String(neigh)); neighBtn.classList.toggle('on', neigh); V.Snd.click(); } }, 'Nachbarn ±2', V.kbd('N'));
+  undoBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: undo }, 'Zurück', V.kbd('⌫'));
+  clearBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: clearAll }, 'Leeren', V.kbd('L'));
+  rebetBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: rebet }, 'Wiederholen', V.kbd('W'));
+  dblBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: dbl }, 'Verdoppeln', V.kbd('D'));
+  spinBtn = el('button', { class: 'btn gold big', type: 'button', onclick: spin }, 'Kugel rollen lassen', V.kbd('Leertaste'));
   totalEl = el('div', { class: 'rtotal', text: 'Auf dem Tisch: 0' });
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite', text: 'Setz Chips auf Zahlen oder Felder. Rechtsklick entfernt ein Feld. Einzelzahl zahlt 35:1.' });
   var ctl = el('div', { class: 'rctl' },
@@ -263,9 +263,29 @@ async function spin() {
   renderBets();
 }
 
+function stepChip(dir) {
+  if (spinning || resolving) return;
+  var S = V.S, list = V.chipList(), i = list.indexOf(S.rchip);
+  S.rchip = list[Math.max(0, Math.min(list.length - 1, (i < 0 ? 0 : i) + dir))];
+  V.Snd.click(); renderChips(); V.save();
+}
+function onKey(e) {
+  var k = e.key.toLowerCase();
+  if (k === ' ' || k === 'enter') { spin(); return true; }
+  if (k === 'backspace') { undo(); return true; }
+  if (k === 'l') { clearAll(); return true; }
+  if (k === 'w') { rebet(); return true; }
+  if (k === 'd') { dbl(); return true; }
+  if (k === 'n') { if (!neighBtn.disabled) neighBtn.click(); return true; }
+  if (k === 'arrowleft' || k === 'arrowright') { stepChip(k === 'arrowright' ? 1 : -1); return true; }
+  return false;
+}
+
 V.games.push({
   id: 'roulette',
   init: build,
+  onKey: onKey,
+  keys: [['Leertaste', 'Kugel rollen lassen'], ['← / →', 'Chipwert wählen'], ['⌫', 'Letzten Einsatz zurück'], ['L', 'Tisch leeren'], ['W', 'Letzte Wette wiederholen'], ['D', 'Alle Einsätze verdoppeln'], ['N', 'Nachbarn ±2 an/aus'], ['Maus', 'Chips auf Felder setzen, Rechtsklick entfernt']],
   onRoom: function () { renderChips(); renderBets(); },
   refresh: function () { renderBets(); }
 });

@@ -3,9 +3,10 @@
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep;
 
-var root, dealerEl, handsEl, msgEl, ctlEl, betCtl, dealBtn, hintBtn, shoeEl, btns = {}, insRow, adviceEl;
+var root, dealerEl, handsEl, msgEl, ctlEl, betCtl, dealBtn, hintBtn, shoeEl, btns = {}, insRow, adviceEl, betSpot;
 var st = null, shoe = null, dealerShown = 1, busy = false, seen = new Map();
 var NAMEACT = { hit: 'Karte', stand: 'Halten', double: 'Verdoppeln', split: 'Teilen', surrender: 'Aufgeben' };
+var KEYACT = { hit: 'K', stand: 'H', double: 'V', split: 'T', surrender: 'A' };
 
 function isRed(c) { return c.s === '♥' || c.s === '♦'; }
 function cardEl(c, down) {
@@ -13,7 +14,8 @@ function cardEl(c, down) {
   var n;
   if (down) n = el('div', { class: 'pcard back', 'aria-label': 'Verdeckte Karte' });
   else n = el('div', { class: 'pcard ' + (isRed(c) ? 'red' : 'blk'), 'aria-label': c.r + ' ' + c.s },
-    el('span', { class: 'cr', text: c.r }), el('span', { class: 'cs', text: c.s }), el('span', { class: 'cbig', text: c.s }));
+    el('span', { class: 'cr', text: c.r }), el('span', { class: 'cs', text: c.s }), el('span', { class: 'cmid', text: c.s }),
+    el('span', { class: 'cbr' }, el('b', { text: c.r }), el('i', { text: c.s })));
   if (prev !== key) { n.classList.add('deal'); seen.set(c, key); }
   return n;
 }
@@ -22,26 +24,43 @@ function valText(cards) {
   return v.soft && v.total < 21 ? (v.total - 10) + ' / ' + v.total : String(v.total);
 }
 
+/* Geschwungene Aufschrift auf dem Filz, wie auf echten Tischen */
+function arc() {
+  return el('div', { class: 'bj-arc', 'aria-hidden': 'true', html:
+    '<svg viewBox="0 0 600 110"><defs><path id="bjArc1" d="M40,18 Q300,120 560,18"/><path id="bjArc2" d="M120,74 Q300,154 480,74"/></defs>' +
+    '<text class="a1"><textPath href="#bjArc1" startOffset="50%" text-anchor="middle">Blackjack zahlt 3 zu 2</textPath></text>' +
+    '<text class="a2"><textPath href="#bjArc2" startOffset="50%" text-anchor="middle">Dealer steht auf Soft 17</textPath></text></svg>' });
+}
+/* Chip-Stapel im Einsatzfeld: ein Chip pro Stelle des Betrags, höchstens fünf */
+function renderSpot(amount) {
+  var stack = betSpot.firstChild, n = amount > 0 ? Math.min(5, String(Math.round(amount)).length - 1) : 0;
+  stack.innerHTML = '';
+  for (var i = 0; i < n; i++) { var c = el('i'); c.style.bottom = (i * 4) + 'px'; stack.appendChild(c); }
+  betSpot.lastChild.textContent = amount > 0 ? fmt(amount) : '';
+  betSpot.classList.toggle('empty', !(amount > 0));
+}
+
 function build() {
   root = V.$('#g-bj');
   dealerEl = el('div', { class: 'bj-dealer' });
   handsEl = el('div', { class: 'bj-hands' });
   msgEl = el('div', { class: 'bj-msg', 'aria-live': 'polite', text: 'Schlag den Dealer, ohne über 21 zu kommen. Blackjack zahlt 3:2.' });
   shoeEl = el('div', { class: 'fine bj-shoe' });
-  var table = el('div', { class: 'bj-table' }, dealerEl, msgEl, handsEl, shoeEl);
+  betSpot = el('div', { class: 'bet-spot', 'aria-hidden': 'true' }, el('span', { class: 'stack' }), el('b'));
+  var table = el('div', { class: 'bj-table' }, el('div', { class: 'shoe-box', 'aria-hidden': 'true' }), dealerEl, arc(), msgEl, handsEl, betSpot, shoeEl);
 
   betCtl = V.betControl('bj');
-  dealBtn = el('button', { class: 'btn gold big', type: 'button', text: 'Austeilen', onclick: deal });
+  dealBtn = el('button', { class: 'btn gold big', type: 'button', onclick: deal }, el('span', { text: 'Austeilen' }), V.kbd('Leertaste'));
   ['hit', 'stand', 'double', 'split', 'surrender'].forEach(function (k) {
-    btns[k] = el('button', { class: 'btn act', type: 'button', text: NAMEACT[k], onclick: function () { act(k); } });
+    btns[k] = el('button', { class: 'btn act', type: 'button', onclick: function () { act(k); } }, NAMEACT[k], V.kbd(KEYACT[k]));
   });
   insRow = el('div', { class: 'ins-row', hidden: true },
     el('span', { class: 'ins-txt' }),
-    el('button', { class: 'btn ghost', type: 'button', text: 'Versichern', onclick: function () { insure(true); } }),
-    el('button', { class: 'btn ghost', type: 'button', text: 'Nein danke', onclick: function () { insure(false); } }));
-  hintBtn = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(V.S.hint), text: V.S.hint ? 'Strategie-Tipp an' : 'Strategie-Tipp aus', onclick: function () {
+    el('button', { class: 'btn ghost', type: 'button', onclick: function () { insure(true); } }, 'Versichern', V.kbd('J')),
+    el('button', { class: 'btn ghost', type: 'button', onclick: function () { insure(false); } }, 'Nein danke', V.kbd('N')));
+  hintBtn = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(V.S.hint), onclick: function () {
     V.S.hint = !V.S.hint; V.save(); renderBJ(); V.Snd.click();
-  } });
+  } }, el('span'), V.kbd('S'));
   adviceEl = el('div', { class: 'advice', 'aria-live': 'polite' });
   var acts = el('div', { class: 'acts' }, btns.hit, btns.stand, btns.double, btns.split, btns.surrender);
   ctlEl = el('div', { class: 'controls' }, betCtl.el, el('div', { class: 'spinbox' }, dealBtn, hintBtn));
@@ -86,6 +105,7 @@ function renderBJ() {
       handsEl.appendChild(wrap);
     });
   }
+  renderSpot(st ? st.staked : S.bets.bj);
   /* Schuh */
   if (shoe) {
     var left = Math.round((1 - shoe.pos / shoe.cards.length) * 100);
@@ -106,10 +126,10 @@ function renderBJ() {
   });
   var canDeal = !busy && (!st || st.phase === 'done');
   dealBtn.disabled = !canDeal;
-  dealBtn.textContent = canDeal ? 'Austeilen · ' + fmt(S.bets.bj) : 'Läuft …';
+  dealBtn.firstChild.textContent = canDeal ? 'Austeilen · ' + fmt(S.bets.bj) : 'Läuft …';
   betCtl.disable(!canDeal);
   hintBtn.setAttribute('aria-pressed', String(S.hint));
-  hintBtn.textContent = S.hint ? 'Strategie-Tipp an' : 'Strategie-Tipp aus';
+  hintBtn.firstChild.textContent = S.hint ? 'Strategie-Tipp an' : 'Strategie-Tipp aus';
   adviceEl.textContent = '';
   if (S.hint && inRound) {
     var h2 = st.hands[st.active];
@@ -205,9 +225,26 @@ async function finishRound() {
   renderBJ();
 }
 
+function onKey(e) {
+  var k = e.key.toLowerCase();
+  if (st && st.phase === 'insurance' && !busy) {
+    if (k === 'j') { insure(true); return true; }
+    if (k === 'n') { insure(false); return true; }
+  }
+  if (k === ' ' || k === 'enter') { if (!busy && (!st || st.phase === 'done')) deal(); return true; }
+  var map = { k: 'hit', h: 'stand', v: 'double', t: 'split', a: 'surrender' };
+  if (map[k]) { act(map[k]); return true; }
+  if ((k === 'arrowup' || k === '+') && !betCtl.isOff()) { betCtl.step(1); return true; }
+  if ((k === 'arrowdown' || k === '-') && !betCtl.isOff()) { betCtl.step(-1); return true; }
+  if (k === 's') { hintBtn.click(); return true; }
+  return false;
+}
+
 V.games.push({
   id: 'bj',
   init: build,
+  onKey: onKey,
+  keys: [['Leertaste', 'Austeilen'], ['K', 'Karte'], ['H', 'Halten'], ['V', 'Verdoppeln'], ['T', 'Teilen'], ['A', 'Aufgeben'], ['J / N', 'Versicherung ja / nein'], ['↑ / ↓', 'Einsatz ändern'], ['S', 'Strategie-Tipp an/aus']],
   onRoom: function () { betCtl.render(); renderBJ(); },
   refresh: function () { if (betCtl) { betCtl.render(); renderBJ(); } }
 });

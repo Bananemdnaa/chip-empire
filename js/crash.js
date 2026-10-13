@@ -24,16 +24,13 @@ function build() {
   autoChk = el('input', { type: 'checkbox', id: 'crashAutoChk' });
   autoIn = el('input', { type: 'number', id: 'crashAuto', min: '1.01', max: '10000', step: '0.01', value: '2.00', inputmode: 'decimal' });
   var autoRow = el('label', { class: 'autorow', for: 'crashAutoChk' }, autoChk, el('span', { text: 'Auto-Auszahlen bei' }), autoIn, el('span', { text: '×' }));
-  goBtn = el('button', { class: 'btn gold big', type: 'button', onclick: onGo });
+  goBtn = el('button', { class: 'btn gold big', type: 'button', onclick: onGo }, el('span'), V.kbd('Leertaste'));
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
   root.appendChild(stage); root.appendChild(histEl); root.appendChild(msgEl);
   root.appendChild(el('div', { class: 'controls' }, betCtl.el, el('div', { class: 'spinbox' }, goBtn, autoRow)));
   root.appendChild(el('p', { class: 'fine', text: 'Der Multiplikator steigt, bis er an einem zufälligen Punkt abstürzt. Zahlst du vorher aus, bekommst du Einsatz × Multiplikator. Hausvorteil 1 %: Die Chance, 2,00× zu erreichen, liegt bei 49,5 %, für 10× bei 9,9 %.' }));
   V.busyFns.push(function () { return running; });
   window.addEventListener('resize', function () { size(); draw(); });
-  document.addEventListener('keydown', function (e) {
-    if (e.code === 'Space' && V.S.game === 'crash' && !/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName || '')) { e.preventDefault(); onGo(); }
-  });
   readColors(); renderHist(); renderBtn();
 }
 
@@ -53,9 +50,10 @@ function autoVal() {
 }
 
 function renderBtn() {
-  if (!running) { goBtn.textContent = 'Einsteigen · ' + fmt(V.S.bets.crash); goBtn.disabled = false; goBtn.classList.remove('cash'); }
-  else if (!cashed) { goBtn.textContent = 'Auszahlen · ' + fmt(Math.floor(bet * Math.floor(curM * 100) / 100)); goBtn.disabled = false; goBtn.classList.add('cash'); }
-  else { goBtn.textContent = 'Überspringen'; goBtn.disabled = false; goBtn.classList.remove('cash'); }
+  var lb = goBtn.firstChild;
+  if (!running) { lb.textContent = 'Einsteigen · ' + fmt(V.S.bets.crash); goBtn.disabled = false; goBtn.classList.remove('cash'); }
+  else if (!cashed) { lb.textContent = 'Auszahlen · ' + fmt(Math.floor(bet * Math.floor(curM * 100) / 100)); goBtn.disabled = false; goBtn.classList.add('cash'); }
+  else { lb.textContent = 'Überspringen'; goBtn.disabled = false; goBtn.classList.remove('cash'); }
   betCtl.disable(running);
   autoIn.disabled = running; autoChk.disabled = running;
 }
@@ -99,7 +97,13 @@ function draw() {
   ctx.beginPath(); ctx.moveTo(X(0), Y(1));
   for (var j = 1; j <= n; j++) { var t2 = curT * j / n; ctx.lineTo(X(t2), Y(Math.min(E.crashMult(t2), curM))); }
   ctx.strokeStyle = col; ctx.lineWidth = 3 * d; ctx.lineJoin = 'round'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(X(curT), Y(curM), 5 * d, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+  /* Rakete an der Spitze, beim Absturz eine Explosion */
+  var tx = X(curT), ty = Y(curM), tb = curT * 0.96;
+  var ang = Math.atan2(ty - Y(Math.min(E.crashMult(tb), curM)), tx - X(tb));
+  ctx.save(); ctx.translate(tx, ty); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (crashedAt) { ctx.font = (38 * d) + 'px serif'; ctx.fillText('💥', 0, 0); }
+  else { ctx.rotate(ang + Math.PI / 4); ctx.font = (28 * d) + 'px serif'; ctx.fillText('🚀', 0, 0); }
+  ctx.restore();
   if (cashed && cashAt > 0) {
     var tc = E.crashTime(cashAt);
     if (tc <= curT) {
@@ -136,6 +140,7 @@ function start() {
   readColors(); size();
   cp = E.crashPoint();
   running = true; cashed = false; cashAt = 0; curM = 1; curT = 0; crashedAt = 0;
+  root.querySelector('.crash-stage').classList.add('flying');
   multEl.className = 'crash-mult live'; subEl.textContent = 'Läuft …'; msgEl.textContent = ''; msgEl.className = 'slot-msg';
   t0 = performance.now();
   renderBtn();
@@ -174,6 +179,7 @@ function cashout(at) {
 
 function crash() {
   running = false; crashedAt = cp;
+  root.querySelector('.crash-stage').classList.remove('flying');
   cancelAnimationFrame(raf);
   multEl.textContent = fmtX(cp); multEl.className = 'crash-mult dead';
   V.S.chist.push(cp); if (V.S.chist.length > 30) V.S.chist.shift();
@@ -197,9 +203,20 @@ function finish() {
   crash();
 }
 
+function onKey(e) {
+  var k = e.key.toLowerCase();
+  if (k === ' ' || k === 'enter') { onGo(); return true; }
+  if ((k === 'arrowup' || k === '+') && !running) { betCtl.step(1); return true; }
+  if ((k === 'arrowdown' || k === '-') && !running) { betCtl.step(-1); return true; }
+  if (k === 'a' && !running) { autoChk.checked = !autoChk.checked; V.Snd.click(); return true; }
+  return false;
+}
+
 V.games.push({
   id: 'crash',
   init: build,
+  onKey: onKey,
+  keys: [['Leertaste', 'Einsteigen / Auszahlen'], ['↑ / ↓', 'Einsatz ändern'], ['A', 'Auto-Auszahlen an/aus']],
   onShow: function () { readColors(); size(); draw(); },
   onRoom: function () { betCtl.render(); renderBtn(); },
   refresh: function () { if (betCtl) { betCtl.render(); if (!running) renderBtn(); } }

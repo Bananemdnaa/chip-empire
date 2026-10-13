@@ -97,9 +97,6 @@ body.in-game { overflow: hidden; }
 .game { max-width: 1040px; margin-inline: auto; animation: gameIn .35s ease-out; }
 @keyframes gameIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .stage-head { max-width: 1040px; margin-inline: auto; }
-/* Walzen passen sich der Fensterhöhe an, damit „Drehen“ immer sichtbar bleibt */
-#g-slots .reels-wrap { max-width: max(320px, calc((100dvh - var(--hud-h) - 330px) * 1.62)); margin-inline: auto; }
-#g-slots .slot-msg { text-align: center; }
 
 /* ---------- Hostess ---------- */
 .host { grid-area: host; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start;
