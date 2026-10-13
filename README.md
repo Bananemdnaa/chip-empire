@@ -11,7 +11,7 @@ Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
 
 **Fortschritt (in allen Modi):**
-- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Drei Äste (Glück, Taktik, Business), jedes Talent braucht das vorherige im Ast. Neu verteilen kostet Chips.
+- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business) mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
 - **Quests**: drei Daily Quests pro Tag, drei Weekly Quests pro Woche (Truhe mit Talentpunkt) und dauerhafte Meilensteine in Stufen.
 
 Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.

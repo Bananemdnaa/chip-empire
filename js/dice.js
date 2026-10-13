@@ -13,6 +13,8 @@ var MAIN = [
 ];
 function payFor(key) {
   if (key.charAt(0) === 's') return SUM_PAY[Number(key.slice(1))];
+  /* Talent Glückswürfel: Pasch zahlt mehr */
+  if (key === 'double') return 5.7 + V.meta.perk('diceDouble');
   for (var i = 0; i < MAIN.length; i++) if (MAIN[i].key === key) return MAIN[i].pay;
   return 0;
 }
@@ -69,6 +71,7 @@ function build() {
 function renderCells(bets, locked) {
   for (var k in cells) {
     var c = cells[k], amt = bets[k] || 0, ch = c.querySelector('.rchip');
+    if (k === 'double') c.querySelector('.pay').textContent = 'zahlt ' + String(payFor('double')).replace('.', ',') + '×';
     ch.hidden = amt <= 0; ch.textContent = amt > 0 ? V.short(amt) : '';
     c.classList.toggle('has', amt > 0);
     c.disabled = locked;
@@ -121,7 +124,7 @@ function onKey(e) {
 }
 
 V.games.push({
-  id: 'dice', init: build, onKey: onKey,
+  id: 'dice', init: build, onKey: onKey, onShow: function () { table.render(); },
   keys: [['Leertaste', 'Würfeln'], ['Maus', 'Chips auf Felder setzen'], ['← / →', 'Chipwert wählen'], ['⌫ / L / W / D', 'Zurück, Leeren, Wiederholen, Verdoppeln']],
   onRoom: function () { table.render(); }, refresh: function () { table.render(); }
 });

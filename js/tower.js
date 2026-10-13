@@ -11,7 +11,8 @@ var DIFF = {
 };
 var KEYS = ['a', 's', 'd', 'f'];
 /* Multiplikator nach k geschafften Etagen: fair geteilt durch die Überlebenschance, mal 97 % */
-function multAt(diff, k) { var D = DIFF[diff], p = (D.tiles - D.dragons) / D.tiles; return k ? Math.floor(RTP / Math.pow(p, k) * 100) / 100 : 0; }
+/* Talent Drachenschuppen erhöht die Quote leicht */
+function multAt(diff, k) { var D = DIFF[diff], p = (D.tiles - D.dragons) / D.tiles; return k ? Math.floor((RTP + V.meta.perk('towerScale')) / Math.pow(p, k) * 100) / 100 : 0; }
 
 var root, towerEl, floorEls = [], bet, goBtn, diffBtns = {}, msgEl;
 var run = null; /* { diff, bet, floor, dragons: [[...]], picks: [] } */

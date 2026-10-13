@@ -108,7 +108,9 @@ async function spin() {
   await sleep(4700);
   clearInterval(tick);
   var stake = 0, ret = 0;
-  for (var k in bets) { stake += bets[k]; if (k === key) ret += bets[k] * f.mult; }
+  /* Talent Glücksfee: das 2×-Feld zahlt etwas mehr */
+  var mult = f.mult + (key === 'x2' ? V.meta.perk('wheelLuck') : 0);
+  for (var k in bets) { stake += bets[k]; if (k === key) ret += V.payout(bets[k], mult); }
   hist.push(key); renderHist();
   badge.textContent = f.label; badge.style.background = f.color;
   tiles[key].classList.add('won');

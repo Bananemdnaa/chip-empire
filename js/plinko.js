@@ -95,7 +95,8 @@ function drop() {
 }
 
 function land(ball, k, b0, risk) {
-  var m = mults(risk)[k], ret = V.payout(b0, m);
+  /* Talent Glatte Nägel: Fächer ab 2× zahlen etwas mehr */
+  var m = mults(risk)[k], ret = V.payout(b0, m >= 2 ? m * (1 + V.meta.perk('plinkoSmooth')) : m);
   setTimeout(function () { if (ball.parentNode) ball.parentNode.removeChild(ball); }, 250);
   var bk = buckets[k];
   var base = bk.getAttribute('class').replace(' hit', '');

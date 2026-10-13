@@ -105,7 +105,7 @@ function render(win) {
   goBtn.disabled = phase === 'busy';
   tipBtn.disabled = phase !== 'hold';
   bet.disable(phase !== 'idle');
-  Array.prototype.forEach.call(payEl.children, function (r) { r.classList.toggle('hit', !!(win && win.key === r.getAttribute('data-key'))); });
+  Array.prototype.forEach.call(payEl.children, function (r) { r.classList.toggle('hit', !!(win && win.key === r.getAttribute('data-key'))); r.querySelector('b').textContent = payOf(r.getAttribute('data-key')) + '×'; });
 }
 
 async function deal() {
@@ -125,7 +125,8 @@ async function deal() {
   render(ev.key ? ev : null);
 }
 function nameOf(key) { var n = ''; HANDS.forEach(function (h) { if (h.key === key) n = h.name; }); return n; }
-function payOf(key) { var p = 0; HANDS.forEach(function (h) { if (h.key === key) p = h.pay; }); return p; }
+/* Talent Pokerface: Full House zahlt 10× */
+function payOf(key) { var p = 0; HANDS.forEach(function (h) { if (h.key === key) p = h.pay; }); return key === 'full' ? p + V.meta.perk('pokerFace') : p; }
 
 function toggle(i) {
   if (phase !== 'hold') return;
@@ -170,7 +171,7 @@ function onKey(e) {
 }
 
 V.games.push({
-  id: 'poker', init: build, onKey: onKey,
+  id: 'poker', init: build, onKey: onKey, onShow: function () { if (phase === 'idle') render(); },
   keys: [['Leertaste', 'Austeilen / Tauschen'], ['Q W E R T', 'Karte 1 bis 5 halten'], ['H', 'Halte-Tipp'], ['↑ / ↓', 'Einsatz ändern']],
   onRoom: function () { bet.render(); render(); }, refresh: function () { if (phase === 'idle') { bet.render(); render(); } }
 });

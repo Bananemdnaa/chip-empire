@@ -15,9 +15,13 @@ var root, table, lanes = [], tiles = [], raceBtn, msgEl, histEl, odds = [], raci
 
 function newOdds() {
   odds = E.shuffle(ODDS.slice());
+  renderOdds();
+}
+/* Quoten-Anzeige (berücksichtigt Talente) */
+function renderOdds() {
   DUCKS.forEach(function (d, i) {
     var t = tiles[i]; if (!t) return;
-    t.querySelector('.q').textContent = String(odds[i]).replace('.', ',') + '×';
+    t.querySelector('.q').textContent = String(payOdds(odds[i])).replace('.', ',') + '×';
     t.querySelector('.p').textContent = Math.round(100 / odds[i] / INV) + ' % Chance';
     t.classList.toggle('fav', odds[i] === ODDS[0]);
     t.classList.toggle('dog', odds[i] === ODDS[ODDS.length - 1]);
@@ -68,6 +72,8 @@ function renderHist() {
   hist.slice(-10).reverse().forEach(function (h) { var s = el('span', { text: DUCKS[h.i].name + ' ' + String(h.o).replace('.', ',') + '×' }); s.style.background = DUCKS[h.i].color; histEl.appendChild(s); });
 }
 
+/* Talent Wettprofi: Außenseiter ab 8× zahlen etwas mehr */
+function payOdds(o) { return o >= 8 ? Math.round(o * (1 + V.meta.perk('duckPro')) * 100) / 100 : o; }
 function pickWinner() {
   var r = E.rand() * INV, acc = 0;
   for (var i = 0; i < odds.length; i++) { acc += 1 / odds[i]; if (r < acc) return i; }
@@ -110,7 +116,7 @@ async function race() {
   order.forEach(function (i, p) { lanes[i].place.textContent = (p + 1) + '.'; });
   lanes[winner].lane.classList.add('win');
   var o = odds[winner], stake = 0, ret = 0;
-  for (var k in bets) { stake += bets[k]; if (k === 'd' + winner) ret += V.payout(bets[k], o); }
+  for (var k in bets) { stake += bets[k]; if (k === 'd' + winner) ret += V.payout(bets[k], payOdds(o)); }
   hist.push({ i: winner, o: o }); renderHist();
   V.settle('ducks', stake, ret, { duckOdds: ret > 0 ? o : 0 });
   var net = ret - stake;
@@ -131,7 +137,7 @@ function onKey(e) {
 }
 
 V.games.push({
-  id: 'ducks', init: build, onKey: onKey,
+  id: 'ducks', init: build, onKey: onKey, onShow: function () { if (!racing) renderOdds(); },
   keys: [['Leertaste', 'Rennen starten'], ['Maus', 'Auf Enten setzen'], ['← / →', 'Chipwert wählen'], ['⌫ / L / W / D', 'Zurück, Leeren, Wiederholen, Verdoppeln']],
   onRoom: function () { table.render(); }, refresh: function () { table.render(); }
 });
