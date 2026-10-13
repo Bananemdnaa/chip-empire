@@ -150,7 +150,7 @@ async function oneSpin(isFree) {
   var bet0 = isFree ? S.free.bet : S.bets.slots;
   if (!isFree) {
     if (S.balance < bet0) { V.needChips(); return null; }
-    V.debit(bet0);
+    V.debit(bet0, true);
   }
   spinning = true; updateSpin(); clearWins();
   var res = E.slotPlay(bet0 / 10, isFree ? E.FREE_MULT : 1);

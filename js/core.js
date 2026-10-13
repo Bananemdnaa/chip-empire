@@ -85,15 +85,19 @@ function load() {
     S = f;
   } catch (e) { /* kein Speicher: frisch starten */ }
 }
+/* Einsätze laufender Runden sind gebunden: Wer mitten in der Runde neu lädt, bekommt sie nicht zurück.
+   Nur Chips, die noch ungespielt auf dem Tisch liegen (Roulette vor dem Drehen), fließen beim Speichern zurück. */
+var locked = 0;
 function save() {
   try {
     var d = Object.assign({}, S);
-    d.balance = S.balance + S.escrow; d.escrow = 0;
+    d.balance = S.balance + S.escrow - Math.min(locked, S.escrow); d.escrow = 0;
     localStorage.setItem(KEY, JSON.stringify(d));
   } catch (e) { /* ignorieren */ }
 }
 function room() { return E.TIERS[S.room]; }
-function debit(n) { S.balance -= n; S.escrow += n; }
+function debit(n, commit) { S.balance -= n; S.escrow += n; if (commit) lock(n); }
+function lock(n) { locked += n; save(); }
 function refund(n) { S.balance += n; S.escrow -= n; }
 
 /* ---------- Ton ---------- */
@@ -261,6 +265,7 @@ function settle(game, staked, ret, opt) {
   var net = ret - staked, before = Math.max(1, S.balance + S.escrow - net);
   S.balance += ret; S.escrow -= staked;
   if (S.escrow < 0) S.escrow = 0;
+  locked = Math.max(0, Math.min(locked - staked, S.escrow));
   S.returned += ret;
   if (staked > 0) {
     S.wagered += staked; S.rounds++;
@@ -475,7 +480,7 @@ function tabs(container, items, current, onPick) {
 
 return {
   E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, pick: pick, short: short, clock: clock,
-  get S() { return S; }, load: load, save: save, room: room, debit: debit, refund: refund, Snd: Snd,
+  get S() { return S; }, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
   toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
   needChips: needChips, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,

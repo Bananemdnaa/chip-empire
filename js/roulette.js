@@ -226,6 +226,7 @@ async function spin() {
   if (t <= 0) { V.toast('Setz zuerst Chips auf den Tisch.', 'bad'); return; }
   V.Snd.ensure();
   spinning = true; renderBets();
+  V.lock(t);
   last = Object.assign({}, bets);
   var n = E.rSpin(), idx = E.R_ORDER.indexOf(n), d = 360 / 37;
   msgEl.className = 'slot-msg'; msgEl.textContent = 'Rien ne va plus …';

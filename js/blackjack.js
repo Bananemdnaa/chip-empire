@@ -129,7 +129,7 @@ async function deal() {
   if (S.balance < bet) { V.needChips(); return; }
   V.Snd.ensure();
   if (!shoe || E.shoeNeedsShuffle(shoe)) { if (shoe) V.toast('Der Dealer mischt einen neuen Schuh.', ''); shoe = E.newShoe(6); }
-  V.debit(bet);
+  V.debit(bet, true);
   seen = new Map();
   dealerShown = 1;
   st = E.bjDeal(shoe, bet);
@@ -151,9 +151,9 @@ async function act(name) {
   else if (name === 'stand') E.bjStand(st);
   else if (name === 'surrender') E.bjSurrender(st);
   else if (name === 'double') {
-    var c1 = st.hands[st.active].bet; V.debit(c1); E.bjDouble(st);
+    var c1 = st.hands[st.active].bet; V.debit(c1, true); E.bjDouble(st);
   } else if (name === 'split') {
-    var c2 = st.hands[st.active].bet; V.debit(c2); E.bjSplit(st);
+    var c2 = st.hands[st.active].bet; V.debit(c2, true); E.bjSplit(st);
   }
   V.hud();
   renderBJ();
@@ -169,7 +169,7 @@ async function insure(take) {
   var S = V.S, cost = Math.floor(st.bet0 / 2);
   if (take) {
     if (S.balance < cost) { V.needChips(); return; }
-    V.debit(cost);
+    V.debit(cost, true);
   }
   E.bjInsurance(st, take);
   V.hud();

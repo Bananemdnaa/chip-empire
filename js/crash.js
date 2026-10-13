@@ -132,7 +132,7 @@ function start() {
   var S = V.S;
   bet = S.bets.crash;
   if (S.balance < bet) { V.needChips(); return; }
-  V.debit(bet); V.hud();
+  V.debit(bet, true); V.hud();
   readColors(); size();
   cp = E.crashPoint();
   running = true; cashed = false; cashAt = 0; curM = 1; curT = 0; crashedAt = 0;
