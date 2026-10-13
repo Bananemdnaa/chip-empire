@@ -1,4 +1,4 @@
-/* Velvet Room – UI-Kern: Zustand, Speichern, Ton, HUD, Hostess, Bet-Steuerung */
+/* Chip Empire – UI-Kern: Zustand, Speichern, Ton, HUD, Hostess, Bet-Steuerung */
 var V = (function () {
 'use strict';
 var E = Engine, A = Art;
@@ -182,7 +182,7 @@ function burst(host, n, colors) {
 /* ---------- Hostess ---------- */
 var LINES = {
   greet: [
-    'Willkommen im Velvet Room! Ich bin Mira. Such dir einen Tisch aus. Ich bringe dir Glück, oder zumindest gute Laune.',
+    'Willkommen im Chip Empire! Ich bin Mira. Such dir einen Tisch aus. Ich bringe dir Glück, oder zumindest gute Laune.',
     'Na, wer wagt sich denn in die Bronze Lounge? Ich bin Sofia. Dein Drink geht aufs Haus, dein Einsatz nicht.',
     'Silver Salon. Hier wird nicht gekleckert, sondern geklotzt. Ich bin Lena und behalte den Überblick.',
     'Gold Suite, Darling. Ich bin Isabella. Hier setzen nur Leute, die wissen, was sie wollen.',

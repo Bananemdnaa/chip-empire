@@ -1,4 +1,4 @@
-/* Velvet Room – Start, Navigation, Spielzeit */
+/* Chip Empire – Start, Navigation, Spielzeit */
 (function () {
 'use strict';
 var $ = V.$, $$ = V.$$;

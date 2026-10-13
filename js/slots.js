@@ -1,4 +1,4 @@
-/* Velvet Room – Slots "Golden Velvet" */
+/* Chip Empire – Slots "Golden Velvet" */
 (function () {
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep;

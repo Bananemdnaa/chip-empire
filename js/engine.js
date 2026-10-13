@@ -1,4 +1,4 @@
-/* Velvet Room – Spiel-Engine (reine Logik, keine DOM-Zugriffe) */
+/* Chip Empire – Spiel-Engine (reine Logik, keine DOM-Zugriffe) */
 var Engine = (function () {
 'use strict';
 

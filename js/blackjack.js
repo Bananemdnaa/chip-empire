@@ -1,4 +1,4 @@
-/* Velvet Room – Blackjack (6 Decks, Dealer steht auf soft 17, Blackjack zahlt 3:2) */
+/* Chip Empire – Blackjack (6 Decks, Dealer steht auf soft 17, Blackjack zahlt 3:2) */
 (function () {
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep;

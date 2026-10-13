@@ -1,4 +1,4 @@
-/* Velvet Room – Europäisches Roulette */
+/* Chip Empire – Europäisches Roulette */
 (function () {
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep, short = V.short;

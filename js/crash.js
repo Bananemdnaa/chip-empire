@@ -1,4 +1,4 @@
-/* Velvet Room – Crash ("Rocket Lounge") */
+/* Chip Empire – Crash ("Rocket Lounge") */
 (function () {
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt, fmtX = V.fmtX;

@@ -1,4 +1,4 @@
-/* Velvet Room – Hostessen (fiktive Figuren, als SVG gezeichnet) */
+/* Chip Empire – Hostessen (fiktive Figuren, als SVG gezeichnet) */
 var Art = (function () {
 'use strict';
 

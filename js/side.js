@@ -1,4 +1,4 @@
-/* Velvet Room – Seitenpanel: Stufen, Zockerprofil, Statistik, Haus */
+/* Chip Empire – Seitenpanel: Stufen, Zockerprofil, Statistik, Haus */
 (function () {
 'use strict';
 var E = V.E, A = V.A, el = V.el, fmt = V.fmt, short = V.short;
