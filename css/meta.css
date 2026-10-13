@@ -1,0 +1,110 @@
+/* Chip Empire – Fortschritt: Level, Talente, Imperium, Aufträge, Hinweis-Punkte */
+
+/* Level im HUD */
+.lvl { flex: none; padding: 1px 7px; border-radius: 999px; font: 700 11px/16px var(--f-mono); letter-spacing: 0 !important; text-transform: none !important;
+  color: #1A0A10 !important; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); }
+
+/* Hinweis-Punkte an der Seitenleiste */
+.rail-btn.dot::after { content: ""; position: absolute; top: 7px; right: 14px; width: 9px; height: 9px; border-radius: 50%;
+  background: #FF4D6A; box-shadow: 0 0 0 2px #12070B, 0 0 10px #FF4D6A; animation: dotPulse 1.6s ease-in-out infinite; }
+@keyframes dotPulse { 50% { transform: scale(1.25); } }
+
+/* gemeinsame Bausteine */
+.mbar { height: 8px; border-radius: 8px; background: rgba(255,255,255,.08); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+.mbar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); box-shadow: 0 0 8px rgba(242,214,142,.5); transition: width .5s; }
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.12); }
+.pips i.on { background: var(--gold-hi); box-shadow: 0 0 6px rgba(242,214,142,.7); }
+
+/* ---------- Talente ---------- */
+.lvl-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px; margin-bottom: 14px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(212,171,82,.12), rgba(0,0,0,.2)); border: 1px solid var(--gold-lo); }
+.lvl-badge { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 400 26px var(--f-display); color: #2A1608;
+  background: radial-gradient(circle at 35% 30%, #FFF0B8, var(--gold) 55%, var(--gold-lo)); box-shadow: 0 0 0 3px rgba(0,0,0,.35), 0 6px 16px rgba(0,0,0,.45); }
+.lvl-info { display: grid; gap: 6px; min-width: 0; }
+.lvl-info b { font-family: var(--f-display); font-weight: 400; font-size: 22px; color: var(--gold-hi); }
+.lvl-info .fine { margin: 0; }
+.tp-box { display: grid; justify-items: center; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.25); }
+.tp-box b { font: 600 24px var(--f-mono); color: var(--muted); }
+.tp-box span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.tp-box.has { border-color: var(--gold); box-shadow: 0 0 18px rgba(242,214,142,.25); }
+.tp-box.has b { color: var(--gold-hi); }
+.branches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.branch { display: grid; gap: 8px; align-content: start; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.2); }
+.branch h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 21px; color: var(--ivory); }
+.branch > .fine { margin: 0 0 4px; }
+.br-gl { box-shadow: inset 0 3px 0 #6FD3A2; } .br-ta { box-shadow: inset 0 3px 0 #FF6A88; } .br-bu { box-shadow: inset 0 3px 0 var(--gold); }
+.talent { display: grid; gap: 4px; justify-items: start; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.03); }
+.talent.got { border-color: var(--gold-lo); background: rgba(212,171,82,.07); }
+.talent.maxed { border-color: var(--gold); }
+.tal-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.tal-h b { font-size: 14.5px; }
+.tal-now { font-size: 12.5px; color: var(--ivory); }
+.talent:not(.got) .tal-now { color: var(--muted); }
+.tal-next { font-size: 11.5px; color: var(--gold); }
+.talent .btn { margin-top: 4px; }
+.respec { margin-top: 14px; align-items: center; }
+.respec .fine { margin: 0; }
+
+/* ---------- Imperium ---------- */
+.emp-head { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 12px; margin-bottom: 14px; align-items: stretch; }
+.emp-kpi { display: grid; align-content: center; gap: 2px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.22); }
+.emp-kpi b { font-size: 20px; color: var(--gold-hi); }
+.vault { display: grid; gap: 7px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--gold-lo); background: linear-gradient(180deg, rgba(212,171,82,.1), rgba(0,0,0,.25)); }
+.vault-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.vault-h b { color: var(--gold-hi); }
+.vault .btn { justify-self: start; }
+.vault.full { border-color: #FF6A88; box-shadow: 0 0 18px rgba(255,106,136,.2); }
+.vault.full .vault-h .lbl::after { content: " · voll!"; color: #FF9AAE; }
+.biz-list { display: grid; gap: 8px; }
+.biz { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.2); }
+.biz.owned { border-color: var(--gold-lo); background: linear-gradient(90deg, rgba(212,171,82,.1), rgba(0,0,0,.2) 60%); }
+.biz.locked { opacity: .5; }
+.biz-ico { width: 52px; height: 52px; display: grid; place-items: center; font-size: 28px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+.biz.owned .biz-ico { border-color: var(--gold-lo); box-shadow: 0 0 14px rgba(242,214,142,.15); }
+.biz-info { display: grid; gap: 3px; min-width: 0; }
+.biz-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.biz-h b { font-size: 15px; }
+.biz-info .fine { margin: 0; }
+.biz-k { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 600 12px var(--f-mono); color: var(--ivory); }
+.biz-k .up { color: #7DFFB0; }
+
+/* ---------- Aufträge ---------- */
+.missions { display: grid; gap: 8px; }
+.mission { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.2); }
+.mission.done { border-color: var(--gold); background: rgba(212,171,82,.1); }
+.mission.claimed { opacity: .6; }
+.ms-ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font: 700 16px var(--f-mono); color: var(--muted); border: 1px solid var(--line); }
+.mission.done .ms-ico { color: #2A1608; background: var(--gold-hi); border-color: var(--gold-hi); }
+.ms-info { display: grid; gap: 5px; min-width: 0; }
+.ms-info .fine { margin: 0; }
+.chest { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+  border: 1px dashed var(--gold-lo); background: rgba(0,0,0,.2); }
+.chest-ico { font-size: 34px; text-align: center; }
+.chest .fine { margin: 2px 0 0; }
+.chest.ready { border-style: solid; border-color: var(--gold-hi); box-shadow: 0 0 24px rgba(242,214,142,.3); animation: chestGlow 1.8s ease-in-out infinite; }
+@keyframes chestGlow { 50% { box-shadow: 0 0 34px rgba(242,214,142,.5); } }
+
+/* Auto-Spin-Schalter */
+.deck-side { display: grid; gap: 6px; justify-items: end; }
+.toggle.auto[aria-pressed="true"] { color: #7DFFB0; border-color: #2E9E6C; }
+.toggle.auto[aria-pressed="true"] .sw { background: #2E9E6C; }
+
+@media (max-width: 860px) {
+  .branches { grid-template-columns: minmax(0, 1fr); }
+  .emp-head { grid-template-columns: 1fr 1fr; }
+  .vault { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .biz { grid-template-columns: 44px minmax(0, 1fr); }
+  .biz-ico { width: 44px; height: 44px; font-size: 24px; }
+  .biz > .btn { grid-column: 1 / -1; justify-self: stretch; }
+  .mission, .chest { grid-template-columns: 34px minmax(0, 1fr); }
+  .mission > .btn, .chest > .btn { grid-column: 1 / -1; justify-self: stretch; }
+  .lvl-head { grid-template-columns: auto minmax(0, 1fr); }
+  .tp-box { grid-column: 1 / -1; grid-auto-flow: column; justify-content: center; gap: 8px; align-items: baseline; }
+  .rail-btn.dot::after { right: 22%; top: 4px; }
+  .deck-side { justify-items: start; }
+  .side > .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .side > .tabs .tab { white-space: nowrap; flex: none; }
+}

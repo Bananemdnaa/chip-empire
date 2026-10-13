@@ -6,7 +6,7 @@ var E = V.E, A = V.A, el = V.el, fmt = V.fmt, short = V.short;
 var tabsEl, body, confirmReset = false;
 var EDGE = { slots: 0.04, roulette: 1 / 37, bj: 0.005, crash: 0.01 };
 var GNAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
-var TABS = [{ id: 'stufen', label: 'Stufen' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Hinter den Kulissen' }];
+var TABS = [{ id: 'imperium', label: 'Imperium' }, { id: 'talente', label: 'Talente' }, { id: 'auftraege', label: 'Aufträge' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Hinter den Kulissen' }];
 
 function build() {
   var host = V.$('#side');
@@ -21,7 +21,8 @@ function refresh() {
   var S = V.S;
   V.tabs(tabsEl, TABS, S.sideTab, function (id) { S.sideTab = id; confirmReset = false; V.Snd.click(); V.save(); refresh(); });
   body.innerHTML = '';
-  if (S.sideTab === 'stufen') stufen();
+  if (V.meta.tabs[S.sideTab]) V.meta.tabs[S.sideTab](body);
+  else if (S.sideTab === 'stufen') stufen();
   else if (S.sideTab === 'profil') profil();
   else if (S.sideTab === 'stats') stats();
   else haus();

@@ -1,0 +1,15 @@
+{
+  "name": "Chip Empire",
+  "short_name": "Chip Empire",
+  "description": "Browser-Casinospiel mit Spielgeld: Slots, Roulette, Blackjack und Crash.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#13080D",
+  "theme_color": "#13080D",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

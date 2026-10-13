@@ -3,7 +3,7 @@
 'use strict';
 var $ = V.$, $$ = V.$$;
 var GAMES = [{ id: 'slots', label: 'Slots' }, { id: 'roulette', label: 'Roulette' }, { id: 'bj', label: 'Blackjack' }, { id: 'crash', label: 'Crash' }];
-var SIDE = [{ id: 'stufen', label: 'Stufen' }, { id: 'profil', label: 'Profil' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Kulissen' }];
+var SIDE = [{ id: 'imperium', label: 'Imperium' }, { id: 'talente', label: 'Talente' }, { id: 'auftraege', label: 'Aufträge' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Kulissen' }];
 
 function lockedMsg(id) {
   return V.GAME_NAME[id] + ' wird in der ' + V.E.TIERS[V.GAME_TIER[id]].name + ' freigeschaltet.';
@@ -41,6 +41,7 @@ function renderNav() {
   var more = railBtn({ id: 'more', label: 'Mehr' }, false, function () { V.Snd.click(); openSide(V.S.sideTab); });
   more.classList.add('rail-more'); more.removeAttribute('role'); more.removeAttribute('aria-selected');
   box.appendChild(more);
+  renderBadges();
 }
 function renderSideNav() {
   var box = $('#sideNav');
@@ -48,11 +49,25 @@ function renderSideNav() {
   SIDE.forEach(function (t) {
     var b = railBtn(t, false, function () { V.Snd.click(); openSide(t.id); });
     b.removeAttribute('role'); b.removeAttribute('aria-selected');
+    b.setAttribute('data-side', t.id);
     box.appendChild(b);
   });
+  renderBadges();
+}
+/* Hinweis-Punkte: Tresor halb voll, Auftrag fertig, Talentpunkt frei */
+function renderBadges() {
+  if (!V.meta || !$('#sideNav')) return;
+  var b = V.meta.badges(), any = false;
+  SIDE.forEach(function (t) {
+    var btn = $('#sideNav [data-side="' + t.id + '"]');
+    if (btn) btn.classList.toggle('dot', !!b[t.id]);
+    if (b[t.id]) any = true;
+  });
+  var more = $('#gameTabs .rail-more');
+  if (more) more.classList.toggle('dot', any);
 }
 /* ---------- Tastatur ---------- */
-var GLOBAL_KEYS = [['1 – 4', 'Spiel wechseln'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
+var GLOBAL_KEYS = [['1 – 4', 'Spiel wechseln'], ['I', 'Imperium'], ['G', 'Talente'], ['O', 'Aufträge'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
 function keyList(title, list) {
   var dl = V.el('dl');
   list.forEach(function (k) { dl.appendChild(V.el('dt', {}, V.el('kbd', { text: k[0] }))); dl.appendChild(V.el('dd', { text: k[1] })); });
@@ -81,6 +96,8 @@ function onKeyDown(e) {
   if (e.key === '?') { e.preventDefault(); openKeys(); return; }
   if (/^[1-4]$/.test(e.key)) { e.preventDefault(); V.Snd.click(); showGame(GAMES[Number(e.key) - 1].id); return; }
   if (e.key === 'm' || e.key === 'M') { $('#sndBtn').click(); return; }
+  var SK = { i: 'imperium', g: 'talente', o: 'auftraege' };
+  if (SK[e.key.toLowerCase()]) { e.preventDefault(); V.Snd.click(); openSide(SK[e.key.toLowerCase()]); return; }
   var g = null;
   V.games.forEach(function (x) { if (x.id === V.S.game) g = x; });
   if (g && g.onKey && g.onKey(e)) { e.preventDefault(); V.Snd.ensure(); }
@@ -119,7 +136,7 @@ async function toMenu() {
   Store.setActive(null);
   location.reload();
 }
-V.showGame = showGame; V.renderNav = renderNav; V.openSide = openSide; V.closeSide = closeSide; V.syncSound = syncSound; V.hardReset = hardReset;
+V.showGame = showGame; V.renderNav = renderNav; V.renderBadges = renderBadges; V.openSide = openSide; V.closeSide = closeSide; V.syncSound = syncSound; V.hardReset = hardReset;
 
 async function startGame(id) {
   /* Mit Konto: vorher den neuesten Stand aus der Cloud holen (offline wird lokal weitergespielt) */
@@ -153,6 +170,9 @@ async function startGame(id) {
   V.renderHost(); V.hud(); V.renderDopa(); syncSound();
   showGame(V.S.game);
   V.say('greet', true);
+  V.meta.migrate();
+  V.meta.ensureMissions();
+  V.hud();
   if (V.dailyAvailable()) {
     setTimeout(function () {
       V.banner('Tagesbonus wartet', 'Hol dir deine Chips für heute ab.', { kind: 'level', ms: 12000, actions: [
@@ -163,6 +183,8 @@ async function startGame(id) {
   setInterval(function () {
     var now = Date.now(), dt = now - last; last = now;
     V.renderWalletBtn();
+    V.meta.tick();
+    if (now % 5000 < 1000) renderBadges();
     if (!document.hidden && dt < 5000) {
       V.S.playMs += dt;
       V.S.dopa = Math.max(0, V.S.dopa - 0.15);

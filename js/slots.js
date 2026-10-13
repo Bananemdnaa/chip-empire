@@ -30,7 +30,8 @@ function cellEl(id) { return el('div', { class: 'cell', 'data-sym': String(id), 
 
 var root, machine, reels = [], strips = [], cells = [], linesSvg, msg, spinBtn, bet, freeBanner, turboBtn, resumeNote, lever;
 var ledBet, ledWin, ledLines, ledLinesLbl, markers = [];
-var spinning = false, turbo = false, freeRunning = false, grid = null;
+var spinning = false, turbo = false, freeRunning = false, grid = null, autoBtn, autoLeft = 0;
+var AUTO_SPINS = 25;
 
 /* ---------- Aufbau ---------- */
 function lineMarkers(side) {
@@ -96,9 +97,12 @@ function build() {
   bet = V.betControl('slots', function () { updateSpin(); });
   spinBtn = el('button', { class: 'spin-btn', type: 'button', 'aria-label': 'Drehen', onclick: function () { onSpin(); } },
     el('span', { class: 'spin-face' }, el('b', { text: 'Drehen' }), el('small')), el('kbd', { class: 'kb', text: 'Leertaste' }));
-  turboBtn = el('button', { class: 'toggle', type: 'button', 'aria-pressed': 'false', onclick: toggleTurbo },
+  turbo = !!V.S.turbo;
+  turboBtn = el('button', { class: 'toggle', type: 'button', 'aria-pressed': String(turbo), onclick: toggleTurbo },
     el('span', { class: 'sw' }), el('span', { text: 'Turbo' }), el('kbd', { class: 'kb', text: 'T' }));
-  var deck = el('div', { class: 'deck' }, bet.el, el('div', { class: 'deck-mid' }, spinBtn), el('div', { class: 'deck-side' }, turboBtn));
+  autoBtn = el('button', { class: 'toggle auto', type: 'button', 'aria-pressed': 'false', title: AUTO_SPINS + ' Drehungen automatisch. Stoppt bei Freispielen, großen Gewinnen oder wenn die Chips knapp werden.', onclick: toggleAuto },
+    el('span', { class: 'sw' }), el('span', { class: 'auto-l', text: 'Auto ' + AUTO_SPINS }), el('kbd', { class: 'kb', text: 'A' }));
+  var deck = el('div', { class: 'deck' }, bet.el, el('div', { class: 'deck-mid' }, spinBtn), el('div', { class: 'deck-side' }, turboBtn, autoBtn));
 
   /* Hebel: anklicken oder nach unten ziehen */
   lever = el('button', { class: 'lever', type: 'button', 'aria-label': 'Hebel ziehen (dreht die Walzen)', title: 'Hebel ziehen' },
@@ -125,7 +129,7 @@ function build() {
   pt.appendChild(el('p', { class: 'fine', text: '10 Gewinnlinien, 5 Walzen. Fahr mit der Maus über eine Liniennummer, um die Linie zu sehen. Auszahlungsquote etwa 96 %: Von 100 Chips Einsatz kommen langfristig im Schnitt rund 96 zurück.' }));
 
   root.appendChild(machine); root.appendChild(pt);
-  V.busyFns.push(function () { return spinning || freeRunning || V.S.free.n > 0; });
+  V.busyFns.push(function () { return spinning || freeRunning || autoLeft > 0 || V.S.free.n > 0; });
   updateSpin();
 }
 
@@ -147,8 +151,31 @@ function bindLever() {
 }
 function toggleTurbo() {
   turbo = !turbo;
+  V.S.turbo = turbo; V.save();
   turboBtn.setAttribute('aria-pressed', String(turbo));
   V.Snd.click();
+}
+/* Auto-Spin: dreht von selbst, bis die Runden aufgebraucht sind oder etwas Besonderes passiert */
+function renderAuto() {
+  autoBtn.setAttribute('aria-pressed', String(autoLeft > 0));
+  autoBtn.querySelector('.auto-l').textContent = autoLeft > 0 ? 'Auto · noch ' + autoLeft : 'Auto ' + AUTO_SPINS;
+}
+function toggleAuto() {
+  V.Snd.click();
+  if (autoLeft > 0) { autoLeft = 0; renderAuto(); return; }
+  autoLeft = AUTO_SPINS; renderAuto();
+  loopAuto();
+}
+async function loopAuto() {
+  while (autoLeft > 0 && V.S.game === 'slots') {
+    if (spinning || freeRunning) { await sleep(150); continue; }
+    if (V.S.free.n <= 0 && V.S.balance < V.S.bets.slots) { V.needChips(); break; }
+    autoLeft--; renderAuto();
+    var res = await onSpin();
+    if (res && (res.free || res.total >= 20 * V.S.bets.slots)) { if (autoLeft > 0) V.toast('Auto-Spin pausiert: ' + (res.free ? 'Freispiele' : 'großer Gewinn') + '!', 'good'); break; }
+    await sleep(turbo ? 150 : 450);
+  }
+  autoLeft = 0; renderAuto();
 }
 
 function updateSpin() {
@@ -283,13 +310,17 @@ async function oneSpin(isFree) {
   machine.classList.add('running');
   msg.className = 'slot-msg'; msg.textContent = isFree ? 'Freispiel …' : 'Viel Glück!';
   var res = E.slotPlay(bet0 / 10, isFree ? E.FREE_MULT : 1);
+  /* Talente: Glückssträhne erhöht Gewinne, Bonusjäger gibt mehr Freispiele */
+  var luck = V.meta.perk('slotLuck');
+  if (luck && res.total > 0) res.total = Math.round(res.total * (1 + luck));
+  if (res.free) res.free += V.meta.perk('slotFree');
   try {
     await animate(res.grid);
   } finally { spinning = false; machine.classList.remove('running'); }
   grid = res.grid;
   showWins(res);
   var total = res.total, ratio = total / bet0;
-  V.settle('slots', isFree ? 0 : bet0, total, { near: res.nearMiss && !res.free, refBet: bet0 });
+  V.settle('slots', isFree ? 0 : bet0, total, { near: res.nearMiss && !res.free, refBet: bet0, freeTrig: res.free > 0 });
   if (isFree) { V.S.free.won += total; }
   countWin(total);
   if (total > 0) {
@@ -334,9 +365,9 @@ async function runFree() {
 
 async function onSpin() {
   var S = V.S;
-  if (spinning || freeRunning) return;
+  if (spinning || freeRunning) return null;
   V.Snd.ensure();
-  if (S.free.n > 0) { await runFree(); return; }
+  if (S.free.n > 0) { await runFree(); return null; }
   var res = await oneSpin(false);
   if (res && res.free) {
     V.S.free = { n: res.free, bet: V.S.bets.slots, won: 0 };
@@ -347,6 +378,7 @@ async function onSpin() {
     await runFree();
   }
   updateSpin();
+  return res;
 }
 
 /* ---------- Tastatur ---------- */
@@ -356,6 +388,7 @@ function onKey(e) {
   if (k === 'ArrowUp' || k === '+') { if (!bet.isOff()) bet.step(1); return true; }
   if (k === 'ArrowDown' || k === '-') { if (!bet.isOff()) bet.step(-1); return true; }
   if (k === 't' || k === 'T') { toggleTurbo(); return true; }
+  if (k === 'a' || k === 'A') { toggleAuto(); return true; }
   return false;
 }
 
@@ -369,7 +402,7 @@ V.games.push({
     }
   },
   onKey: onKey,
-  keys: [['Leertaste', 'Drehen'], ['↑ / ↓', 'Einsatz ändern'], ['T', 'Turbo an/aus']],
+  keys: [['Leertaste', 'Drehen'], ['↑ / ↓', 'Einsatz ändern'], ['T', 'Turbo an/aus'], ['A', 'Auto-Spin (' + AUTO_SPINS + ') starten/stoppen']],
   onRoom: function () { bet.render(); updateSpin(); },
   refresh: function () { bet.render(); updateSpin(); }
 });

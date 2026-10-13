@@ -152,7 +152,7 @@ async function deal() {
   V.debit(bet, true);
   seen = new Map();
   dealerShown = 1;
-  st = E.bjDeal(shoe, bet);
+  st = E.bjDeal(shoe, bet, 1.5 + V.meta.perk('bjPay'));
   msgEl.className = 'bj-msg'; msgEl.textContent = '';
   V.Snd.card();
   V.hud();
@@ -209,7 +209,7 @@ async function finishRound() {
   var net = st.returned - st.staked;
   var bust = st.hands.length === 1 && st.hands[0].result === 'bust';
   var nat = st.hands.some(function (h) { return h.result === 'blackjack'; });
-  V.settle('bj', st.staked, st.returned, {});
+  V.settle('bj', st.staked, st.returned, { natural: nat });
   var txt;
   if (nat) txt = 'Blackjack! ' + (net > 0 ? '+' + fmt(net) + ' Chips' : '');
   else if (net > 0) txt = 'Gewonnen: +' + fmt(net) + ' Chips';

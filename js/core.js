@@ -58,8 +58,10 @@ function fresh(mode) {
     hist: [], series: [start], gst: { slots: emptyG(), roulette: emptyG(), bj: emptyG(), crash: emptyG() },
     sound: true, hint: true, game: 'slots', bets: { slots: 100, bj: 100, crash: 100 }, rchip: 100,
     rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
-    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'stufen',
-    bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0
+    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'imperium',
+    bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0,
+    xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0,
+    missions: { day: '', list: [], bonus: false }, turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0
   };
 }
 var S = fresh('career');
@@ -92,7 +94,7 @@ function load(id) {
   f.room = clamp(f.room, 0, f.unlocked);
   if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
   if (!GAME_TIER.hasOwnProperty(f.game)) f.game = 'slots';
-  if (['stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0) f.sideTab = 'stufen';
+  if (['imperium', 'talente', 'auftraege', 'stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0) f.sideTab = 'imperium';
   S = f;
   if (!d) save();
   return true;
@@ -136,18 +138,20 @@ function gameOpen(id) { return !isCareer() || S.unlocked >= GAME_TIER[id]; }
 function gamesAt(t) { return Object.keys(GAME_TIER).filter(function (g) { return GAME_TIER[g] === t; }); }
 function isBroke() { return S.balance + S.escrow < E.TIERS[0].min; }
 function bailoutAmt() { return E.TIERS[S.unlocked].min * CAREER.bailoutMult; }
-function bailoutWait() { return Math.max(0, S.bailoutAt + CAREER.bailoutCooldown - Date.now()); }
+function perk(id) { return V.meta ? V.meta.perk(id) : 0; }
+function cooldown() { return CAREER.bailoutCooldown - perk('rescue'); }
+function bailoutWait() { return Math.max(0, S.bailoutAt + cooldown() - Date.now()); }
 function bailout() {
   if (!isCareer() || !isBroke() || bailoutWait() > 0) return;
   var amt = bailoutAmt();
   S.balance += amt; S.bailouts++; S.bailedOut += amt; S.bailoutAt = Date.now();
-  Snd.cash(); toast('Notgroschen: +' + fmt(amt) + ' Chips. Der nächste erst in ' + Math.round(CAREER.bailoutCooldown / 60000) + ' Minuten.', 'good');
+  Snd.cash(); toast('Notgroschen: +' + fmt(amt) + ' Chips. Der nächste erst in ' + Math.round(cooldown() / 60000) + ' Minuten.', 'good');
   hud(); if (V.side) V.side.refresh(); save();
 }
 function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
 function dailyAvailable() { return isCareer() && S.dailyLast !== dayKey(Date.now()); }
 function dailyStreakNext() { return S.dailyLast === dayKey(Date.now() - 864e5) ? S.dailyStreak + 1 : 1; }
-function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1))); }
+function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1)) * (1 + perk('daily'))); }
 function claimDaily() {
   if (!dailyAvailable()) return;
   var streak = dailyStreakNext(), amt = dailyAmt(streak);
@@ -171,7 +175,7 @@ function renderWalletBtn() {
     pulse = true;
   } else {
     var w = bailoutWait();
-    b.title = 'Notgroschen: nur wenn du pleite bist, höchstens alle ' + Math.round(CAREER.bailoutCooldown / 60000) + ' Minuten';
+    b.title = 'Notgroschen: nur wenn du pleite bist, höchstens alle ' + Math.round(cooldown() / 60000) + ' Minuten';
     if (!isBroke()) { b.innerHTML = '🛟 <span class="hide-sm">Notgroschen </span>' + short(bailoutAmt()); b.disabled = true; }
     else if (w > 0) { b.textContent = '⏳ ' + clock(w); b.disabled = true; }
     else { b.innerHTML = '🛟 <span class="hide-sm">Notgroschen </span>+' + short(bailoutAmt()); pulse = true; }
@@ -365,7 +369,7 @@ function settle(game, staked, ret, opt) {
   if (staked > 0) {
     S.wagered += staked; S.rounds++;
     var g = S.gst[game]; g.r++; g.w += staked; g.ret += ret;
-    S.comps += staked * room().comp * compMult();
+    S.comps += staked * room().comp * compMult() * (1 + perk('comps'));
     S.hist.push({ g: game, bet: staked, ret: ret, bal: before }); if (S.hist.length > 80) S.hist.shift();
     S.series.push(Math.round(S.balance + S.escrow)); if (S.series.length > 400) S.series.shift();
     addAff(0.2);
@@ -391,6 +395,7 @@ function settle(game, staked, ret, opt) {
     else if (S.lossStreak >= 5 && Math.random() < 0.6) say('lossStreak');
     else if (net < 0 && Math.random() < 0.5) say('loss');
   }
+  if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt });
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
 }
@@ -440,6 +445,9 @@ function hud() {
   $('#claimComp').disabled = S.comps < 1;
   renderWalletBtn();
   renderTier();
+  var lv = $('#lvl');
+  if (lv && V.meta) { lv.textContent = 'Lv ' + S.level; lv.title = S.xp + ' / ' + V.meta.xpFor(S.level) + ' XP bis Level ' + (S.level + 1); }
+  if (V.renderBadges) V.renderBadges();
 }
 function renderTier() {
   var T = room(), U = E.TIERS[S.unlocked];

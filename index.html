@@ -10,11 +10,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=10">
-<link rel="stylesheet" href="css/shell.css?v=10">
-<link rel="stylesheet" href="css/games.css?v=10">
-<link rel="stylesheet" href="css/tables.css?v=10">
-<link rel="stylesheet" href="css/host.css?v=10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chip Empire">
+<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/shell.css?v=14">
+<link rel="stylesheet" href="css/games.css?v=14">
+<link rel="stylesheet" href="css/tables.css?v=14">
+<link rel="stylesheet" href="css/host.css?v=14">
+<link rel="stylesheet" href="css/meta.css?v=14">
 </head>
 <body>
 <main id="menu" class="menu">
@@ -33,7 +40,7 @@
     <div class="hud-player">
       <span id="tierBadge" class="tier-badge" aria-hidden="true"></span>
       <div class="hud-pinfo">
-        <div class="hud-pname"><b id="playerName"></b><span id="tierName">Lobby</span></div>
+        <div class="hud-pname"><b id="playerName"></b><span id="lvl" class="lvl">Lv 1</span><span id="tierName">Lobby</span></div>
         <div class="prog"><div class="prog-track"><i id="progBar"></i></div><span id="progTxt"></span></div>
       </div>
     </div>
@@ -118,19 +125,20 @@
 <div id="banner" class="banner" hidden role="status"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
-<script src="js/engine.js?v=10"></script>
-<script src="js/art.js?v=10"></script>
+<script src="js/engine.js?v=14"></script>
+<script src="js/art.js?v=14"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-<script src="js/store.js?v=10"></script>
-<script src="js/cloud.js?v=10"></script>
-<script src="js/icons.js?v=10"></script>
-<script src="js/core.js?v=10"></script>
-<script src="js/slots.js?v=10"></script>
-<script src="js/roulette.js?v=10"></script>
-<script src="js/blackjack.js?v=10"></script>
-<script src="js/crash.js?v=10"></script>
-<script src="js/side.js?v=10"></script>
-<script src="js/menu.js?v=10"></script>
-<script src="js/main.js?v=10"></script>
+<script src="js/store.js?v=14"></script>
+<script src="js/cloud.js?v=14"></script>
+<script src="js/icons.js?v=14"></script>
+<script src="js/core.js?v=14"></script>
+<script src="js/meta.js?v=14"></script>
+<script src="js/slots.js?v=14"></script>
+<script src="js/roulette.js?v=14"></script>
+<script src="js/blackjack.js?v=14"></script>
+<script src="js/crash.js?v=14"></script>
+<script src="js/side.js?v=14"></script>
+<script src="js/menu.js?v=14"></script>
+<script src="js/main.js?v=14"></script>
 </body>
 </html>

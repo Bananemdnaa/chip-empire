@@ -238,11 +238,11 @@ function isNatural(h, st) {
 function dealerHasBJ(st) {
   return st.dealer.length === 2 && handValue(st.dealer).total === 21;
 }
-function bjDeal(shoe, bet) {
+function bjDeal(shoe, bet, bjPay) {
   var p1 = draw(shoe), d1 = draw(shoe), p2 = draw(shoe), d2 = draw(shoe);
   var st = {
     shoe: shoe, hands: [newHand([p1, p2], bet, false)], active: 0, dealer: [d1, d2],
-    insurance: 0, insuranceReturn: 0, phase: 'player', staked: bet, returned: 0, settled: false, bet0: bet
+    insurance: 0, insuranceReturn: 0, phase: 'player', staked: bet, returned: 0, settled: false, bet0: bet, bjPay: bjPay || 1.5
   };
   if (d1.r === 'A') { st.phase = 'insurance'; return st; }
   afterPeek(st);
@@ -339,7 +339,7 @@ function settle(st) {
     var pv = handValue(h.cards).total, pay = 0, res;
     if (h.surrendered) { pay = Math.floor(h.bet / 2); res = 'surrender'; }
     else if (isNatural(h, st)) {
-      if (dBJ) { pay = h.bet; res = 'push'; } else { pay = h.bet + h.bet * 3 / 2; res = 'blackjack'; }
+      if (dBJ) { pay = h.bet; res = 'push'; } else { pay = h.bet + h.bet * (st.bjPay || 1.5); res = 'blackjack'; }
     }
     else if (pv > 21) { pay = 0; res = 'bust'; }
     else if (dBJ) { pay = 0; res = 'lose'; }

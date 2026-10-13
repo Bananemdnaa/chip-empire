@@ -241,16 +241,20 @@ async function spin() {
   await sleep(5300);
   clearInterval(tk);
   var res = E.rResolve(bets, n);
+  /* Talent La Partage: bei Zero die Hälfte der einfachen Chancen zurück */
+  var partage = 0;
+  if (n === 0 && V.meta.perk('partage')) ['red', 'black', 'odd', 'even', 'low', 'high'].forEach(function (k) { if (bets[k]) partage += Math.floor(bets[k] / 2); });
+  res.ret += partage;
   var S = V.S;
   S.rhist.push(n); if (S.rhist.length > 120) S.rhist.shift();
   resultBadge.textContent = String(n); resultBadge.className = 'result-badge ' + E.rColor(n);
   spinning = false; resolving = true;
-  V.settle('roulette', res.staked, res.ret, {});
+  V.settle('roulette', res.staked, res.ret, { straight: Object.keys(res.won).some(function (k) { return k.charAt(0) === 'n'; }) });
   var net = res.ret - res.staked;
   for (var k in res.won) if (cellMap[k]) cellMap[k].classList.add('won');
   msgEl.className = 'slot-msg ' + (net > 0 ? 'win' : '');
   msgEl.textContent = 'Gewinnzahl ' + n + ' (' + COLORS[E.rColor(n)] + '). ' + (res.ret > 0
-    ? 'Zurück: ' + fmt(res.ret) + ' Chips (' + (net >= 0 ? '+' : '') + fmt(net) + ')' : 'Kein Treffer, ' + fmt(res.staked) + ' Chips gehen ans Haus.');
+    ? 'Zurück: ' + fmt(res.ret) + ' Chips (' + (net >= 0 ? '+' : '') + fmt(net) + ')' + (partage ? ' · La Partage +' + fmt(partage) : '') : 'Kein Treffer, ' + fmt(res.staked) + ' Chips gehen ans Haus.');
   if (net > 0) {
     var ratio = res.ret / res.staked;
     if (ratio >= 8) { V.Snd.big(); V.burst(V.$('#g-roulette .wheel'), 30); V.banner(ratio >= 20 ? 'VOLLTREFFER' : 'BIG WIN', '+' + fmt(net) + ' Chips', { kind: 'win', ms: 2400 }); }

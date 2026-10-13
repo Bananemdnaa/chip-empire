@@ -21,8 +21,10 @@ function build() {
   histEl = el('div', { class: 'chist', 'aria-label': 'Letzte Crash-Punkte' });
 
   betCtl = V.betControl('crash');
-  autoChk = el('input', { type: 'checkbox', id: 'crashAutoChk' });
-  autoIn = el('input', { type: 'number', id: 'crashAuto', min: '1.01', max: '10000', step: '0.01', value: '2.00', inputmode: 'decimal' });
+  autoChk = el('input', { type: 'checkbox', id: 'crashAutoChk', checked: !!V.S.crashAutoOn });
+  autoIn = el('input', { type: 'number', id: 'crashAuto', min: '1.01', max: '10000', step: '0.01', value: V.S.crashAuto || '2.00', inputmode: 'decimal' });
+  function keepAuto() { V.S.crashAutoOn = autoChk.checked; V.S.crashAuto = String(autoIn.value || '2.00'); V.save(); }
+  autoChk.addEventListener('change', keepAuto); autoIn.addEventListener('change', keepAuto);
   var autoRow = el('label', { class: 'autorow', for: 'crashAutoChk' }, autoChk, el('span', { text: 'Auto-Auszahlen bei' }), autoIn, el('span', { text: '×' }));
   goBtn = el('button', { class: 'btn gold big', type: 'button', onclick: onGo }, el('span'), V.kbd('Leertaste'));
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
@@ -167,7 +169,7 @@ function cashout(at) {
   if (!running || cashed || at > cp) return;
   cashed = true; cashAt = at;
   var ret = Math.floor(bet * at);
-  V.settle('crash', bet, ret, {});
+  V.settle('crash', bet, ret, { mult: at });
   V.S.bestMult = Math.max(V.S.bestMult, at);
   V.Snd.cash();
   subEl.textContent = 'Ausgezahlt bei ' + fmtX(at) + ': +' + fmt(ret - bet) + ' Chips';
@@ -184,11 +186,13 @@ function crash() {
   multEl.textContent = fmtX(cp); multEl.className = 'crash-mult dead';
   V.S.chist.push(cp); if (V.S.chist.length > 30) V.S.chist.shift();
   if (!cashed) {
-    V.settle('crash', bet, 0, {});
+    /* Talent Fallschirm: Sofort-Crash bei 1,00× kostet nichts */
+    var safe = cp <= 1 && V.meta.perk('crashSafe') ? bet : 0;
+    V.settle('crash', bet, safe, {});
     V.Snd.crash();
     subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + '. Einsatz verloren.';
     msgEl.className = 'slot-msg';
-    msgEl.textContent = cp <= 1.0 ? 'Sofort-Crash bei 1,00×. Das passiert in etwa 2 von 100 Runden.' : 'Zu spät. ' + fmt(bet) + ' Chips gehen ans Haus.';
+    msgEl.textContent = safe ? 'Sofort-Crash, aber dein Fallschirm hat den Einsatz gerettet.' : cp <= 1.0 ? 'Sofort-Crash bei 1,00×. Das passiert in etwa 2 von 100 Runden.' : 'Zu spät. ' + fmt(bet) + ' Chips gehen ans Haus.';
   } else {
     subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + ' · du hattest bei ' + fmtX(cashAt) + ' ausgezahlt.';
     if (cp > cashAt * 1.5) msgEl.textContent = 'Hättest du gewartet: ' + fmtX(cp) + '. Genau dieses Gefühl hält Spieler am Tisch.';
@@ -208,7 +212,7 @@ function onKey(e) {
   if (k === ' ' || k === 'enter') { onGo(); return true; }
   if ((k === 'arrowup' || k === '+') && !running) { betCtl.step(1); return true; }
   if ((k === 'arrowdown' || k === '-') && !running) { betCtl.step(-1); return true; }
-  if (k === 'a' && !running) { autoChk.checked = !autoChk.checked; V.Snd.click(); return true; }
+  if (k === 'a' && !running) { autoChk.checked = !autoChk.checked; autoChk.dispatchEvent(new Event('change')); V.Snd.click(); return true; }
   return false;
 }
 
