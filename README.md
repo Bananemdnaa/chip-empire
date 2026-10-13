@@ -1,12 +1,12 @@
 # Chip Empire
 
-Ein Browser-Casinospiel mit Spielgeld: Slots, Roulette, Blackjack und Crash. Steig durch die Lounges auf, sammle Comps und baue dein Chip-Imperium.
+Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel, Roulette, Entenrennen, Plinko, Crash, Dragon Tower, Blackjack und Video-Poker. Steig durch die Lounges auf, sammle Comps und baue dein Chip-Imperium.
 
 **Spielen:** https://bananemdnaa.github.io/chip-empire/
 
 ## Spielmodi
 
-- **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Bronze: Roulette, Silver: Crash, Gold: Blackjack). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie.
+- **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Glücksrad, Würfel · Bronze: Roulette, Entenrennen, Plinko · Silver: Crash, Dragon Tower · Gold: Blackjack, Video-Poker). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie.
 - **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert.
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
 
@@ -19,7 +19,7 @@ Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal i
 ## Steuerung
 
 Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel zeigt alle Kürzel:
-`1`–`4` Spiel wechseln, `Leertaste` drehen/austeilen/einsteigen, `↑`/`↓` Einsatz, Blackjack mit `K` Karte, `H` Halten, `V` Verdoppeln, `T` Teilen, `A` Aufgeben.
+`1`–`0` Spiel wechseln, `Leertaste` drehen/austeilen/einsteigen, `↑`/`↓` Einsatz, Blackjack mit `K` Karte, `H` Halten, `V` Verdoppeln, `T` Teilen, `A` Aufgeben.
 
 ## Online-Konten (Supabase)
 
@@ -55,7 +55,9 @@ py -3 -m http.server 8765
 | `js/cloud.js` | Online-Konten, Cloud-Spielstände und Bestenliste über Supabase |
 | `js/core.js` | Zustand, Speichern, Karriere-Regeln, Ton, HUD, Gastgeberin, Einsatz-Steuerung |
 | `js/meta.js` | Level, Talentbaum, Quests, Imperium |
-| `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js` | Die vier Spiele |
+| `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `poker.js` | Die zehn Spiele |
+| `js/chipbets.js` | Gemeinsamer Chip-Tisch für Spiele mit mehreren Wettfeldern |
+| `css/games2.css` | Glücksrad, Würfel, Entenrennen, Plinko, Dragon Tower, Video-Poker |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
 | `js/menu.js` | Hauptmenü |
 | `js/main.js` | Start und Navigation |

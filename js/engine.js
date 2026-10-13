@@ -427,19 +427,26 @@ var PROFILES = {
     desc: 'Kleine Einsätze, lange Sessions, immer auf der Suche nach dem Bonus.',
     kick: 'Fast-Treffer und Verluste, die als Gewinn gefeiert werden: Zwei Scatter, Lichter und Sound, obwohl du weniger zurückbekommst als eingesetzt.' }
 };
-function profileOf(hist) {
+var DEFAULT_CAT = { crash: 'thrill', bj: 'strat', roulette: 'ritual', slots: 'dream' };
+/* catOf ordnet jedes Spiel einem Spielertyp zu (thrill, strat, ritual, dream) */
+function profileOf(hist, catOf) {
   var n = hist.length;
-  if (n < 8) return { key: 'rookie', hi: false, shares: { slots: 0, roulette: 0, bj: 0, crash: 0 }, ratio: 0 };
-  var cnt = { slots: 0, roulette: 0, bj: 0, crash: 0 }, ratioSum = 0;
-  hist.forEach(function (h) { cnt[h.g]++; ratioSum += Math.min(1, h.bet / Math.max(1, h.bal)); });
+  if (n < 8) return { key: 'rookie', hi: false, shares: {}, ratio: 0 };
+  var cnt = {}, cat = { thrill: 0, strat: 0, ritual: 0, dream: 0 }, ratioSum = 0;
+  hist.forEach(function (h) {
+    cnt[h.g] = (cnt[h.g] || 0) + 1;
+    var c = catOf ? catOf(h.g) : DEFAULT_CAT[h.g];
+    if (cat.hasOwnProperty(c)) cat[c]++;
+    ratioSum += Math.min(1, h.bet / Math.max(1, h.bal));
+  });
   var shares = {};
   for (var g in cnt) shares[g] = cnt[g] / n;
   var ratio = ratioSum / n;
   var scores = {
-    thrill: shares.crash + (ratio > 0.05 ? 0.15 : 0),
-    strat: shares.bj,
-    ritual: shares.roulette,
-    dream: shares.slots + (ratio < 0.012 ? 0.1 : 0)
+    thrill: cat.thrill / n + (ratio > 0.05 ? 0.15 : 0),
+    strat: cat.strat / n,
+    ritual: cat.ritual / n,
+    dream: cat.dream / n + (ratio < 0.012 ? 0.1 : 0)
   };
   var best = 'dream', bv = -1;
   ['thrill', 'strat', 'ritual', 'dream'].forEach(function (k) { if (scores[k] > bv) { bv = scores[k]; best = k; } });

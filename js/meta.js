@@ -2,7 +2,7 @@
 var Meta = (function () {
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt;
-var GN = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
+var GN = V.GAME_NAME;
 function pct(v) { return (Math.round(v * 1000) / 10).toString().replace('.', ',') + ' %'; }
 function isEmpire() { return V.S.mode === 'empire'; }
 /* Maßstab für Chip-Belohnungen: Karriere und Imperium nach höchster Stufe, Sandbox nach aktuellem Raum */
@@ -138,7 +138,7 @@ function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + (d.getM
 /* Woche beginnt am Montag */
 function weekStart() { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
 function weekKey() { return 'W' + dayKey(weekStart()); }
-function openGames() { return ['slots', 'roulette', 'bj', 'crash'].filter(function (g) { return V.gameOpen(g); }); }
+function openGames() { return V.GAME_LIST.map(function (g) { return g.id; }).filter(function (g) { return V.gameOpen(g); }); }
 function qmult() { return 1 + perk('quest'); }
 
 /* Vorlagen: n = Ziel, diff = Belohnungsfaktor, ev = Fortschritt pro Ereignis, req = nötiges Spiel, cond = weitere Bedingung */
@@ -177,6 +177,17 @@ var DAILY = [
   { id: 'double', req: 'bj', make: function () { return { text: 'Gewinne 2 verdoppelte Hände', n: 2, diff: 1, icon: '✌️' }; }, ev: function (q, e) { return e.opt.doubleWins || 0; } },
   { id: 'split', req: 'bj', make: function () { return { text: 'Teile ein Paar und gewinne mindestens eine Hand', n: 1, diff: 2, icon: '✂️' }; }, ev: function (q, e) { return e.opt.splitWin ? 1 : 0; } },
   { id: 'cards', req: 'bj', make: function () { return { text: 'Gewinne eine Hand mit 4 oder mehr Karten', n: 1, diff: 1, icon: '🗂️' }; }, ev: function (q, e) { return e.opt.manyCards ? 1 : 0; } },
+  /* neue Spiele */
+  { id: 'wheel12', req: 'wheel', make: function () { return { text: 'Triff im Glücksrad ein Feld mit 12× oder mehr', n: 1, diff: 2, icon: '🎡' }; }, ev: function (q, e) { return e.opt.wheelHit && e.opt.wheelMult >= 12 ? 1 : 0; } },
+  { id: 'dicePair', req: 'dice', make: function () { return { text: 'Gewinne eine Pasch-Wette beim Würfeln', n: 1, diff: 2, icon: '🎲' }; }, ev: function (q, e) { return e.opt.doubleWin ? 1 : 0; } },
+  { id: 'diceExact', req: 'dice', make: function () { return { text: 'Triff beim Würfeln eine genaue Summe', n: 1, diff: 1, icon: '🎯' }; }, ev: function (q, e) { return e.opt.exactWin ? 1 : 0; } },
+  { id: 'duckDog', req: 'ducks', make: function () { return { text: 'Gewinne mit einer Ente mit Quote 8× oder mehr', n: 1, diff: 2, icon: '🦆' }; }, ev: function (q, e) { return e.opt.duckOdds >= 8 ? 1 : 0; } },
+  { id: 'duckWins', req: 'ducks', make: function () { return { text: 'Gewinne 3 Entenrennen', n: 3, diff: 1, icon: '🏁' }; }, ev: function (q, e) { return e.game === 'ducks' && e.opt.duckOdds > 0 ? 1 : 0; } },
+  { id: 'plinko3', req: 'plinko', make: function () { return { text: 'Triff im Plinko ein Fach mit 3× oder mehr', n: 1, diff: 1, icon: '🔻' }; }, ev: function (q, e) { return e.opt.plinkoMult >= 3 ? 1 : 0; } },
+  { id: 'plinkoBalls', req: 'plinko', make: function () { return { text: 'Lass 30 Plinko-Kugeln fallen', n: 30, diff: 1, icon: '⚪' }; }, ev: function (q, e) { return e.game === 'plinko' && R(e) ? 1 : 0; } },
+  { id: 'tower5', req: 'tower', make: function () { return { text: 'Schaffe im Dragon Tower Etage 5', n: 1, diff: 2, icon: '🐉' }; }, ev: function (q, e) { return e.opt.towerFloors >= 5 ? 1 : 0; } },
+  { id: 'pokerTrips', req: 'poker', make: function () { return { text: 'Bekomme beim Video-Poker einen Drilling oder besser', n: 1, diff: 1, icon: '🃏' }; }, ev: function (q, e) { return e.opt.pokerRank >= 3 ? 1 : 0; } },
+  { id: 'pokerPay', req: 'poker', make: function () { return { text: 'Gewinne 5 Video-Poker-Hände', n: 5, diff: 1, icon: '♠️' }; }, ev: function (q, e) { return e.game === 'poker' && e.net > 0 ? 1 : 0; } },
   /* Crash */
   { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 3,00× aus', n: 1, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
   { id: 'crash5', req: 'crash', make: function () { return { text: 'Zahle 5-mal im Crash aus', n: 5, diff: 1, icon: '🛰️' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult ? 1 : 0; } },
@@ -200,7 +211,11 @@ var WEEKLY = [
   { id: 'natural', req: 'bj', make: function () { return { text: 'Bekomme 8 Blackjacks', n: 8, diff: 1, icon: '🂡' }; }, ev: function (q, e) { return e.opt.natural ? 1 : 0; } },
   { id: 'double', req: 'bj', make: function () { return { text: 'Gewinne 12 verdoppelte Hände', n: 12, diff: 1, icon: '✌️' }; }, ev: function (q, e) { return e.opt.doubleWins || 0; } },
   { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle 6-mal im Crash bei mindestens 3,00× aus', n: 6, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
-  { id: 'crashHigh', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 10,00× aus', n: 1, diff: 2, icon: '🌠' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 10 ? 1 : 0; } }
+  { id: 'crashHigh', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 10,00× aus', n: 1, diff: 2, icon: '🌠' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 10 ? 1 : 0; } },
+  { id: 'tower9', req: 'tower', make: function () { return { text: 'Bezwinge den Dragon Tower bis ganz oben', n: 1, diff: 2, icon: '🏯' }; }, ev: function (q, e) { return e.opt.towerFloors >= 9 ? 1 : 0; } },
+  { id: 'pokerFlush', req: 'poker', make: function () { return { text: 'Bekomme 3-mal einen Flush oder besser', n: 3, diff: 2, icon: '♥️' }; }, ev: function (q, e) { return e.opt.pokerRank >= 5 ? 1 : 0; } },
+  { id: 'wheelHits', req: 'wheel', make: function () { return { text: 'Triff 25-mal im Glücksrad', n: 25, diff: 1, icon: '🎡' }; }, ev: function (q, e) { return e.opt.wheelHit ? 1 : 0; } },
+  { id: 'duckRaces', req: 'ducks', make: function () { return { text: 'Wette bei 40 Entenrennen mit', n: 40, diff: 1, icon: '🦆' }; }, ev: function (q, e) { return e.game === 'ducks' && R(e) ? 1 : 0; } }
 ];
 function allowed(t) { return (!t.req || V.gameOpen(t.req)) && (!t.cond || t.cond()); }
 function makeQuest(t, r, K) {

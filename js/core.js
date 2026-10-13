@@ -30,6 +30,10 @@ function fmt(n) { return Math.round(n).toLocaleString('de-DE'); }
 function fmtX(m) { return m.toFixed(2).replace('.', ',') + '×'; }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+/* Animationsschritt, der auch in einem Hintergrund-Tab weiterläuft (dort per Timer statt Frame) */
+function frame(cb) { if (document.hidden) setTimeout(function () { cb(performance.now()); }, 50); else requestAnimationFrame(cb); }
+/* Auszahlung Einsatz × Faktor, abgerundet, ohne Kommazahl-Fehler (100 × 2,3 = 230, nicht 229) */
+function payout(bet, mult) { return Math.floor(bet * mult + 1e-6); }
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 function short(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' Mio';
@@ -45,25 +49,39 @@ function clock(ms) {
 /* ---------- Zustand ---------- */
 /* Karriere: wenig Startgeld, kein Gratis-Nachschub, Spiele werden mit den Stufen freigeschaltet */
 var CAREER = { start: 1000, bailoutCooldown: 10 * 60 * 1000, bailoutMult: 50, dailyMult: 50 };
-var GAME_TIER = { slots: 0, roulette: 1, crash: 2, bj: 3 };
-var GAME_NAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
+/* Alle Spiele an einer Stelle: Reihenfolge der Navigation, Freischalt-Stufe in der Karriere,
+   Hausvorteil (für Statistik) und Spielertyp (für das Zockerprofil) */
+var GAME_LIST = [
+  { id: 'slots', name: 'Slots', tier: 0, edge: 0.04, cat: 'dream' },
+  { id: 'wheel', name: 'Glücksrad', tier: 0, edge: 0.05, cat: 'ritual' },
+  { id: 'dice', name: 'Würfel', tier: 0, edge: 0.04, cat: 'ritual' },
+  { id: 'roulette', name: 'Roulette', tier: 1, edge: 1 / 37, cat: 'ritual' },
+  { id: 'ducks', name: 'Entenrennen', tier: 1, edge: 0.034, cat: 'ritual' },
+  { id: 'plinko', name: 'Plinko', tier: 1, edge: 0.01, cat: 'thrill' },
+  { id: 'crash', name: 'Crash', tier: 2, edge: 0.01, cat: 'thrill' },
+  { id: 'tower', name: 'Dragon Tower', tier: 2, edge: 0.03, cat: 'thrill' },
+  { id: 'bj', name: 'Blackjack', tier: 3, edge: 0.005, cat: 'strat' },
+  { id: 'poker', name: 'Video-Poker', tier: 3, edge: 0.02, cat: 'strat' }
+];
+var GAME_TIER = {}, GAME_NAME = {}, GAME_BY = {};
+GAME_LIST.forEach(function (g) { GAME_TIER[g.id] = g.tier; GAME_NAME[g.id] = g.name; GAME_BY[g.id] = g; });
 var RANK = ['L', 'B', 'S', 'G', 'P', '★'];
 function emptyG() { return { r: 0, w: 0, ret: 0 }; }
+function allGames(fn) { var o = {}; GAME_LIST.forEach(function (g) { o[g.id] = fn(g.id); }); return o; }
 function fresh(mode) {
   var career = mode !== 'sandbox', start = career ? CAREER.start : 10000;
   return {
     mode: mode === 'empire' ? 'empire' : career ? 'career' : 'sandbox',
     balance: start, escrow: 0, wagered: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
     comps: 0, compsClaimed: 0, room: 0, unlocked: career ? 0 : 5, aff: [0, 0, 0, 0, 0, 0], tips: 0,
-    hist: [], series: [start], gst: { slots: emptyG(), roulette: emptyG(), bj: emptyG(), crash: emptyG() },
-    sound: true, hint: true, game: 'slots', bets: { slots: 100, bj: 100, crash: 100 }, rchip: 100,
+    hist: [], series: [start], gst: allGames(emptyG), sound: true, hint: true, game: 'slots', bets: allGames(function () { return 100; }), rchip: 100,
     rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
     playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'quests',
     bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0,
     xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0,
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
     qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, miles: {}, init: 0 },
-    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0
+    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid'
   };
 }
 var S = fresh('career');
@@ -524,7 +542,7 @@ function ladder() {
 }
 function clampBets() {
   var l = ladder(), lo = l[0], hi = l[l.length - 1];
-  ['slots', 'bj', 'crash'].forEach(function (k) {
+  Object.keys(S.bets).forEach(function (k) {
     var v = S.bets[k];
     if (l.indexOf(v) < 0) {
       v = clamp(v, lo, hi);
@@ -596,7 +614,7 @@ function tabs(container, items, current, onPick) {
 }
 
 return {
-  E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, pick: pick, short: short, clock: clock,
+  E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, frame: frame, payout: payout, pick: pick, short: short, clock: clock,
   get S() { return S; }, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
   toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
@@ -604,7 +622,7 @@ return {
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
   resetState: function () { S = fresh(S.mode); locked = 0; save(); },
   get slotId() { return slotId; }, get slotName() { return slotName; },
-  RANK: RANK, isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
+  GAME_LIST: GAME_LIST, GAME_BY: GAME_BY, RANK: RANK, isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
   bailout: bailout, bailoutAmt: bailoutAmt, claimDaily: claimDaily, dailyAvailable: dailyAvailable,
   renderWalletBtn: renderWalletBtn, walletAction: walletAction
 };

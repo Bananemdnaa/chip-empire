@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 var $ = V.$, $$ = V.$$;
-var GAMES = [{ id: 'slots', label: 'Slots' }, { id: 'roulette', label: 'Roulette' }, { id: 'bj', label: 'Blackjack' }, { id: 'crash', label: 'Crash' }];
+var GAMES = V.GAME_LIST.map(function (g) { return { id: g.id, label: g.name }; });
 /* In der Leiste nur das Wichtigste; Statistik, Profil und Kulissen sind Reiter im selben Fenster */
 var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
 var SIDE = SIDE_ALL;
@@ -45,6 +45,9 @@ function renderNav() {
   more.classList.add('rail-more'); more.removeAttribute('role'); more.removeAttribute('aria-selected');
   box.appendChild(more);
   renderBadges();
+  /* Am Handy das aktive Spiel in der wischbaren Leiste sichtbar halten */
+  var act = box.querySelector('[aria-selected="true"]');
+  if (act && box.scrollWidth > box.clientWidth) box.scrollLeft = Math.max(0, act.offsetLeft - box.clientWidth / 2 + act.offsetWidth / 2);
 }
 function renderSideNav() {
   SIDE = sideItems();
@@ -71,7 +74,7 @@ function renderBadges() {
   if (more) more.classList.toggle('dot', any);
 }
 /* ---------- Tastatur ---------- */
-var GLOBAL_KEYS = [['1 – 4', 'Spiel wechseln'], ['Q', 'Quests'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
+var GLOBAL_KEYS = [['1 – 9, 0', 'Spiel wechseln'], ['Q', 'Quests'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
 function keyList(title, list) {
   var dl = V.el('dl');
   list.forEach(function (k) { dl.appendChild(V.el('dt', {}, V.el('kbd', { text: k[0] }))); dl.appendChild(V.el('dd', { text: k[1] })); });
@@ -98,7 +101,7 @@ function onKeyDown(e) {
   if (e.key === 'Enter' && tag === 'BUTTON') return;
   if (e.key === ' ' && tag === 'BUTTON') e.target.blur();
   if (e.key === '?') { e.preventDefault(); openKeys(); return; }
-  if (/^[1-4]$/.test(e.key)) { e.preventDefault(); V.Snd.click(); showGame(GAMES[Number(e.key) - 1].id); return; }
+  if (/^[0-9]$/.test(e.key)) { var gi = e.key === '0' ? 9 : Number(e.key) - 1; if (GAMES[gi]) { e.preventDefault(); V.Snd.click(); showGame(GAMES[gi].id); } return; }
   if (e.key === 'm' || e.key === 'M') { $('#sndBtn').click(); return; }
   var SK = { q: 'quests', g: 'talente' };
   if (V.S.mode === 'empire') SK.i = 'imperium';

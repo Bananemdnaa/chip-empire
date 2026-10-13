@@ -4,8 +4,9 @@
 var E = V.E, A = V.A, el = V.el, fmt = V.fmt, short = V.short;
 
 var tabsEl, body, confirmReset = false;
-var EDGE = { slots: 0.04, roulette: 1 / 37, bj: 0.005, crash: 0.01 };
-var GNAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
+var GNAME = V.GAME_NAME;
+function edge(g) { return V.GAME_BY[g] ? V.GAME_BY[g].edge : 0; }
+function catOf(g) { return V.GAME_BY[g] ? V.GAME_BY[g].cat : ''; }
 var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Hinter den Kulissen' }];
 
 function build() {
@@ -59,13 +60,13 @@ function stufen() {
 }
 
 function profil() {
-  var S = V.S, p = E.profileOf(S.hist), P = E.PROFILES[p.key];
+  var S = V.S, p = E.profileOf(S.hist, catOf), P = E.PROFILES[p.key];
   var rec = E.recommend(p.key, S.balance, S.unlocked);
   var head = el('div', { class: 'prof-h' }, el('div', { class: 'prof-type', text: P.name }), p.hi ? el('span', { class: 'tag warn', text: 'Hohe Einsätze' }) : null);
   body.appendChild(head);
   body.appendChild(el('p', { text: P.desc }));
   var bars = el('div', { class: 'shares' });
-  ['slots', 'roulette', 'bj', 'crash'].forEach(function (g) {
+  Object.keys(p.shares).sort(function (a, b) { return p.shares[b] - p.shares[a]; }).forEach(function (g) {
     var v = p.shares[g] || 0;
     var bar = el('i'); bar.style.width = (v * 100).toFixed(1) + '%';
     bars.appendChild(el('div', { class: 'share' }, el('span', { text: GNAME[g] }), el('div', { class: 'sbar' }, bar), el('span', { class: 'num', text: Math.round(v * 100) + ' %' })));
@@ -137,10 +138,12 @@ function stats() {
   var tbl = el('table', { class: 'stbl' },
     el('thead', {}, el('tr', {}, el('th', { text: 'Spiel' }), el('th', { text: 'Runden' }), el('th', { text: 'Umsatz' }), el('th', { text: 'Deine Quote' }), el('th', { text: 'Theorie' }))));
   var tb = el('tbody');
-  ['slots', 'roulette', 'bj', 'crash'].forEach(function (g) {
-    var x = S.gst[g], q = x.w > 0 ? (x.ret / x.w * 100).toFixed(1).replace('.', ',') + ' %' : '–';
+  V.GAME_LIST.forEach(function (gg) {
+    var g = gg.id, x = S.gst[g] || { r: 0, w: 0, ret: 0 };
+    if (V.isCareer() && !V.gameOpen(g) && !x.r) return;
+    var q = x.w > 0 ? (x.ret / x.w * 100).toFixed(1).replace('.', ',') + ' %' : '–';
     tb.appendChild(el('tr', {}, el('td', { text: GNAME[g] }), el('td', { class: 'num', text: fmt(x.r) }), el('td', { class: 'num', text: short(x.w) }),
-      el('td', { class: 'num', text: q }), el('td', { class: 'num', text: ((1 - EDGE[g]) * 100).toFixed(1).replace('.', ',') + ' %' })));
+      el('td', { class: 'num', text: q }), el('td', { class: 'num', text: ((1 - edge(g)) * 100).toFixed(1).replace('.', ',') + ' %' })));
   });
   tbl.appendChild(tb);
   body.appendChild(el('div', { class: 'tscroll' }, tbl));
@@ -159,7 +162,7 @@ function stats() {
 
 function haus() {
   var S = V.S, exp = 0;
-  ['slots', 'roulette', 'bj', 'crash'].forEach(function (g) { exp += S.gst[g].w * EDGE[g]; });
+  V.GAME_LIST.forEach(function (g) { exp += (S.gst[g.id] ? S.gst[g.id].w : 0) * g.edge; });
   body.appendChild(el('p', { class: 'side-intro', text: 'Was ein echtes Casino nie anzeigen würde.' }));
   body.appendChild(el('div', { class: 'kvs' },
     el('div', { class: 'kv' }, el('span', { text: 'Erwarteter Verlust bisher' }), el('b', { class: 'num neg', text: '−' + fmt(exp) })),
