@@ -43,25 +43,33 @@ function clock(ms) {
 }
 
 /* ---------- Zustand ---------- */
-var KEY = 'velvet-room-v1';
+/* Karriere: wenig Startgeld, kein Gratis-Nachschub, Spiele werden mit den Stufen freigeschaltet */
+var CAREER = { start: 1000, bailoutCooldown: 10 * 60 * 1000, bailoutMult: 50, dailyMult: 50 };
+var GAME_TIER = { slots: 0, roulette: 1, crash: 2, bj: 3 };
+var GAME_NAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
 function emptyG() { return { r: 0, w: 0, ret: 0 }; }
-function fresh() {
+function fresh(mode) {
+  var career = mode !== 'sandbox', start = career ? CAREER.start : 10000;
   return {
-    balance: 10000, escrow: 0, wagered: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
-    comps: 0, compsClaimed: 0, room: 0, unlocked: 0, aff: [0, 0, 0, 0, 0, 0], tips: 0,
-    hist: [], series: [10000], gst: { slots: emptyG(), roulette: emptyG(), bj: emptyG(), crash: emptyG() },
+    mode: career ? 'career' : 'sandbox',
+    balance: start, escrow: 0, wagered: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
+    comps: 0, compsClaimed: 0, room: 0, unlocked: career ? 0 : 5, aff: [0, 0, 0, 0, 0, 0], tips: 0,
+    hist: [], series: [start], gst: { slots: emptyG(), roulette: emptyG(), bj: emptyG(), crash: emptyG() },
     sound: true, hint: true, game: 'slots', bets: { slots: 100, bj: 100, crash: 100 }, rchip: 100,
     rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
-    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'stufen'
+    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'stufen',
+    bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0
   };
 }
-var S = fresh();
+var S = fresh('career');
+var slotId = null, slotName = '', slotRev = 0, saveBlocked = false;
 function isNum(x) { return typeof x === 'number' && isFinite(x); }
-function load() {
-  try {
-    var raw = localStorage.getItem(KEY);
-    if (!raw) return;
-    var d = JSON.parse(raw), f = fresh();
+function load(id) {
+  var slot = Store.get(id);
+  if (!slot) return false;
+  slotId = id; slotName = slot.name; slotRev = slot.rev;
+  var f = fresh(slot.mode), d = slot.state;
+  if (d && typeof d === 'object') {
     Object.keys(f).forEach(function (k) {
       if (!(k in d)) return;
       var a = f[k], b = d[k];
@@ -70,35 +78,102 @@ function load() {
       else if (Array.isArray(a)) { if (Array.isArray(b)) f[k] = b; }
       else if (a && typeof a === 'object') { if (b && typeof b === 'object') f[k] = Object.assign({}, a, b); }
     });
-    f.escrow = 0;
-    if (f.aff.length !== 6) f.aff = [0, 0, 0, 0, 0, 0];
-    f.aff = f.aff.map(function (x) { return isNum(x) ? clamp(x, 0, 100) : 0; });
-    f.hist = f.hist.filter(function (h) { return h && isNum(h.bet) && isNum(h.bal) && f.gst[h.g]; }).slice(-80);
-    f.series = f.series.filter(isNum).slice(-400); if (!f.series.length) f.series = [f.balance];
-    f.rhist = f.rhist.filter(function (n) { return isNum(n) && n >= 0 && n <= 36; }).slice(-120);
-    f.chist = f.chist.filter(isNum).slice(-30);
-    f.unlocked = clamp(Math.max(f.unlocked, E.tierFor(f.wagered)), 0, 5);
-    f.room = clamp(f.room, 0, f.unlocked);
-    if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
-    if (['slots', 'roulette', 'bj', 'crash'].indexOf(f.game) < 0) f.game = 'slots';
-    if (['stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0) f.sideTab = 'stufen';
-    S = f;
-  } catch (e) { /* kein Speicher: frisch starten */ }
+  }
+  f.mode = slot.mode === 'sandbox' ? 'sandbox' : 'career';
+  f.escrow = 0;
+  if (f.aff.length !== 6) f.aff = [0, 0, 0, 0, 0, 0];
+  f.aff = f.aff.map(function (x) { return isNum(x) ? clamp(x, 0, 100) : 0; });
+  f.hist = f.hist.filter(function (h) { return h && isNum(h.bet) && isNum(h.bal) && f.gst[h.g]; }).slice(-80);
+  f.series = f.series.filter(isNum).slice(-400); if (!f.series.length) f.series = [f.balance];
+  f.rhist = f.rhist.filter(function (n) { return isNum(n) && n >= 0 && n <= 36; }).slice(-120);
+  f.chist = f.chist.filter(isNum).slice(-30);
+  f.unlocked = f.mode === 'sandbox' ? 5 : clamp(Math.max(f.unlocked, E.tierFor(f.wagered)), 0, 5);
+  f.room = clamp(f.room, 0, f.unlocked);
+  if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
+  if (!GAME_TIER.hasOwnProperty(f.game)) f.game = 'slots';
+  if (['stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0) f.sideTab = 'stufen';
+  S = f;
+  if (!d) save();
+  return true;
 }
 /* Einsätze laufender Runden sind gebunden: Wer mitten in der Runde neu lädt, bekommt sie nicht zurück.
    Nur Chips, die noch ungespielt auf dem Tisch liegen (Roulette vor dem Drehen), fließen beim Speichern zurück. */
 var locked = 0;
 function save() {
-  try {
-    var d = Object.assign({}, S);
-    d.balance = S.balance + S.escrow - Math.min(locked, S.escrow); d.escrow = 0;
-    localStorage.setItem(KEY, JSON.stringify(d));
-  } catch (e) { /* ignorieren */ }
+  if (!slotId || saveBlocked) return;
+  var d = Object.assign({}, S);
+  d.balance = S.balance + S.escrow - Math.min(locked, S.escrow); d.escrow = 0;
+  var rev = Store.put(slotId, d);
+  if (rev) slotRev = rev;
 }
+/* Läuft derselbe Spielstand in einem zweiten Tab weiter, darf dieser Tab ihn nicht mehr überschreiben */
+window.addEventListener('storage', function (e) {
+  if (!slotId || saveBlocked || e.key !== Store.KEY) return;
+  var slot = Store.get(slotId);
+  if (slot && slot.rev === slotRev) return;
+  saveBlocked = true;
+  banner('Spielstand woanders geändert', slot ? 'Dieser Spielstand wurde in einem anderen Tab weitergespielt. Lade neu, um nichts zu überschreiben.' : 'Dieser Spielstand wurde gelöscht.', {
+    kind: 'level', ms: 86400000, actions: [{ label: 'Neu laden', gold: true, fn: function () { location.reload(); } }]
+  });
+});
 function room() { return E.TIERS[S.room]; }
 function debit(n, commit) { S.balance -= n; S.escrow += n; if (commit) lock(n); }
 function lock(n) { locked += n; save(); }
 function refund(n) { S.balance += n; S.escrow -= n; }
+
+/* ---------- Karriere: Freischaltungen, Notgroschen, Tagesbonus ---------- */
+function isCareer() { return S.mode === 'career'; }
+function gameOpen(id) { return !isCareer() || S.unlocked >= GAME_TIER[id]; }
+function gamesAt(t) { return Object.keys(GAME_TIER).filter(function (g) { return GAME_TIER[g] === t; }); }
+function isBroke() { return S.balance + S.escrow < E.TIERS[0].min; }
+function bailoutAmt() { return E.TIERS[S.unlocked].min * CAREER.bailoutMult; }
+function bailoutWait() { return Math.max(0, S.bailoutAt + CAREER.bailoutCooldown - Date.now()); }
+function bailout() {
+  if (!isCareer() || !isBroke() || bailoutWait() > 0) return;
+  var amt = bailoutAmt();
+  S.balance += amt; S.bailouts++; S.bailedOut += amt; S.bailoutAt = Date.now();
+  Snd.cash(); toast('Notgroschen: +' + fmt(amt) + ' Chips. Der nächste erst in ' + Math.round(CAREER.bailoutCooldown / 60000) + ' Minuten.', 'good');
+  hud(); if (V.side) V.side.refresh(); save();
+}
+function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function dailyAvailable() { return isCareer() && S.dailyLast !== dayKey(Date.now()); }
+function dailyStreakNext() { return S.dailyLast === dayKey(Date.now() - 864e5) ? S.dailyStreak + 1 : 1; }
+function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1))); }
+function claimDaily() {
+  if (!dailyAvailable()) return;
+  var streak = dailyStreakNext(), amt = dailyAmt(streak);
+  S.dailyStreak = streak; S.dailyLast = dayKey(Date.now()); S.dailyTotal += amt; S.balance += amt;
+  Snd.unlock();
+  banner('Tagesbonus +' + fmt(amt), 'Tag ' + streak + ' in Folge' + (streak < 7 ? ' · morgen gibt es mehr' : ' · maximale Serie'), { kind: 'win', ms: 3000 });
+  hud(); if (V.side) V.side.refresh(); save();
+}
+/* Der goldene Knopf oben: Sandbox = Nachschub, Karriere = Tagesbonus oder Notgroschen */
+function renderWalletBtn() {
+  var b = $('#reload'); if (!b) return;
+  var pulse = false;
+  b.disabled = false;
+  if (!isCareer()) {
+    b.innerHTML = '+ <span class="hide-sm">Nachschub </span>' + short(E.TIERS[S.unlocked].reload);
+    b.title = 'Gratis-Chips nachholen';
+    pulse = S.balance < room().min;
+  } else if (dailyAvailable()) {
+    b.innerHTML = '🎁 <span class="hide-sm">Tagesbonus </span>' + short(dailyAmt(dailyStreakNext()));
+    b.title = 'Einmal pro Tag abholen';
+    pulse = true;
+  } else {
+    var w = bailoutWait();
+    b.title = 'Notgroschen: nur wenn du pleite bist, höchstens alle ' + Math.round(CAREER.bailoutCooldown / 60000) + ' Minuten';
+    if (!isBroke()) { b.innerHTML = '🛟 <span class="hide-sm">Notgroschen </span>' + short(bailoutAmt()); b.disabled = true; }
+    else if (w > 0) { b.textContent = '⏳ ' + clock(w); b.disabled = true; }
+    else { b.innerHTML = '🛟 <span class="hide-sm">Notgroschen </span>+' + short(bailoutAmt()); pulse = true; }
+  }
+  b.classList.toggle('pulse', pulse);
+}
+function walletAction() {
+  if (!isCareer()) reload();
+  else if (dailyAvailable()) claimDaily();
+  else bailout();
+}
 
 /* ---------- Ton ---------- */
 var Snd = (function () {
@@ -305,11 +380,12 @@ function levelUp(t) {
   S.balance += T.bonus;
   Snd.unlock();
   var hn = A.HOSTESSES[t].name;
-  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(T.bonus) + ' Chips · Hostess ' + hn + ' erwartet dich', {
+  var newGames = isCareer() ? gamesAt(t).map(function (g) { return GAME_NAME[g]; }) : [];
+  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(T.bonus) + ' Chips · ' + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Hostess ' + hn + ' erwartet dich', {
     kind: 'level', ms: 9000, actions: [{ label: 'Raum betreten', gold: true, fn: function () { enterRoom(t, true); } }, { label: 'Später', fn: function () {} }]
   });
   burst($('#app'), 40);
-  hud(); renderTier(); if (V.side) V.side.refresh(); save();
+  hud(); renderTier(); if (V.renderNav) V.renderNav(); if (V.side) V.side.refresh(); save();
 }
 var realityT = 0;
 function maybeReality() {
@@ -341,8 +417,7 @@ function hud() {
   }
   $('#comp').textContent = fmt(Math.floor(S.comps));
   $('#claimComp').disabled = S.comps < 1;
-  $('#reload').innerHTML = '+ <span class="hide-sm">Nachschub </span>' + short(E.TIERS[S.unlocked].reload);
-  $('#reload').classList.toggle('pulse', S.balance < room().min);
+  renderWalletBtn();
   renderTier();
 }
 function renderTier() {
@@ -386,6 +461,7 @@ function enterRoom(id, force) {
   return true;
 }
 function reload() {
+  if (isCareer()) return;
   var amt = E.TIERS[S.unlocked].reload;
   S.balance += amt; S.reloads++; S.reloaded += amt;
   Snd.cash(); say('reload', true); toast('+' + fmt(amt) + ' Chips Nachschub', 'good');
@@ -399,7 +475,7 @@ function claimComps() {
   hud(); if (V.side) V.side.refresh(); save();
 }
 function needChips() {
-  toast('Zu wenig Chips. Hol dir Nachschub oder senke den Einsatz.', 'bad');
+  toast(isCareer() ? 'Zu wenig Chips. Senk den Einsatz oder wechsle in einen kleineren Raum.' : 'Zu wenig Chips. Hol dir Nachschub oder senke den Einsatz.', 'bad');
   var r = $('#reload'); if (r) { r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake'); }
 }
 
@@ -485,6 +561,10 @@ return {
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
   needChips: needChips, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
-  resetState: function () { S = fresh(); }
+  resetState: function () { S = fresh(S.mode); locked = 0; save(); },
+  get slotId() { return slotId; }, get slotName() { return slotName; },
+  isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
+  bailout: bailout, bailoutAmt: bailoutAmt, claimDaily: claimDaily, dailyAvailable: dailyAvailable,
+  renderWalletBtn: renderWalletBtn, walletAction: walletAction
 };
 })();

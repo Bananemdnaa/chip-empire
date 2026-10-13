@@ -41,6 +41,7 @@ function stufen() {
         el('span', { text: 'Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %' }),
         el('span', { text: i === 0 ? 'Startraum' : 'ab ' + short(T.wager) + ' Umsatz' }),
         T.bonus ? el('span', { text: 'Aufstiegsbonus ' + short(T.bonus) }) : null,
+        V.isCareer() && V.gamesAt(i).length ? el('span', { class: 'unlock', text: 'Schaltet frei: ' + V.gamesAt(i).map(function (g) { return GNAME[g]; }).join(', ') }) : null,
         el('span', { text: 'Sympathie ' + V.affTitle(S.aff[i]) })));
     var btn = el('button', { class: 'btn ' + (here ? 'ghost' : 'gold') + ' sm', type: 'button', text: here ? 'Aktueller Raum' : locked ? 'Noch ' + short(Math.max(0, T.wager - S.wagered)) + ' Umsatz' : 'Betreten',
       disabled: here || locked, onclick: function () { V.enterRoom(i); refresh(); } });
@@ -48,7 +49,9 @@ function stufen() {
     card.appendChild(pic); card.appendChild(info);
     list.appendChild(card);
   });
-  body.appendChild(el('p', { class: 'side-intro', text: 'Jeder Chip, den du setzt, zählt als Umsatz und bringt dich näher an die nächste Stufe. Höhere Stufen haben höhere Limits, mehr Comps und eine eigene Hostess.' }));
+  body.appendChild(el('p', { class: 'side-intro', text: V.isCareer()
+    ? 'Jeder Chip, den du setzt, zählt als Umsatz und bringt dich näher an die nächste Stufe. Jede Stufe bringt höhere Limits, mehr Comps, eine eigene Hostess und neue Spiele.'
+    : 'Sandbox: Alle Räume und Spiele sind offen. Umsatz zählt trotzdem für deine Statistik.' }));
   body.appendChild(list);
 }
 
@@ -84,6 +87,7 @@ function profil() {
 function apply(rec) {
   var S = V.S;
   if (V.isBusy()) { V.toast('Beende erst die laufende Runde.', 'bad'); return; }
+  if (!V.gameOpen(rec.game)) { V.toast(GNAME[rec.game] + ' ist noch nicht freigeschaltet.', 'bad'); return; }
   if (rec.room !== S.room) V.enterRoom(rec.room);
   var target = Math.sqrt(rec.betLo * rec.betHi);
   var l = V.ladder(), best = l[0];
@@ -140,7 +144,10 @@ function stats() {
   body.appendChild(el('div', { class: 'kvs' },
     el('div', { class: 'kv' }, el('span', { text: 'Größter Gewinn' }), el('b', { class: 'num', text: fmt(S.biggest) })),
     el('div', { class: 'kv' }, el('span', { text: 'Bester Crash-Cashout' }), el('b', { class: 'num', text: S.bestMult ? V.fmtX(S.bestMult) : '–' })),
-    el('div', { class: 'kv' }, el('span', { text: 'Nachschub geholt' }), el('b', { class: 'num', text: S.reloads + '× · ' + fmt(S.reloaded) })),
+    V.isCareer()
+      ? el('div', { class: 'kv' }, el('span', { text: 'Notgroschen geholt' }), el('b', { class: 'num', text: S.bailouts + '× · ' + fmt(S.bailedOut) }))
+      : el('div', { class: 'kv' }, el('span', { text: 'Nachschub geholt' }), el('b', { class: 'num', text: S.reloads + '× · ' + fmt(S.reloaded) })),
+    V.isCareer() ? el('div', { class: 'kv' }, el('span', { text: 'Tagesbonus' }), el('b', { class: 'num', text: 'Serie ' + S.dailyStreak + ' · ' + fmt(S.dailyTotal) })) : null,
     el('div', { class: 'kv' }, el('span', { text: 'Comps eingelöst' }), el('b', { class: 'num', text: fmt(S.compsClaimed) })),
     el('div', { class: 'kv' }, el('span', { text: 'Trinkgeld gegeben' }), el('b', { class: 'num', text: S.tips + '×' })),
     el('div', { class: 'kv' }, el('span', { text: 'Spielzeit' }), el('b', { class: 'num', text: V.clock(S.playMs) }))));
@@ -170,8 +177,8 @@ function haus() {
   body.appendChild(el('h4', { text: 'Einstellungen' }));
   var snd = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(S.sound), text: S.sound ? 'Ton an' : 'Ton aus', onclick: function () { S.sound = !S.sound; V.save(); refresh(); V.syncSound(); } });
   var reset;
-  if (!confirmReset) reset = el('button', { class: 'btn ghost sm', type: 'button', text: 'Spielstand zurücksetzen', onclick: function () { confirmReset = true; refresh(); } });
-  else reset = el('span', { class: 'confirm' }, el('span', { text: 'Wirklich alles löschen?' }),
+  if (!confirmReset) reset = el('button', { class: 'btn ghost sm', type: 'button', text: 'Diesen Spielstand zurücksetzen', onclick: function () { confirmReset = true; refresh(); } });
+  else reset = el('span', { class: 'confirm' }, el('span', { text: 'Wirklich von vorn beginnen?' }),
     el('button', { class: 'btn crimson sm', type: 'button', text: 'Ja, zurücksetzen', onclick: function () { V.hardReset(); } }),
     el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { confirmReset = false; refresh(); } }));
   body.appendChild(el('div', { class: 'rrow' }, snd, reset));

@@ -4,7 +4,12 @@ Ein Browser-Casinospiel mit Spielgeld: Slots, Roulette, Blackjack und Crash. Ste
 
 **Spielen:** https://bananemdnaa.github.io/chip-empire/
 
-Alles läuft lokal im Browser, der Spielstand wird im `localStorage` gespeichert. Es gibt kein echtes Geld und keine Auszahlungen.
+## Spielmodi
+
+- **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Bronze: Roulette, Silver: Crash, Gold: Blackjack). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie.
+- **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
+
+Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
 ## Lokal starten
 
@@ -24,7 +29,9 @@ py -3 -m http.server 8765
 | `css/style.css` | Gesamtes Styling |
 | `js/engine.js` | Reine Spiellogik (Zufall, Stufen, Slots, Roulette, Blackjack, Crash, Profil) |
 | `js/art.js` | Hostessen-Porträts als SVG |
-| `js/core.js` | Zustand, Speichern, Ton, HUD, Hostess, Einsatz-Steuerung |
+| `js/store.js` | Spielstände (Slots) im Browser-Speicher |
+| `js/core.js` | Zustand, Speichern, Karriere-Regeln, Ton, HUD, Hostess, Einsatz-Steuerung |
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js` | Die vier Spiele |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
+| `js/menu.js` | Hauptmenü |
 | `js/main.js` | Start und Navigation |
