@@ -19,6 +19,7 @@ function addXp(n) {
   var ups = 0;
   while (S.xp >= xpFor(S.level)) { S.xp -= xpFor(S.level); S.level++; ups++; }
   if (ups) {
+    progress({ levelUp: ups }, ['weekly']);
     V.Snd.unlock();
     V.banner('Level ' + S.level + '!', '+' + ups + ' Talentpunkt' + (ups > 1 ? 'e' : '') + ' zum Verteilen', { kind: 'level', ms: 5000, actions: [
       { label: 'Talentbaum öffnen', gold: true, fn: function () { V.openSide('talente'); } }, { label: 'Später', fn: function () {} }] });
@@ -139,30 +140,73 @@ function weekKey() { return 'W' + dayKey(weekStart()); }
 function openGames() { return ['slots', 'roulette', 'bj', 'crash'].filter(function (g) { return V.gameOpen(g); }); }
 function qmult() { return 1 + perk('quest'); }
 
-/* Vorlagen: n = Ziel, diff = Belohnungsfaktor, ev = Fortschritt pro Runde */
+/* Vorlagen: n = Ziel, diff = Belohnungsfaktor, ev = Fortschritt pro Ereignis, req = nötiges Spiel, cond = weitere Bedingung */
+function R(e) { return e.staked > 0; }
+function maxRoom() { return V.S.room === V.S.unlocked; }
 var DAILY = [
+  /* allgemein */
   { id: 'rounds', make: function (r) { var gs = openGames(), g = gs[Math.floor(r() * gs.length)], n = g === 'slots' ? 25 : 12; return { text: 'Spiele ' + n + ' Runden ' + GN[g], n: n, game: g, diff: 1, icon: '🎲' }; },
-    ev: function (q, e) { return e.game === q.game && e.staked > 0 ? 1 : 0; } },
-  { id: 'wins', make: function () { return { text: 'Gewinne 8 Runden', n: 8, diff: 1, icon: '🏆' }; }, ev: function (q, e) { return e.net > 0 ? 1 : 0; } },
+    ev: function (q, e) { return e.game === q.game && R(e) ? 1 : 0; } },
+  { id: 'wins', make: function () { return { text: 'Gewinne 8 Runden', n: 8, diff: 1, icon: '🏆' }; }, ev: function (q, e) { return R(e) && e.net > 0 ? 1 : 0; } },
   { id: 'wager', make: function () { var n = tierMin() * 400; return { text: 'Setze insgesamt ' + fmt(n) + ' Chips', n: n, diff: 1, icon: '🪙' }; }, ev: function (q, e) { return e.staked; } },
   { id: 'big', make: function () { return { text: 'Gewinne in einer Runde das 10-Fache deines Einsatzes', n: 1, diff: 2, icon: '💥' }; }, ev: evBig },
-  { id: 'streak', make: function () { return { text: 'Gewinne 3 Runden hintereinander', n: 1, diff: 1, icon: '🔥' }; }, ev: function () { return V.S.winStreak >= 3 ? 1 : 0; } },
-  { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 3,00× aus', n: 1, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
+  { id: 'streak', make: function () { return { text: 'Gewinne 3 Runden hintereinander', n: 1, diff: 1, icon: '🔥' }; }, ev: function (q, e) { return R(e) && V.S.winStreak >= 3 ? 1 : 0; } },
+  { id: 'comeback', make: function () { return { text: 'Gewinne direkt nach 3 verlorenen Runden', n: 1, diff: 1, icon: '🦅' }; }, ev: function (q, e) { return R(e) && e.net > 0 && e.prevLoss >= 3 ? 1 : 0; } },
+  { id: 'variety', make: function () { var n = openGames().length; return { text: 'Spiele heute jedes deiner ' + n + ' Spiele mindestens einmal', n: n, diff: 1, icon: '🧭' }; },
+    cond: function () { return openGames().length >= 2; },
+    ev: function (q, e) { if (!R(e) || (q.seen || '').indexOf(e.game) >= 0) return 0; q.seen = (q.seen || '') + e.game + ','; return 1; } },
+  { id: 'highroom', make: function () { return { text: 'Spiele 10 Runden in deinem höchsten Raum', n: 10, diff: 1, icon: '🏰' }; }, cond: function () { return V.S.unlocked > 0; },
+    ev: function (q, e) { return R(e) && maxRoom() ? 1 : 0; } },
+  { id: 'maxbet', make: function () { return { text: 'Setz 3-mal den Höchsteinsatz deines Raums', n: 3, diff: 1, icon: '💎' }; }, ev: function (q, e) { return R(e) && e.atMax ? 1 : 0; } },
+  { id: 'tip', make: function () { return { text: 'Gib deiner Gastgeberin Trinkgeld', n: 1, diff: 1, icon: '🥂' }; }, ev: function (q, e) { return e.tip ? 1 : 0; } },
+  { id: 'comps', make: function () { return { text: 'Löse deine Comps ein', n: 1, diff: 1, icon: '🎟️' }; }, ev: function (q, e) { return e.comps ? 1 : 0; } },
+  /* Slots */
+  { id: 'free', req: 'slots', make: function () { return { text: 'Löse Freispiele aus', n: 1, diff: 2, icon: '🎁' }; }, ev: function (q, e) { return e.opt.freeTrig ? 1 : 0; } },
+  { id: 'sevens', req: 'slots', make: function () { return { text: 'Gewinne eine Linie mit Siebenen', n: 1, diff: 2, icon: '7️⃣' }; }, ev: function (q, e) { return e.opt.sevens ? 1 : 0; } },
+  { id: 'lines3', req: 'slots', make: function () { return { text: 'Gewinne auf 3 Linien gleichzeitig', n: 1, diff: 1, icon: '〰️' }; }, ev: function (q, e) { return e.opt.lines >= 3 ? 1 : 0; } },
+  { id: 'wild', req: 'slots', make: function () { return { text: 'Gewinne 3-mal mit Hilfe eines Wilds', n: 3, diff: 1, icon: '🃏' }; }, ev: function (q, e) { return e.opt.wildHelp ? 1 : 0; } },
+  /* Roulette */
   { id: 'straight', req: 'roulette', make: function () { return { text: 'Triff eine Einzelzahl im Roulette', n: 1, diff: 2, icon: '🎯' }; }, ev: function (q, e) { return e.opt.straight ? 1 : 0; } },
+  { id: 'color', req: 'roulette', make: function () { return { text: 'Gewinne 5-mal auf Rot oder Schwarz', n: 5, diff: 1, icon: '🔴' }; }, ev: function (q, e) { return e.opt.colorWin ? 1 : 0; } },
+  { id: 'dozen', req: 'roulette', make: function () { return { text: 'Gewinne 3-mal mit einem Dutzend oder einer Kolonne', n: 3, diff: 1, icon: '🧮' }; }, ev: function (q, e) { return e.opt.dozenWin ? 1 : 0; } },
+  { id: 'spread', req: 'roulette', make: function () { return { text: 'Setz in einer Runde auf 8 verschiedene Felder', n: 1, diff: 1, icon: '🕸️' }; }, ev: function (q, e) { return e.opt.fields >= 8 ? 1 : 0; } },
+  { id: 'zero', req: 'roulette', make: function () { return { text: 'Erlebe, wie die Kugel auf der Zero landet', n: 1, diff: 2, icon: '🟢' }; }, ev: function (q, e) { return e.opt.number === 0 ? 1 : 0; } },
+  /* Blackjack */
   { id: 'natural', req: 'bj', make: function () { return { text: 'Bekomme einen Blackjack', n: 1, diff: 1, icon: '🂡' }; }, ev: function (q, e) { return e.opt.natural ? 1 : 0; } },
-  { id: 'free', req: 'slots', make: function () { return { text: 'Löse Freispiele aus', n: 1, diff: 2, icon: '🎁' }; }, ev: function (q, e) { return e.opt.freeTrig ? 1 : 0; } }
+  { id: 'double', req: 'bj', make: function () { return { text: 'Gewinne 2 verdoppelte Hände', n: 2, diff: 1, icon: '✌️' }; }, ev: function (q, e) { return e.opt.doubleWins || 0; } },
+  { id: 'split', req: 'bj', make: function () { return { text: 'Teile ein Paar und gewinne mindestens eine Hand', n: 1, diff: 2, icon: '✂️' }; }, ev: function (q, e) { return e.opt.splitWin ? 1 : 0; } },
+  { id: 'cards', req: 'bj', make: function () { return { text: 'Gewinne eine Hand mit 4 oder mehr Karten', n: 1, diff: 1, icon: '🗂️' }; }, ev: function (q, e) { return e.opt.manyCards ? 1 : 0; } },
+  /* Crash */
+  { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 3,00× aus', n: 1, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
+  { id: 'crash5', req: 'crash', make: function () { return { text: 'Zahle 5-mal im Crash aus', n: 5, diff: 1, icon: '🛰️' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult ? 1 : 0; } },
+  { id: 'crashHigh', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 5,00× aus', n: 1, diff: 2, icon: '🌠' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 5 ? 1 : 0; } }
 ];
 var WEEKLY = [
-  { id: 'rounds', make: function () { return { text: 'Spiele 150 Runden', n: 150, diff: 1, icon: '🎲' }; }, ev: function (q, e) { return e.staked > 0 ? 1 : 0; } },
-  { id: 'wins', make: function () { return { text: 'Gewinne 60 Runden', n: 60, diff: 1, icon: '🏆' }; }, ev: function (q, e) { return e.net > 0 ? 1 : 0; } },
+  { id: 'rounds', make: function () { return { text: 'Spiele 150 Runden', n: 150, diff: 1, icon: '🎲' }; }, ev: function (q, e) { return R(e) ? 1 : 0; } },
+  { id: 'wins', make: function () { return { text: 'Gewinne 60 Runden', n: 60, diff: 1, icon: '🏆' }; }, ev: function (q, e) { return R(e) && e.net > 0 ? 1 : 0; } },
   { id: 'wager', make: function () { var n = tierMin() * 6000; return { text: 'Setze insgesamt ' + fmt(n) + ' Chips', n: n, diff: 1, icon: '🪙' }; }, ev: function (q, e) { return e.staked; } },
   { id: 'big', make: function () { return { text: 'Gewinne 5-mal das 10-Fache deines Einsatzes', n: 5, diff: 2, icon: '💥' }; }, ev: evBig },
   { id: 'dailies', make: function () { return { text: 'Schließe 7 Daily Quests ab', n: 7, diff: 2, icon: '📜' }; }, ev: function (q, e) { return e.dailyDone ? 1 : 0; } },
-  { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle 6-mal im Crash bei mindestens 3,00× aus', n: 6, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
+  { id: 'level', make: function () { return { text: 'Steige ein Level auf', n: 1, diff: 1, icon: '⭐' }; }, ev: function (q, e) { return e.levelUp ? 1 : 0; } },
+  { id: 'streak5', make: function () { return { text: 'Gewinne 5 Runden hintereinander', n: 1, diff: 2, icon: '🔥' }; }, ev: function (q, e) { return R(e) && V.S.winStreak >= 5 ? 1 : 0; } },
+  { id: 'highroom', make: function () { return { text: 'Spiele 60 Runden in deinem höchsten Raum', n: 60, diff: 1, icon: '🏰' }; }, cond: function () { return V.S.unlocked > 0; },
+    ev: function (q, e) { return R(e) && maxRoom() ? 1 : 0; } },
+  { id: 'tips', make: function () { return { text: 'Gib 5-mal Trinkgeld', n: 5, diff: 1, icon: '🥂' }; }, ev: function (q, e) { return e.tip ? 1 : 0; } },
+  { id: 'free', req: 'slots', make: function () { return { text: 'Löse 4-mal Freispiele aus', n: 4, diff: 2, icon: '🎁' }; }, ev: function (q, e) { return e.opt.freeTrig ? 1 : 0; } },
+  { id: 'sevens', req: 'slots', make: function () { return { text: 'Gewinne 4 Linien mit Siebenen', n: 4, diff: 2, icon: '7️⃣' }; }, ev: function (q, e) { return e.opt.sevens ? 1 : 0; } },
   { id: 'straight', req: 'roulette', make: function () { return { text: 'Triff 4 Einzelzahlen im Roulette', n: 4, diff: 2, icon: '🎯' }; }, ev: function (q, e) { return e.opt.straight ? 1 : 0; } },
+  { id: 'color', req: 'roulette', make: function () { return { text: 'Gewinne 30-mal auf Rot oder Schwarz', n: 30, diff: 1, icon: '🔴' }; }, ev: function (q, e) { return e.opt.colorWin ? 1 : 0; } },
   { id: 'natural', req: 'bj', make: function () { return { text: 'Bekomme 8 Blackjacks', n: 8, diff: 1, icon: '🂡' }; }, ev: function (q, e) { return e.opt.natural ? 1 : 0; } },
-  { id: 'free', req: 'slots', make: function () { return { text: 'Löse 4-mal Freispiele aus', n: 4, diff: 2, icon: '🎁' }; }, ev: function (q, e) { return e.opt.freeTrig ? 1 : 0; } }
+  { id: 'double', req: 'bj', make: function () { return { text: 'Gewinne 12 verdoppelte Hände', n: 12, diff: 1, icon: '✌️' }; }, ev: function (q, e) { return e.opt.doubleWins || 0; } },
+  { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle 6-mal im Crash bei mindestens 3,00× aus', n: 6, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
+  { id: 'crashHigh', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 10,00× aus', n: 1, diff: 2, icon: '🌠' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 10 ? 1 : 0; } }
 ];
+function allowed(t) { return (!t.req || V.gameOpen(t.req)) && (!t.cond || t.cond()); }
+function makeQuest(t, r, K) {
+  var m = t.make(r);
+  return { id: t.id, text: m.text, icon: m.icon, n: m.n, game: m.game || '', seen: '', p: 0, done: false, claimed: false,
+    chips: Math.round(tierMin() * K.chips * m.diff), xp: K.xp * m.diff };
+}
 function evBig(q, e) { var ref = e.staked || (e.opt && e.opt.refBet) || 0; return ref > 0 && e.ret >= ref * 10 ? 1 : 0; }
 var KIND = {
   daily: { tpl: DAILY, key: dayKey, chips: 120, xp: 60, chest: 300, tp: 0, label: 'Daily' },
@@ -185,16 +229,12 @@ function ensureQuests() {
   var S = V.S;
   ['daily', 'weekly'].forEach(function (kind) {
     var K = KIND[kind], key = K.key(), cur = S.quests[kind];
-    if (cur && cur.key === key && cur.list && cur.list.length) return;
+    if (cur && cur.key === key && cur.list && cur.list.length) { if (cur.swaps === undefined) cur.swaps = 1; return; }
     var r = rng(hash(kind + key + '|' + (V.slotId || '')));
-    var pool = K.tpl.filter(function (t) { return !t.req || V.gameOpen(t.req); });
+    var pool = K.tpl.filter(allowed);
     var list = [];
-    while (list.length < 3 && pool.length) {
-      var t = pool.splice(Math.floor(r() * pool.length), 1)[0], m = t.make(r);
-      list.push({ id: t.id, text: m.text, icon: m.icon, n: m.n, game: m.game || '', p: 0, done: false, claimed: false,
-        chips: Math.round(tierMin() * K.chips * m.diff), xp: K.xp * m.diff });
-    }
-    S.quests[kind] = { key: key, list: list, chest: false };
+    while (list.length < 3 && pool.length) list.push(makeQuest(pool.splice(Math.floor(r() * pool.length), 1)[0], r, K));
+    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1 };
   });
 }
 function claimQuest(kind, i) {
@@ -205,8 +245,20 @@ function claimQuest(kind, i) {
   S.balance += chips;
   V.Snd.cash(); V.toast('Quest-Belohnung: +' + fmt(chips) + ' Chips, +' + xp + ' XP', 'good');
   addXp(xp);
-  if (kind === 'daily') { S.qstats.dailies++; progress({ dailyDone: true, staked: 0, ret: 0, net: 0, opt: {} }, ['weekly']); }
+  if (kind === 'daily') { S.qstats.dailies++; progress({ dailyDone: true }, ['weekly']); }
   V.hud(); V.side.refresh(); V.save();
+}
+/* Eine offene Quest gegen eine andere tauschen (1-mal pro Tag bzw. Woche) */
+function swapQuest(kind, i) {
+  var S = V.S, K = KIND[kind], st = S.quests[kind], q = st.list[i];
+  if (!q || q.done || !(st.swaps > 0)) return;
+  var used = st.list.map(function (x) { return x.id; });
+  var pool = K.tpl.filter(function (t) { return allowed(t) && used.indexOf(t.id) < 0; });
+  if (!pool.length) { V.toast('Gerade gibt es keine andere passende Quest.', 'bad'); return; }
+  st.list[i] = makeQuest(pool[Math.floor(Math.random() * pool.length)], Math.random, K);
+  st.swaps--;
+  V.Snd.click(); V.toast('Neue Quest: ' + st.list[i].text, 'good');
+  V.side.refresh(); V.save();
 }
 function allClaimed(kind) { var l = V.S.quests[kind].list; return l.length > 0 && l.every(function (q) { return q.claimed; }); }
 function claimChest(kind) {
@@ -235,6 +287,7 @@ function claimMile(id) {
 /* Fortschritt für Daily und Weekly aus einem Ereignis */
 function progress(e, kinds) {
   ensureQuests();
+  e.opt = e.opt || {}; e.staked = e.staked || 0; e.ret = e.ret || 0; e.net = e.net || 0;
   (kinds || ['daily', 'weekly']).forEach(function (kind) {
     var tpl = {}; KIND[kind].tpl.forEach(function (t) { tpl[t.id] = t; });
     V.S.quests[kind].list.forEach(function (q) {
@@ -414,7 +467,7 @@ function renderImperium(body) {
 
 /* ---- Quests ---- */
 var questView = 'daily';
-function questCard(kind, q, i) {
+function questCard(kind, q, i, canSwap) {
   var chips = Math.round(q.chips * qmult()), xp = Math.round(q.xp * qmult());
   return el('article', { class: 'quest' + (q.done ? ' done' : '') + (q.claimed ? ' claimed' : '') },
     el('div', { class: 'q-ico', text: q.claimed ? '✓' : q.icon || '★' }),
@@ -422,17 +475,20 @@ function questCard(kind, q, i) {
       el('b', { text: q.text }),
       el('div', { class: 'q-prog' }, bar(q.p / q.n), el('span', { class: 'num', text: fmt(q.p) + '/' + fmt(q.n) })),
       el('div', { class: 'q-rew' }, el('span', { class: 'rw chips', text: '+' + V.short(chips) }), el('span', { class: 'rw xp', text: '+' + xp + ' XP' }))),
-    el('button', { class: 'btn ' + (q.done && !q.claimed ? 'gold' : 'ghost') + ' sm', type: 'button', disabled: !q.done || q.claimed,
-      text: q.claimed ? 'Abgeholt' : q.done ? 'Abholen' : 'Offen', onclick: function () { claimQuest(kind, i); } }));
+    q.done || q.claimed || !canSwap
+      ? el('button', { class: 'btn ' + (q.done && !q.claimed ? 'gold' : 'ghost') + ' sm', type: 'button', disabled: !q.done || q.claimed,
+          text: q.claimed ? 'Abgeholt' : q.done ? 'Abholen' : 'Offen', onclick: function () { claimQuest(kind, i); } })
+      : el('button', { class: 'btn ghost sm q-swap', type: 'button', title: 'Diese Quest gegen eine andere tauschen', text: '↻ Tauschen',
+          onclick: function () { swapQuest(kind, i); } }));
 }
 function renderQuestList(body, kind) {
   var K = KIND[kind], st = V.S.quests[kind];
   var next = kind === 'daily' ? (function () { var d = new Date(); d.setHours(24, 0, 0, 0); return d - Date.now(); })() : weekStart().getTime() + 7 * 864e5 - Date.now();
   body.appendChild(el('div', { class: 'q-top' },
-    el('span', { class: 'fine', text: kind === 'daily' ? 'Jeden Tag drei neue Quests.' : 'Jede Woche drei große Quests, Reset am Montag.' }),
+    el('span', { class: 'fine', text: (kind === 'daily' ? 'Jeden Tag drei neue Quests.' : 'Jede Woche drei große Quests, Reset am Montag.') + (st.swaps > 0 ? ' Du kannst eine offene Quest tauschen.' : '') }),
     el('span', { class: 'q-timer', text: '⏳ Neue in ' + until(next) })));
   var list = el('div', { class: 'quests' });
-  st.list.forEach(function (q, i) { list.appendChild(questCard(kind, q, i)); });
+  st.list.forEach(function (q, i) { list.appendChild(questCard(kind, q, i, st.swaps > 0)); });
   body.appendChild(list);
   var all = allClaimed(kind), chips = Math.round(tierMin() * K.chest * qmult());
   body.appendChild(el('div', { class: 'chest' + (all && !st.chest ? ' ready' : '') + (st.chest ? ' opened' : '') },
@@ -484,7 +540,7 @@ function tick() {
 }
 
 return {
-  perk: perk, onRound: onRound, migrate: migrate, addXp: addXp, xpFor: xpFor, badges: badges, tick: tick, ensureQuests: ensureQuests,
+  perk: perk, onRound: onRound, migrate: migrate, event: function (e) { progress(e); }, addXp: addXp, xpFor: xpFor, badges: badges, tick: tick, ensureQuests: ensureQuests,
   pointsFree: pointsFree, worth: worth, perHour: perHour, isEmpire: isEmpire,
   tabs: { talente: renderTalente, imperium: renderImperium, quests: renderQuests }
 };

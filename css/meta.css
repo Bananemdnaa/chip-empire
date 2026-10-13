@@ -83,6 +83,7 @@
 .respec .fine { margin: 0; }
 
 /* ---------- Quests ---------- */
+.q-swap { color: var(--gold); }
 .q-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .q-top .fine { margin: 0; }
 .q-timer { font: 600 12px var(--f-mono); color: var(--gold); padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.3); }

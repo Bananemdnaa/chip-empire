@@ -320,7 +320,9 @@ async function oneSpin(isFree) {
   grid = res.grid;
   showWins(res);
   var total = res.total, ratio = total / bet0;
-  V.settle('slots', isFree ? 0 : bet0, total, { near: res.nearMiss && !res.free, refBet: bet0, freeTrig: res.free > 0 });
+  V.settle('slots', isFree ? 0 : bet0, total, { near: res.nearMiss && !res.free, refBet: bet0, freeTrig: res.free > 0, lines: res.wins.length,
+    sevens: res.wins.some(function (w) { return w.sym === SYM.SEVEN; }),
+    wildHelp: res.wins.some(function (w) { return w.cells.some(function (c) { return res.grid[c[0]][c[1]] === SYM.WILD; }); }) });
   if (isFree) { V.S.free.won += total; }
   countWin(total);
   if (total > 0) {

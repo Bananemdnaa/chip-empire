@@ -348,7 +348,9 @@ function tip() {
   var c = tipCost();
   if (S.balance < c) { toast('Zu wenig Chips für Trinkgeld.', 'bad'); return; }
   S.balance -= c; S.tips++; addAff(7);
-  Snd.chip(); say('tip', true); renderAff(); hud(); save();
+  Snd.chip(); say('tip', true); renderAff(); hud();
+  if (V.meta) { V.meta.event({ tip: true }); if (V.side) V.side.refresh(); }
+  save();
 }
 
 /* ---------- Dopamin-Pegel ---------- */
@@ -364,7 +366,7 @@ var busyFns = [];
 function isBusy() { return busyFns.some(function (f) { return f(); }); }
 function settle(game, staked, ret, opt) {
   opt = opt || {};
-  var net = ret - staked, before = Math.max(1, S.balance + S.escrow - net);
+  var net = ret - staked, before = Math.max(1, S.balance + S.escrow - net), prevLoss = S.lossStreak;
   S.balance += ret; S.escrow -= staked;
   if (S.escrow < 0) S.escrow = 0;
   locked = Math.max(0, Math.min(locked - staked, S.escrow));
@@ -398,7 +400,7 @@ function settle(game, staked, ret, opt) {
     else if (S.lossStreak >= 5 && Math.random() < 0.6) say('lossStreak');
     else if (net < 0 && Math.random() < 0.5) say('loss');
   }
-  if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt });
+  if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt, prevLoss: prevLoss, atMax: staked > 0 && staked >= room().max });
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
 }
@@ -506,6 +508,7 @@ function claimComps() {
   var c = Math.floor(S.comps);
   if (c < 1) return;
   S.comps -= c; S.compsClaimed += c; S.balance += c;
+  if (V.meta) V.meta.event({ comps: true });
   Snd.cash(); toast('Comps eingelöst: +' + fmt(c) + ' Chips', 'good');
   hud(); if (V.side) V.side.refresh(); save();
 }

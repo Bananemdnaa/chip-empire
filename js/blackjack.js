@@ -209,7 +209,11 @@ async function finishRound() {
   var net = st.returned - st.staked;
   var bust = st.hands.length === 1 && st.hands[0].result === 'bust';
   var nat = st.hands.some(function (h) { return h.result === 'blackjack'; });
-  V.settle('bj', st.staked, st.returned, { natural: nat });
+  var won = function (h) { return h.result === 'win' || h.result === 'blackjack'; };
+  V.settle('bj', st.staked, st.returned, { natural: nat,
+    doubleWins: st.hands.filter(function (h) { return h.doubled && won(h); }).length,
+    splitWin: st.hands.length > 1 && st.hands.some(won),
+    manyCards: st.hands.some(function (h) { return won(h) && h.cards.length >= 4; }) });
   var txt;
   if (nat) txt = 'Blackjack! ' + (net > 0 ? '+' + fmt(net) + ' Chips' : '');
   else if (net > 0) txt = 'Gewonnen: +' + fmt(net) + ' Chips';

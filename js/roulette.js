@@ -249,7 +249,11 @@ async function spin() {
   S.rhist.push(n); if (S.rhist.length > 120) S.rhist.shift();
   resultBadge.textContent = String(n); resultBadge.className = 'result-badge ' + E.rColor(n);
   spinning = false; resolving = true;
-  V.settle('roulette', res.staked, res.ret, { straight: Object.keys(res.won).some(function (k) { return k.charAt(0) === 'n'; }) });
+  var wonKeys = Object.keys(res.won);
+  V.settle('roulette', res.staked, res.ret, { number: n, fields: Object.keys(bets).length,
+    straight: wonKeys.some(function (k) { return k.charAt(0) === 'n'; }),
+    colorWin: !!(res.won.red || res.won.black),
+    dozenWin: wonKeys.some(function (k) { return /^[dc][123]$/.test(k); }) });
   var net = res.ret - res.staked;
   for (var k in res.won) if (cellMap[k]) cellMap[k].classList.add('won');
   msgEl.className = 'slot-msg ' + (net > 0 ? 'win' : '');
