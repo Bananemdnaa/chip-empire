@@ -1,4 +1,4 @@
-/* Chip Empire – Hostessen (fiktive Figuren, als SVG gezeichnet) */
+/* Chip Empire – Gastgeberinnen (fiktive Figuren, als SVG gezeichnet) */
 var Art = (function () {
 'use strict';
 
@@ -6,19 +6,19 @@ var HOSTESSES = [
   { name: 'Mira', role: 'Empfangsdame', trait: 'herzlich, neugierig',
     skin: '#F0C7A4', shade: '#DDA982', hair: '#2B1912', hairHi: '#5A3A2A', style: 'bob',
     eye: '#5A3A22', lip: '#B5173D', dress: '#0F6E56', dressHi: '#1E9577', jewel: '#E8C77A', bgA: '#3C1822', bgB: '#150810', neck: 'v' },
-  { name: 'Sofia', role: 'Cocktail-Hostess', trait: 'verspielt, schlagfertig',
+  { name: 'Sofia', role: 'Barkeeperin', trait: 'verspielt, schlagfertig',
     skin: '#F6D6BC', shade: '#E4B796', hair: '#D7A64A', hairHi: '#F2D283', style: 'wave',
     eye: '#3F7F9F', lip: '#D24A5E', dress: '#B58A3E', dressHi: '#E3C16F', jewel: '#FFF1C8', bgA: '#3A2018', bgB: '#150A08', neck: 'scoop' },
-  { name: 'Lena', role: 'Pit-Hostess', trait: 'ruhig, aufmerksam',
+  { name: 'Lena', role: 'Croupière', trait: 'ruhig, aufmerksam',
     skin: '#EBC09C', shade: '#D49C76', hair: '#8E3A1E', hairHi: '#C2662F', style: 'long',
     eye: '#3D6B4A', lip: '#A31E34', dress: '#17141A', dressHi: '#3A3440', jewel: '#C0C6D0', bgA: '#2C1A28', bgB: '#110810', neck: 'sweet' },
-  { name: 'Isabella', role: 'VIP-Hostess', trait: 'elegant, selbstsicher',
+  { name: 'Isabella', role: 'VIP-Betreuerin', trait: 'elegant, selbstsicher',
     skin: '#C98E66', shade: '#AE7149', hair: '#120C0C', hairHi: '#3A2A2A', style: 'sleek',
     eye: '#2A1A12', lip: '#C0243F', dress: '#C79A3A', dressHi: '#F0D37E', jewel: '#FFF1C8', bgA: '#3A1A1A', bgB: '#150808', neck: 'v' },
-  { name: 'Anastasia', role: 'Penthouse-Concierge', trait: 'kühl, charmant',
+  { name: 'Anastasia', role: 'Concierge', trait: 'kühl, charmant',
     skin: '#F8E0CB', shade: '#E8C2A4', hair: '#E4DAC6', hairHi: '#FFFFFF', style: 'updo',
     eye: '#5F86A8', lip: '#A91F3C', dress: '#8E9AAA', dressHi: '#D7DEE8', jewel: '#EAF4FF', bgA: '#1E2230', bgB: '#0B0D14', neck: 'scoop' },
-  { name: 'Valentina', role: 'Black-Room-Dame', trait: 'geheimnisvoll, direkt',
+  { name: 'Celeste', role: 'Dame des Black Room', trait: 'geheimnisvoll, direkt',
     skin: '#E8B995', shade: '#CE946C', hair: '#0C0709', hairHi: '#2E1A22', style: 'curl',
     eye: '#2E1B14', lip: '#D0173F', dress: '#8E0E2B', dressHi: '#D0284A', jewel: '#FFD7DE', bgA: '#3A0B18', bgB: '#10040A', neck: 'sweet' }
 ];

@@ -40,9 +40,10 @@ py -3 -m http.server 8765
 | `css/style.css` | Grund-Styling der Spiele und Seitenfenster |
 | `css/games.css` | Slot-Automat, Tastenkürzel, Tasten-Hilfe |
 | `css/tables.css` | Blackjack-Tisch, Roulette-Rad und -Chips, Crash-Himmel |
+| `css/host.css` | Gastgeberin rechts: Porträt, Chat-Blase, Beziehung, Aufregung, Raum |
 | `css/shell.css` | Rahmen: Titelbildschirm, Spiel-HUD, Seitenleiste, Fenster |
 | `js/engine.js` | Reine Spiellogik (Zufall, Stufen, Slots, Roulette, Blackjack, Crash, Profil) |
-| `js/art.js` | Hostessen-Porträts als SVG |
+| `js/art.js` | Porträts der Gastgeberinnen als SVG |
 | `js/icons.js` | Icons als Inline-SVG |
 | `js/store.js` | Spielstände (Slots) im Browser-Speicher |
 | `js/cloud.js` | Online-Konten, Cloud-Spielstände und Bestenliste über Supabase |

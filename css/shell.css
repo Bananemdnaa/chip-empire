@@ -310,12 +310,7 @@ body.in-game { overflow: hidden; }
 
   .stage { overflow: visible; padding: 12px 12px 16px; }
   .game-title { font-size: 24px; }
-  .host { display: grid; grid-template-columns: 110px minmax(0, 1fr); border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
-  .host-card { grid-row: span 5; }
-  .host-meta { position: static; background: var(--velvet); padding: 6px 8px 8px; }
-  .host-role { font-size: 11.5px; }
-  .host-name { font-size: 20px; }
-  .host .foot { grid-column: 1 / -1; }
+  .host { display: grid; border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
 
   /* Tab-Leiste unten wie in Handy-Spielen */
   .rail { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; flex-direction: row; gap: 2px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); overflow: visible;

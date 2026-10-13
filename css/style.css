@@ -192,24 +192,7 @@ button, select, input { font: inherit; color: inherit; }
 .autorow input[type="checkbox"] { accent-color: var(--gold); width: 16px; height: 16px; }
 
 /* ---------- Hostess ---------- */
-.host-card { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--gold-lo); }
-.host-portrait svg { display: block; width: 100%; height: auto; }
-.host-meta { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 10px; background: linear-gradient(transparent, rgba(10,4,6,.92)); }
-.host-name { font-family: var(--f-display); font-size: 26px; color: var(--gold-hi); line-height: 1; }
-.host-role { font-size: 12.5px; color: var(--ivory); opacity: .85; margin-top: 3px; }
-.say { position: relative; margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--ivory); color: #2A1420; font-size: 14px; min-height: 3.2em; }
-.say::before { content: ""; position: absolute; top: -8px; left: 22px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--ivory); }
-.say.pop { animation: pop .3s ease-out; }
 @keyframes pop { from { transform: scale(.96); opacity: .4; } to { transform: none; opacity: 1; } }
-.host-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.meter-h { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
-.meter-h .perk { margin-left: auto; color: var(--gold); font-size: 12px; }
-.meter-track { height: 6px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 5px; }
-.meter-track i { display: block; height: 100%; width: 0; transition: width .5s; }
-.meter-track.aff i { background: linear-gradient(90deg, #8E0E2B, #E0577A); }
-.meter-track.dopa i { background: linear-gradient(90deg, #3B6FB0, #B05AD0 50%, #FF6A88); }
-.room-pick { display: grid; gap: 4px; min-width: 0; }
-.room-pick select { width: 100%; min-width: 0; max-width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--velvet); }
 
 /* ---------- Seitenpanel ---------- */
 .side-body { min-width: 0; }

@@ -148,7 +148,7 @@ async function startGame(id) {
   $('#tipBtn').addEventListener('click', V.tip);
   $('#chatBtn').addEventListener('click', function () { V.say('chat', true); });
   $('#menuBtn').addEventListener('click', toMenu);
-  $('#roomSel').addEventListener('change', function (e) { if (!V.enterRoom(Number(e.target.value))) V.renderTier(); });
+  $('#roomBtn').addEventListener('click', function () { V.Snd.click(); openSide('stufen'); });
   $('#sndBtn').addEventListener('click', function () { V.S.sound = !V.S.sound; syncSound(); V.save(); if (V.S.sound) V.Snd.click(); });
   V.renderHost(); V.hud(); V.renderDopa(); syncSound();
   showGame(V.S.game);

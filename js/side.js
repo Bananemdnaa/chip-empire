@@ -42,7 +42,7 @@ function stufen() {
         el('span', { text: i === 0 ? 'Startraum' : 'ab ' + short(T.wager) + ' Umsatz' }),
         T.bonus ? el('span', { text: 'Aufstiegsbonus ' + short(T.bonus) }) : null,
         V.isCareer() && V.gamesAt(i).length ? el('span', { class: 'unlock', text: 'Schaltet frei: ' + V.gamesAt(i).map(function (g) { return GNAME[g]; }).join(', ') }) : null,
-        el('span', { text: 'Sympathie ' + V.affTitle(S.aff[i]) })));
+        el('span', { text: 'Beziehung: ' + V.affTitle(S.aff[i]) })));
     var btn = el('button', { class: 'btn ' + (here ? 'ghost' : 'gold') + ' sm', type: 'button', text: here ? 'Aktueller Raum' : locked ? 'Noch ' + short(Math.max(0, T.wager - S.wagered)) + ' Umsatz' : 'Betreten',
       disabled: here || locked, onclick: function () { V.enterRoom(i); refresh(); } });
     info.appendChild(btn);
@@ -50,7 +50,7 @@ function stufen() {
     list.appendChild(card);
   });
   body.appendChild(el('p', { class: 'side-intro', text: V.isCareer()
-    ? 'Jeder Chip, den du setzt, zählt als Umsatz und bringt dich näher an die nächste Stufe. Jede Stufe bringt höhere Limits, mehr Comps, eine eigene Hostess und neue Spiele.'
+    ? 'Jeder Chip, den du setzt, zählt als Umsatz und bringt dich näher an die nächste Stufe. Jede Stufe bringt höhere Limits, mehr Comps, eine eigene Gastgeberin und neue Spiele.'
     : 'Sandbox: Alle Räume und Spiele sind offen. Umsatz zählt trotzdem für deine Statistik.' }));
   body.appendChild(list);
 }
@@ -168,7 +168,7 @@ function haus() {
     ['Verluste als Gewinn verkleidet', 'Bei Slots blinkt und klingelt es auch, wenn du weniger zurückbekommst als eingesetzt.'],
     ['Fast-Treffer', 'Zwei Bonus-Symbole fühlen sich an wie „beinahe“. Für die Walzen ist es einfach ein Verlust.'],
     ['Stufen und Comps', 'Aufstieg belohnt Umsatz, nicht Gewinn. Comps sind ein kleiner Teil deines erwarteten Verlusts.'],
-    ['Persönliche Ansprache', 'Eine Hostess, die dich kennt, macht das Gehen schwerer. Sympathie steigt mit jedem Einsatz.']
+    ['Persönliche Ansprache', 'Eine Gastgeberin, die dich kennt, macht das Gehen schwerer. Die Beziehung wächst mit jedem Einsatz.']
   ];
   var ul = el('div', { class: 'tricks' });
   tricks.forEach(function (t) { ul.appendChild(el('div', { class: 'trick' }, el('b', { text: t[0] }), el('span', { text: t[1] }))); });

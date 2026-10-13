@@ -1,0 +1,69 @@
+/* Chip Empire – Gastgeberin: Porträt im Bogenrahmen, Chat-Blase, Beziehung, Aufregung, Raum */
+
+.host { gap: 14px; }
+
+/* Porträt im Art-déco-Bogen mit Namensschild */
+.host-card { position: relative; display: grid; justify-items: center; }
+.host-arch { position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 999px 999px 18px 18px;
+  border: 2px solid var(--gold); box-shadow: 0 0 0 4px #1A0A10, 0 0 0 5px var(--gold-lo), 0 18px 34px rgba(0,0,0,.55), inset 0 0 30px rgba(0,0,0,.5); }
+.host-arch::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(120% 70% at 50% 0%, rgba(255,240,200,.12), transparent 55%), linear-gradient(180deg, transparent 70%, rgba(10,4,6,.65)); }
+.host-portrait svg { display: block; width: 100%; height: auto; }
+.host-plate { position: relative; z-index: 1; margin-top: -30px; min-width: 78%; max-width: 100%; padding: 8px 18px 9px; text-align: center; border-radius: 12px;
+  background: linear-gradient(180deg, #2E1520, #170A10); border: 1px solid var(--gold); box-shadow: 0 0 0 3px rgba(0,0,0,.35), 0 10px 22px rgba(0,0,0,.5); }
+.host-plate::before, .host-plate::after { content: "◆"; position: absolute; top: 50%; transform: translateY(-50%); font-size: 9px; color: var(--gold); }
+.host-plate::before { left: 7px; } .host-plate::after { right: 7px; }
+.host-kicker { display: block; font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); }
+.host-name { font-family: var(--f-display); font-size: 26px; line-height: 1.05; color: var(--gold-hi); text-shadow: 0 0 16px rgba(242,214,142,.35); }
+.host-role { font-size: 12px; color: var(--ivory); opacity: .8; margin-top: 1px; }
+
+/* Chat-Blase mit „tippt …“ */
+.say { position: relative; margin: 2px 0 0; padding: 11px 14px; min-height: 3.4em; border-radius: 4px 16px 16px 16px; font-size: 14px; line-height: 1.4;
+  background: linear-gradient(180deg, #FFF8EA, #F1E6D2); color: #2A1420; box-shadow: 0 8px 20px rgba(0,0,0,.35); }
+.say::before { content: ""; position: absolute; top: -9px; left: 0; border: 9px solid transparent; border-left-color: #FFF8EA; border-bottom: 0; }
+.say.pop { animation: pop .3s ease-out; }
+.say.typing::after { content: ""; display: block; width: 34px; height: 10px; margin: 6px 0;
+  background: radial-gradient(circle, #8E6E5A 0 3.5px, transparent 4px) 0 50% / 12px 10px repeat-x; animation: typing 1s steps(3) infinite; }
+@keyframes typing { 0% { width: 12px; } 100% { width: 46px; } }
+
+/* Zwei klare Aktionen */
+.host-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.host-act { display: grid; justify-items: start; gap: 1px; padding: 9px 11px 10px; border-radius: 12px; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); background: rgba(255,255,255,.035); color: var(--ivory); transition: border-color .2s, background .2s, transform .1s; }
+.host-act:hover { border-color: var(--gold); background: rgba(212,171,82,.09); }
+.host-act:active { transform: scale(.98); }
+.host-act .ha-ico { font-size: 18px; line-height: 1.2; }
+.host-act b { font-size: 14px; }
+.host-act small { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+
+/* Info-Kästen */
+.host-box { display: grid; gap: 6px; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.22); }
+.hb-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hb-h b { font-size: 13px; color: var(--ivory); }
+.hb-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.hb-title b { font-family: var(--f-display); font-weight: 400; font-size: 19px; color: #FFB3C2; }
+.hb-title .perk { font: 600 12px var(--f-mono); color: var(--gold-hi); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--gold-lo); background: rgba(212,171,82,.1); }
+.hb-hint { margin: 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+.hearts { display: flex; gap: 3px; font-size: 15px; line-height: 1; }
+.hearts i { font-style: normal; color: rgba(255,255,255,.16); }
+.hearts i.on { color: #FF6A88; text-shadow: 0 0 8px rgba(255,106,136,.6); }
+.meter-track { height: 7px; border-radius: 7px; background: rgba(255,255,255,.08); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+.meter-track i { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .5s; }
+.meter-track.aff i { background: linear-gradient(90deg, #8E0E2B, #FF6A88); box-shadow: 0 0 8px rgba(255,106,136,.5); }
+.meter-track.dopa i { background: linear-gradient(90deg, #3B6FB0, #B05AD0 50%, #FF6A88); }
+
+/* Raum */
+.host-room { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.22); }
+.host-room b { font-family: var(--f-display); font-weight: 400; font-size: 17px; color: var(--gold-hi); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.host-room .btn { flex: none; }
+
+/* Handy: Porträt klein links, Rest daneben bzw. darunter */
+@media (max-width: 720px) {
+  .host { grid-template-columns: 112px minmax(0, 1fr); align-items: start; gap: 10px 12px; }
+  .host-card { grid-row: span 2; }
+  .host-plate { margin-top: -18px; min-width: 100%; padding: 5px 6px; }
+  .host-plate::before, .host-plate::after, .host-kicker { display: none; }
+  .host-name { font-size: 19px; }
+  .host-role { font-size: 10.5px; }
+  .host-box, .host-room, .host .foot { grid-column: 1 / -1; }
+}

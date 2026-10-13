@@ -263,7 +263,7 @@ function burst(host, n, colors) {
   }
 }
 
-/* ---------- Hostess ---------- */
+/* ---------- Gastgeberin ---------- */
 var LINES = {
   greet: [
     'Willkommen im Chip Empire! Ich bin Mira. Such dir einen Tisch aus. Ich bringe dir Glück, oder zumindest gute Laune.',
@@ -271,7 +271,7 @@ var LINES = {
     'Silver Salon. Hier wird nicht gekleckert, sondern geklotzt. Ich bin Lena und behalte den Überblick.',
     'Gold Suite, Darling. Ich bin Isabella. Hier setzen nur Leute, die wissen, was sie wollen.',
     'Penthouse. Die Aussicht ist atemberaubend, die Einsätze auch. Anastasia, freut mich.',
-    'Willkommen im Black Room. Keine Fenster, keine Uhren. Ich bin Valentina. Bleib, so lange du magst.'
+    'Willkommen im Black Room. Keine Fenster, keine Uhren. Ich bin Celeste. Bleib, so lange du magst.'
   ],
   smallwin: ['Netter Treffer!', 'Das läuft doch.', 'Ein kleiner Gewinn, aber ein Gewinn.', 'Das Glück flirtet mit dir.', 'Gut gemacht, weiter so.'],
   win: ['Sauber gespielt!', 'Du hast heute einen Lauf.', 'Das gefällt mir. Mehr davon!', 'Na, wer sagt’s denn.', 'Der Tisch liebt dich gerade.'],
@@ -308,22 +308,33 @@ function say(kind, force) {
   if (kind === 'greet') txt = LINES.greet[S.room];
   else txt = pick(LINES[kind] || LINES.chat);
   var b = $('#hostSay'); if (!b) return;
-  b.textContent = txt;
-  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  clearTimeout(sayTimer);
+  b.classList.remove('pop'); b.classList.add('typing'); b.textContent = '';
+  sayTimer = setTimeout(function () {
+    b.classList.remove('typing'); b.textContent = txt;
+    void b.offsetWidth; b.classList.add('pop');
+  }, kind === 'greet' ? 250 : 550);
 }
+var sayTimer = 0;
 function renderHost() {
   var h = A.HOSTESSES[S.room];
   $('#hostPortrait').innerHTML = A.portrait(S.room);
   $('#hostName').textContent = h.name;
   $('#hostRole').textContent = h.role + ' · ' + h.trait;
   renderAff();
-  $('#tipBtn').textContent = 'Trinkgeld ' + fmt(tipCost());
+  $('#tipCost').textContent = fmt(tipCost()) + ' Chips · sie mag dich mehr';
 }
+/* Beziehung: vier Herzen nach „Fremde“, Balken bis zur nächsten Stufe */
 function renderAff() {
-  var v = S.aff[S.room];
-  $('#affTitle').textContent = affTitle(v);
-  $('#affBar').style.width = v.toFixed(1) + '%';
+  var v = S.aff[S.room], lvl = 0;
+  affTitles.forEach(function (a, i) { if (v >= a[0]) lvl = i; });
+  var cur = affTitles[lvl][0], nxt = affTitles[lvl + 1];
+  var p = nxt ? (v - cur) / (nxt[0] - cur) : 1;
+  $('#affTitle').textContent = affTitles[lvl][1];
+  $('#affBar').style.width = (clamp(p, 0, 1) * 100).toFixed(1) + '%';
+  $('#affHearts').innerHTML = [1, 2, 3, 4].map(function (i) { return '<i class="' + (i <= lvl ? 'on' : '') + '">♥</i>'; }).join('');
   $('#affPerk').textContent = '+' + Math.round(25 * v / 100) + ' % Comps';
+  $('#affNext').textContent = nxt ? 'Noch ' + Math.max(1, Math.ceil((1 - p) * 100)) + ' % bis „' + nxt[1] + '“. Steigt mit jedem Einsatz und mit Trinkgeld.' : 'Höchste Stufe erreicht. Mehr Comps gibt es nicht.';
 }
 function addAff(v) { S.aff[S.room] = clamp(S.aff[S.room] + v * (1 - S.aff[S.room] / 140), 0, 100); }
 function tip() {
@@ -390,7 +401,7 @@ function levelUp(t) {
   Snd.unlock();
   var hn = A.HOSTESSES[t].name;
   var newGames = isCareer() ? gamesAt(t).map(function (g) { return GAME_NAME[g]; }) : [];
-  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(T.bonus) + ' Chips · ' + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Hostess ' + hn + ' erwartet dich', {
+  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(T.bonus) + ' Chips · ' + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Gastgeberin ' + hn + ' erwartet dich', {
     kind: 'level', ms: 9000, actions: [{ label: 'Raum betreten', gold: true, fn: function () { enterRoom(t, true); } }, { label: 'Später', fn: function () {} }]
   });
   burst($('#app'), 40);
@@ -437,6 +448,7 @@ function renderTier() {
   $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %';
   var badge = $('#tierBadge');
   if (badge) { badge.setAttribute('data-tier', String(S.unlocked)); badge.textContent = RANK[S.unlocked]; badge.title = 'Deine Stufe: ' + U.name; }
+  if ($('#roomName')) $('#roomName').textContent = T.name;
   var sel = $('#roomSel');
   if (sel && sel.options.length === 0) {
     E.TIERS.forEach(function (t) { sel.appendChild(el('option', { value: t.id, text: t.name })); });

@@ -10,10 +10,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=9">
-<link rel="stylesheet" href="css/shell.css?v=9">
-<link rel="stylesheet" href="css/games.css?v=9">
-<link rel="stylesheet" href="css/tables.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/shell.css?v=10">
+<link rel="stylesheet" href="css/games.css?v=10">
+<link rel="stylesheet" href="css/tables.css?v=10">
+<link rel="stylesheet" href="css/host.css?v=10">
 </head>
 <body>
 <main id="menu" class="menu">
@@ -61,28 +62,35 @@
     <div id="g-crash" class="game" hidden></div>
   </main>
 
-  <aside class="host" aria-label="Hostess">
+  <aside class="host" aria-label="Deine Gastgeberin">
     <div class="host-card">
-      <div id="hostPortrait" class="host-portrait"></div>
-      <div class="host-meta">
+      <div class="host-arch"><div id="hostPortrait" class="host-portrait"></div></div>
+      <div class="host-plate">
+        <span class="host-kicker">Deine Gastgeberin</span>
         <div class="host-name" id="hostName">Mira</div>
         <div class="host-role" id="hostRole"></div>
       </div>
     </div>
-    <p id="hostSay" class="say"></p>
-    <div class="host-row">
-      <button id="chatBtn" class="btn ghost sm" type="button">Plaudern</button>
-      <button id="tipBtn" class="btn ghost sm" type="button">Trinkgeld</button>
+    <p id="hostSay" class="say" aria-live="polite"></p>
+    <div class="host-acts">
+      <button id="chatBtn" class="host-act" type="button"><span class="ha-ico" aria-hidden="true">💬</span><b>Plaudern</b><small>Sie erzählt dir was</small></button>
+      <button id="tipBtn" class="host-act" type="button"><span class="ha-ico" aria-hidden="true">🥂</span><b>Trinkgeld</b><small id="tipCost">100 Chips</small></button>
     </div>
-    <div class="meter">
-      <div class="meter-h"><span class="lbl">Sympathie</span><b id="affTitle">Fremde</b><span id="affPerk" class="perk"></span></div>
+    <section class="host-box" aria-label="Eure Beziehung">
+      <div class="hb-h"><span class="lbl">Eure Beziehung</span><span id="affHearts" class="hearts" aria-hidden="true"></span></div>
+      <div class="hb-title"><b id="affTitle">Fremde</b><span id="affPerk" class="perk"></span></div>
       <div class="meter-track aff"><i id="affBar"></i></div>
-    </div>
-    <div class="meter">
-      <div class="meter-h"><span class="lbl">Dopamin-Pegel</span><b id="dopaLbl">Ruhig</b></div>
+      <p id="affNext" class="hb-hint"></p>
+    </section>
+    <section class="host-box" aria-label="Deine Aufregung">
+      <div class="hb-h"><span class="lbl">Deine Aufregung</span><b id="dopaLbl">Ruhig</b></div>
       <div class="meter-track dopa"><i id="dopaBar"></i></div>
+      <p class="hb-hint">Steigt bei Gewinnen und Beinahe-Treffern. Ist sie hoch, wird es Zeit für eine Pause.</p>
+    </section>
+    <div class="host-room">
+      <span class="lbl">Raum</span><b id="roomName">Lobby</b>
+      <button id="roomBtn" class="btn ghost sm" type="button">Räume</button>
     </div>
-    <label class="room-pick" for="roomSel"><span class="lbl">Raum</span><select id="roomSel"></select></label>
     <p class="foot">Spielgeld ohne Wert, kein echtes Glücksspiel · Alle Figuren sind frei erfunden</p>
   </aside>
 
@@ -110,19 +118,19 @@
 <div id="banner" class="banner" hidden role="status"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
-<script src="js/engine.js?v=9"></script>
-<script src="js/art.js?v=9"></script>
+<script src="js/engine.js?v=10"></script>
+<script src="js/art.js?v=10"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-<script src="js/store.js?v=9"></script>
-<script src="js/cloud.js?v=9"></script>
-<script src="js/icons.js?v=9"></script>
-<script src="js/core.js?v=9"></script>
-<script src="js/slots.js?v=9"></script>
-<script src="js/roulette.js?v=9"></script>
-<script src="js/blackjack.js?v=9"></script>
-<script src="js/crash.js?v=9"></script>
-<script src="js/side.js?v=9"></script>
-<script src="js/menu.js?v=9"></script>
-<script src="js/main.js?v=9"></script>
+<script src="js/store.js?v=10"></script>
+<script src="js/cloud.js?v=10"></script>
+<script src="js/icons.js?v=10"></script>
+<script src="js/core.js?v=10"></script>
+<script src="js/slots.js?v=10"></script>
+<script src="js/roulette.js?v=10"></script>
+<script src="js/blackjack.js?v=10"></script>
+<script src="js/crash.js?v=10"></script>
+<script src="js/side.js?v=10"></script>
+<script src="js/menu.js?v=10"></script>
+<script src="js/main.js?v=10"></script>
 </body>
 </html>
