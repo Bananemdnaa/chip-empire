@@ -1,0 +1,2706 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Velvet Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: Spieltisch links, Hostess rechts, darunter Stufen/Profil/Statistik. Eine bewusst dunkle Samt-und-Messing-Welt. */
+:root {
+  color-scheme: dark;
+  --bg: #13080D;
+  --velvet: #1E0D15;
+  --velvet-2: #2A1420;
+  --felt: #0D3A2C;
+  --felt-2: #0A2C22;
+  --gold: #D4AB52;
+  --gold-hi: #F2D68E;
+  --gold-lo: #8A6A2A;
+  --crimson: #C4203F;
+  --ivory: #F4EBDB;
+  --muted: #B9A595;
+  --line: rgba(212, 171, 82, .22);
+  --good: #6FD3A2;
+  --warn: #F0B84A;
+  --tier: #3C1822;
+  --f-display: "Limelight", "Didot", "Bodoni 72", Georgia, serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+#app[data-tier="0"] { --tier: #4A1D2A; }
+#app[data-tier="1"] { --tier: #4A2A18; }
+#app[data-tier="2"] { --tier: #3A2140; }
+#app[data-tier="3"] { --tier: #4A2416; }
+#app[data-tier="4"] { --tier: #222A40; }
+#app[data-tier="5"] { --tier: #4E0C1E; }
+
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--ivory); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+#app {
+  min-height: 100vh; padding-inline: 16px; padding-block: 0 24px; position: relative; overflow-x: hidden;
+  background:
+    radial-gradient(1200px 600px at 70% -10%, var(--tier), transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 2px, transparent 2px 6px),
+    var(--bg);
+  transition: background .6s;
+}
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.lbl { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.fine { font-size: 12.5px; color: var(--muted); max-width: 70ch; margin: 10px 0 0; }
+h4 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin: 18px 0 8px; font-weight: 700; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+
+/* ---------- Kopfzeile ---------- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center;
+  padding-block: 12px 10px; margin-inline: -16px; padding-inline: 16px; background: linear-gradient(var(--bg) 70%, rgba(19,8,13,.85)); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+.logo { font-family: var(--f-display); font-size: 28px; line-height: 1; color: var(--gold-hi); letter-spacing: .02em; text-shadow: 0 0 18px rgba(242,214,142,.25); }
+.tier-line { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; font-size: 13px; color: var(--muted); }
+.tier-line b { color: var(--ivory); font-weight: 700; }
+.wallet { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: flex-end; }
+.bal-box, .comp-box { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: rgba(0,0,0,.25); }
+.bal-box b { font-size: 20px; color: var(--gold-hi); min-width: 7ch; text-align: right; }
+.comp-box b { font-size: 14px; }
+.prog { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
+.prog-track { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,.07); overflow: hidden; }
+.prog-track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); transition: width .5s; }
+
+/* ---------- Knöpfe ---------- */
+.btn { border: 1px solid var(--line); background: rgba(255,255,255,.04); border-radius: 999px; padding: 9px 16px; cursor: pointer; font-weight: 600; letter-spacing: .01em;
+  transition: transform .08s, background .2s, border-color .2s, box-shadow .2s; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--gold); background: rgba(212,171,82,.1); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.gold { background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-lo)); color: #2A1608; border-color: var(--gold-hi); box-shadow: 0 2px 0 #5C4318, 0 6px 18px rgba(212,171,82,.25); }
+.btn.gold:hover:not(:disabled) { background: linear-gradient(180deg, #FFF0C2, var(--gold-hi) 55%, var(--gold)); }
+.btn.crimson { background: var(--crimson); border-color: #E04462; color: #fff; }
+.btn.sm { padding: 6px 12px; font-size: 13px; }
+.btn.xs { padding: 2px 9px; font-size: 12px; }
+.btn.big { padding: 13px 26px; font-size: 16px; font-weight: 700; min-width: 13em; }
+.btn.pulse { animation: pulse 1.4s infinite; }
+.btn.shake { animation: shake .4s; }
+.btn.cash { background: linear-gradient(180deg, #9CF0C6, var(--good) 55%, #2E9E6C); border-color: #BDF7DA; color: #052417; box-shadow: 0 2px 0 #1C5E40, 0 6px 18px rgba(111,211,162,.3); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(242,214,142,.25), 0 6px 18px rgba(212,171,82,.25); } }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* ---------- Layout ---------- */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; margin-top: 16px; align-items: start; }
+.stage { min-width: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.tab { border: 0; background: none; padding: 9px 14px; cursor: pointer; color: var(--muted); font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--gold-hi); border-bottom-color: var(--gold); }
+.tab:hover { color: var(--ivory); }
+.game-tabs .tab { font-family: var(--f-display); font-size: 19px; font-weight: 400; letter-spacing: .03em; padding: 8px 16px; }
+.game { background: radial-gradient(120% 90% at 50% 0%, var(--felt), var(--felt-2) 70%); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: inset 0 0 0 6px rgba(0,0,0,.18), 0 18px 40px rgba(0,0,0,.35); position: relative; }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-end; justify-content: space-between; margin-top: 14px; }
+.spinbox { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.betctl { display: grid; gap: 6px; }
+.betrow { display: flex; align-items: center; gap: 8px; }
+.betval { min-width: 7.5ch; text-align: center; font-family: var(--f-mono); font-size: 18px; font-weight: 600; color: var(--gold-hi); }
+.presets { display: flex; gap: 6px; }
+.chipbtn { border: 1px solid var(--line); background: rgba(0,0,0,.2); border-radius: 6px; padding: 3px 9px; font-size: 12px; cursor: pointer; }
+.chipbtn:hover:not(:disabled) { border-color: var(--gold); }
+.chipbtn.on, .chipbtn[aria-pressed="true"] { background: var(--gold); color: #2A1608; border-color: var(--gold-hi); }
+.chipbtn:disabled { opacity: .4; cursor: not-allowed; }
+.slot-msg { min-height: 1.45em; margin-top: 12px; color: var(--ivory); font-weight: 500; }
+.slot-msg.win { color: var(--gold-hi); font-weight: 700; }
+.note { margin-top: 8px; padding: 8px 12px; border-radius: 8px; background: rgba(240,184,74,.12); border: 1px solid rgba(240,184,74,.35); font-size: 13px; }
+
+/* ---------- Slots ---------- */
+.reels-wrap { position: relative; padding: 12px; border-radius: 14px; background: linear-gradient(180deg, #2A1408, #120804); border: 2px solid var(--gold-lo);
+  box-shadow: inset 0 0 0 1px var(--gold-hi), inset 0 10px 30px rgba(0,0,0,.6); }
+.reels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.reel { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; border-radius: 8px; background: linear-gradient(180deg, #0B0507, #1D0F14 20%, #1D0F14 80%, #0B0507); padding: 4px; overflow: hidden; }
+.reel.spinning .cell { filter: blur(1.4px); transform: translateY(2px); }
+.reel.land { animation: land .3s ease-out; }
+@keyframes land { 0% { transform: translateY(-6px); } 60% { transform: translateY(3px); } 100% { transform: none; } }
+.cell { aspect-ratio: 1 / 1; display: grid; place-items: center; border-radius: 6px; background: radial-gradient(circle at 50% 40%, #FFF8EA, #E9DCC4 70%, #CDBB9C); box-shadow: inset 0 -3px 0 rgba(0,0,0,.15); transition: opacity .25s, box-shadow .25s, transform .25s; }
+.cell.win { box-shadow: 0 0 0 3px var(--gold-hi), 0 0 18px rgba(242,214,142,.8); transform: scale(1.04); z-index: 1; }
+.cell.dim { opacity: .35; }
+.s { font-weight: 800; line-height: 1; user-select: none; }
+.s-rank { font-family: var(--f-display); font-weight: 400; font-size: clamp(20px, 5.4vw, 40px); }
+.rk0 { color: #2F6E5A; } .rk1 { color: #2D5B8C; } .rk2 { color: #7A3C8E; } .rk3 { color: #9E2A35; } .rk4 { color: #B07A1E; }
+.s-gem, .s-scat { width: 74%; height: 74%; }
+.s-bar { font-size: clamp(11px, 2.6vw, 19px); letter-spacing: .06em; color: #F4EBDB; background: #1A1014; border: 2px solid #D4AB52; padding: 4px 6px; border-radius: 4px; }
+.s-seven { font-family: var(--f-display); font-size: clamp(30px, 7.6vw, 58px); color: #C4203F; text-shadow: 2px 2px 0 #6A0A1E, 0 0 1px #000; -webkit-text-stroke: 1px #6A0A1E; }
+.s-wild { width: 86%; height: 62%; display: grid; place-items: center; border-radius: 6px; background: linear-gradient(135deg, #F2D68E, #B5862E); border: 2px solid #5C4318; }
+.s-wild i { font-style: normal; font-family: var(--f-display); font-weight: 400; font-size: clamp(11px, 2.6vw, 20px); color: #3A1A08; letter-spacing: .04em; }
+svg.lines { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); pointer-events: none; overflow: visible; }
+.wl { fill: none; stroke: var(--gold-hi); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; opacity: .85; filter: drop-shadow(0 0 4px rgba(242,214,142,.9)); }
+.free-banner { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); background: var(--crimson); color: #fff; padding: 4px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; white-space: nowrap; border: 1px solid var(--gold-hi); max-width: 94%; overflow: hidden; text-overflow: ellipsis; }
+.paytable { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.paytable summary { cursor: pointer; color: var(--gold); font-weight: 600; }
+.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 10px; }
+.pt-row { display: flex; align-items: center; gap: 10px; }
+.pt-row.wide { grid-column: 1 / -1; }
+.pt-sym { width: 40px; flex: none; }
+.pt-sym .s-rank { font-size: 22px; } .pt-sym .s-seven { font-size: 30px; } .pt-sym .s-bar { font-size: 10px; padding: 2px 3px; } .pt-sym .s-wild i { font-size: 10px; }
+.pt-txt { font-family: var(--f-mono); font-size: 12.5px; color: var(--ivory); min-width: 0; }
+
+/* ---------- Roulette ---------- */
+.rlayout { display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.rleft, .rright { min-width: 0; }
+.wheel { position: relative; width: 100%; max-width: 300px; aspect-ratio: 1 / 1; margin: 0 auto; }
+.wheel-rot, .ball-orbit { position: absolute; inset: 0; transition: transform 5.2s cubic-bezier(.12,.62,.16,1); }
+.wheel-rot svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 10px 18px rgba(0,0,0,.5)); }
+.ball-orbit .ball { position: absolute; left: 50%; top: 1.6%; width: 5%; aspect-ratio: 1 / 1; margin-left: -2.5%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #D9D9D9 60%, #8E8E8E); box-shadow: 0 1px 3px rgba(0,0,0,.6); transition: top .9s cubic-bezier(.5,0,.75,1.4); }
+.ball-orbit.drop .ball { top: 13%; }
+.pointer { position: absolute; left: 50%; top: -6px; width: 0; height: 0; margin-left: -7px; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 11px solid var(--gold-hi); filter: drop-shadow(0 1px 1px #000); }
+.result-badge { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1 / 1; transform: translate(-50%, -50%); border-radius: 50%; display: grid; place-items: center; font-family: var(--f-mono); font-weight: 600; font-size: clamp(16px, 4vw, 24px); background: #1a0d10; border: 2px solid var(--gold); color: var(--ivory); }
+.result-badge.red { background: #B3182F; } .result-badge.black { background: #15101A; } .result-badge.green { background: #0F6A4A; }
+.rhist { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; justify-content: center; }
+.hp { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; font-family: var(--f-mono); font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,.18); }
+.hp.red { background: #B3182F; } .hp.black { background: #15101A; } .hp.green { background: #0F6A4A; }
+.hp:first-child { box-shadow: 0 0 0 2px var(--gold-hi); }
+.hotcold { display: grid; gap: 3px; margin-top: 10px; font-size: 12.5px; text-align: center; color: var(--muted); }
+.hotcold .hot { color: #FF9A8A; } .hotcold .cold { color: #9AC4FF; }
+.rscroll { overflow-x: auto; padding-bottom: 4px; }
+.rboard { display: grid; grid-template-columns: 1.1fr repeat(12, 1fr) 1.1fr; grid-template-rows: repeat(3, 44px) 38px 38px; gap: 3px; min-width: 540px; }
+.rcell { position: relative; border: 1px solid rgba(244,235,219,.55); border-radius: 4px; cursor: pointer; font-family: var(--f-mono); font-weight: 600; font-size: 14px; color: #fff; display: grid; place-items: center; padding: 0; transition: box-shadow .15s, filter .15s; }
+.rcell.red { background: #A9162C; } .rcell.black { background: #17111A; } .rcell.green { background: #0F6A4A; }
+.rcell.out { background: rgba(0,0,0,.18); font-family: var(--f-body); font-size: 12.5px; font-weight: 600; }
+.rcell:hover:not(:disabled) { filter: brightness(1.25); }
+.rcell.won { box-shadow: 0 0 0 3px var(--gold-hi), 0 0 16px rgba(242,214,142,.85); z-index: 1; }
+.dia { display: block; width: 22px; height: 14px; transform: rotate(0); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.dia.red { background: #C4203F; } .dia.black { background: #0A0608; outline: 1px solid #fff; }
+.rchip { position: absolute; right: 2px; bottom: 2px; min-width: 26px; height: 22px; padding: 0 4px; border-radius: 11px; background: var(--gold); color: #2A1608; font-family: var(--f-mono); font-size: 10.5px; font-weight: 600; display: grid; place-items: center; border: 2px dashed #fff; box-shadow: 0 1px 3px rgba(0,0,0,.6); pointer-events: none; }
+.rctl { display: grid; gap: 10px; margin-top: 12px; justify-items: start; }
+.rrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { width: 44px; height: 44px; border-radius: 50%; border: 3px dashed rgba(255,255,255,.85); background: radial-gradient(circle, #8E0E2B 55%, #5E0A1E 56%); font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; cursor: pointer; color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.5); }
+.chip.c2 { background: radial-gradient(circle, #1E5E8E 55%, #133F60 56%); }
+.chip.c3 { background: radial-gradient(circle, #1A1418 55%, #000 56%); }
+.chip.c4 { background: radial-gradient(circle, #5B2A8E 55%, #3C1A60 56%); }
+.chip.c5 { background: radial-gradient(circle, #C79A3A 55%, #8A6A2A 56%); color: #2A1608; }
+.chip.c6, .chip.c7 { background: radial-gradient(circle, #E8E2D4 55%, #A8A090 56%); color: #2A1608; }
+.chip[aria-pressed="true"] { transform: translateY(-4px); box-shadow: 0 0 0 2px var(--gold-hi), 0 6px 10px rgba(0,0,0,.5); }
+.chip:disabled { opacity: .45; cursor: not-allowed; }
+.rtotal { font-family: var(--f-mono); font-size: 13px; color: var(--gold-hi); }
+
+/* ---------- Blackjack ---------- */
+.bj-table { display: grid; gap: 14px; min-height: 330px; align-content: start; padding: 4px; background: radial-gradient(70% 50% at 50% 50%, rgba(255,255,255,.04), transparent); }
+.bj-table::before { content: "BLACKJACK ZAHLT 3 ZU 2 · DEALER STEHT AUF SOFT 17"; display: block; text-align: center; font-size: 11px; letter-spacing: .18em; color: rgba(242,214,142,.55); order: 1; }
+.bj-dealer { order: 0; }
+.bj-msg { order: 2; text-align: center; min-height: 1.6em; font-weight: 700; font-size: 17px; }
+.bj-msg.win { color: var(--gold-hi); } .bj-msg.lose { color: #FF9A8A; }
+.bj-hands { order: 3; display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.bj-shoe { order: 4; text-align: center; margin: 0 auto; }
+.hand { padding: 8px 10px; border-radius: 12px; border: 1px solid transparent; min-width: 0; }
+.hand.active { border-color: var(--gold); background: rgba(242,214,142,.06); box-shadow: 0 0 0 3px rgba(242,214,142,.12); }
+.hand-h { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 14px; justify-content: center; }
+.hv { font-family: var(--f-mono); background: rgba(0,0,0,.35); padding: 1px 8px; border-radius: 999px; font-size: 13px; }
+.hbet { font-family: var(--f-mono); font-size: 12px; color: var(--gold-hi); }
+.hand-cards { display: flex; justify-content: center; min-height: 92px; }
+.hand-cards.empty { align-items: center; color: var(--muted); font-size: 14px; }
+.hand-cards .pcard + .pcard { margin-left: -26px; }
+.pcard { position: relative; width: 64px; height: 90px; border-radius: 7px; background: linear-gradient(180deg, #FFFDF8, #F1E9DA); box-shadow: 0 2px 6px rgba(0,0,0,.45); border: 1px solid #CFC3AA; flex: none; }
+.pcard.red { color: #B3182F; } .pcard.blk { color: #18121A; }
+.pcard .cr { position: absolute; left: 6px; top: 4px; font-family: var(--f-mono); font-weight: 600; font-size: 16px; line-height: 1; }
+.pcard .cs { position: absolute; left: 6px; top: 22px; font-size: 14px; line-height: 1; }
+.pcard .cbig { position: absolute; right: 7px; bottom: 5px; font-size: 32px; line-height: 1; }
+.pcard.back { background: repeating-linear-gradient(45deg, #8E0E2B 0 6px, #6A0A1E 6px 12px); border: 3px solid #F4EBDB; }
+.pcard.back::after { content: ""; position: absolute; inset: 6px; border: 1px solid var(--gold-hi); border-radius: 4px; }
+.pcard.deal { animation: deal .32s ease-out; }
+@keyframes deal { from { transform: translate(40px, -40px) rotate(8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.hres { text-align: center; margin-top: 6px; font-weight: 700; font-size: 13px; }
+.hres.win, .hres.blackjack { color: var(--gold-hi); } .hres.lose, .hres.bust { color: #FF9A8A; } .hres.push, .hres.surrender { color: var(--muted); }
+.ins-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin-top: 10px; padding: 10px; border-radius: 10px; background: rgba(0,0,0,.25); }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.btn.act { min-width: 7.2em; }
+.btn.act.rec { border-color: var(--gold-hi); box-shadow: 0 0 0 2px rgba(242,214,142,.35); }
+.advice { text-align: center; min-height: 1.4em; font-size: 13px; color: var(--gold-hi); margin-top: 8px; }
+
+/* ---------- Crash ---------- */
+.crash-stage { position: relative; height: 300px; border-radius: 12px; background: linear-gradient(180deg, #0B1420, #0A0E16); border: 1px solid var(--line); overflow: hidden; }
+.crash-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.crash-over { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; padding: 16px; }
+.crash-mult { font-family: var(--f-mono); font-weight: 600; font-size: clamp(40px, 9vw, 72px); color: var(--ivory); text-shadow: 0 4px 20px rgba(0,0,0,.6); }
+.crash-mult.live { color: var(--gold-hi); }
+.crash-mult.dead { color: var(--crimson); }
+.crash-sub { font-size: 14px; color: var(--muted); max-width: 40ch; }
+.chist { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.cp { font-family: var(--f-mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+.cp.lo { color: #FF9A8A; border-color: rgba(255,154,138,.4); } .cp.mid { color: var(--ivory); border-color: rgba(244,235,219,.3); } .cp.hi { color: var(--gold-hi); border-color: var(--gold); }
+.autorow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.autorow input[type="number"] { width: 6.5em; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: rgba(0,0,0,.3); font-family: var(--f-mono); }
+.autorow input[type="checkbox"] { accent-color: var(--gold); width: 16px; height: 16px; }
+
+/* ---------- Hostess ---------- */
+.host { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 110px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; padding: 14px; border-radius: 16px; background: linear-gradient(180deg, var(--velvet-2), var(--velvet)); border: 1px solid var(--line); }
+.host-card { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--gold-lo); }
+.host-portrait svg { display: block; width: 100%; height: auto; }
+.host-meta { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 10px; background: linear-gradient(transparent, rgba(10,4,6,.92)); }
+.host-name { font-family: var(--f-display); font-size: 26px; color: var(--gold-hi); line-height: 1; }
+.host-role { font-size: 12.5px; color: var(--ivory); opacity: .85; margin-top: 3px; }
+.say { position: relative; margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--ivory); color: #2A1420; font-size: 14px; min-height: 3.2em; }
+.say::before { content: ""; position: absolute; top: -8px; left: 22px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--ivory); }
+.say.pop { animation: pop .3s ease-out; }
+@keyframes pop { from { transform: scale(.96); opacity: .4; } to { transform: none; opacity: 1; } }
+.host-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.meter-h { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+.meter-h .perk { margin-left: auto; color: var(--gold); font-size: 12px; }
+.meter-track { height: 6px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 5px; }
+.meter-track i { display: block; height: 100%; width: 0; transition: width .5s; }
+.meter-track.aff i { background: linear-gradient(90deg, #8E0E2B, #E0577A); }
+.meter-track.dopa i { background: linear-gradient(90deg, #3B6FB0, #B05AD0 50%, #FF6A88); }
+.room-pick { display: grid; gap: 4px; min-width: 0; }
+.room-pick select { width: 100%; min-width: 0; max-width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--velvet); }
+
+/* ---------- Seitenpanel ---------- */
+.side { margin-top: 22px; padding: 16px; border-radius: 16px; background: var(--velvet); border: 1px solid var(--line); }
+.side-body { min-width: 0; }
+.side-intro { color: var(--muted); max-width: 70ch; margin: 0 0 12px; }
+.tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.tier { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.18); }
+.tier.here { border-color: var(--gold); background: rgba(212,171,82,.08); }
+.tier.locked .tier-pic { filter: grayscale(.85) brightness(.55); }
+.tier-pic svg { width: 84px; height: 105px; display: block; border-radius: 8px; }
+.tier-info { display: grid; gap: 4px; align-content: start; justify-items: start; min-width: 0; }
+.tier-h { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tier-h b { font-family: var(--f-display); font-weight: 400; font-size: 18px; color: var(--gold-hi); }
+.tag { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.tag.warn { color: var(--warn); border-color: rgba(240,184,74,.5); }
+.tier-l { font-size: 13px; color: var(--ivory); }
+.tier-k { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: var(--muted); font-family: var(--f-mono); margin-bottom: 4px; }
+.prof-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.prof-type { font-family: var(--f-display); font-size: 28px; color: var(--gold-hi); }
+.side-body p { max-width: 70ch; }
+.shares { display: grid; gap: 6px; max-width: 520px; }
+.share { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 3.5em; gap: 10px; align-items: center; font-size: 13px; }
+.sbar { height: 6px; background: rgba(255,255,255,.08); border-radius: 6px; overflow: hidden; }
+.sbar i { display: block; height: 100%; background: var(--gold); }
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; max-width: 520px; }
+.kv span { color: var(--muted); }
+.kvs { display: grid; gap: 0; max-width: 520px; margin-top: 10px; }
+.recbox { margin-top: 16px; padding: 14px; border: 1px solid var(--gold); border-radius: 12px; display: grid; gap: 6px; max-width: 520px; justify-items: stretch; background: rgba(212,171,82,.06); }
+.recbox .btn { justify-self: start; margin-top: 6px; }
+.rec-h { font-family: var(--f-display); font-size: 18px; color: var(--gold-hi); }
+.big-kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.big-kv > div { display: grid; gap: 2px; }
+.big-kv span { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.big-kv b { font-size: 24px; }
+.pos { color: var(--good); } .neg { color: #FF9A8A; }
+.spark { width: 100%; max-width: 520px; height: 90px; display: block; }
+.sp-area { fill: rgba(212,171,82,.14); } .sp-line { fill: none; stroke: var(--gold-hi); stroke-width: 2; vector-effect: non-scaling-stroke; } .sp-dot { fill: var(--gold-hi); }
+.tscroll { overflow-x: auto; margin-top: 14px; }
+.stbl { border-collapse: collapse; min-width: 440px; font-size: 13.5px; }
+.stbl th, .stbl td { padding: 6px 12px 6px 0; text-align: right; border-bottom: 1px solid var(--line); }
+.stbl th:first-child, .stbl td:first-child { text-align: left; }
+.stbl th { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.tricks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.trick { display: grid; gap: 3px; padding: 10px 12px; border-left: 2px solid var(--gold-lo); background: rgba(0,0,0,.15); font-size: 13.5px; }
+.trick b { color: var(--gold-hi); }
+.trick span { color: var(--muted); }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+
+/* ---------- Overlays ---------- */
+.banner { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 50; text-align: center; padding: 22px 34px; border-radius: 18px; background: radial-gradient(circle at 50% 0%, #3A1420, #14070C); border: 2px solid var(--gold); box-shadow: 0 0 0 6px rgba(212,171,82,.15), 0 30px 80px rgba(0,0,0,.7); animation: bn .45s cubic-bezier(.2,1.4,.4,1); max-width: calc(100vw - 32px); }
+.bn-title { font-family: var(--f-display); font-size: clamp(30px, 7vw, 56px); color: var(--gold-hi); line-height: 1.05; text-shadow: 0 0 24px rgba(242,214,142,.5); }
+.bn-sub { margin-top: 6px; font-size: 16px; color: var(--ivory); font-family: var(--f-mono); }
+.bn-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.banner.level .bn-sub { font-family: var(--f-body); }
+@keyframes bn { from { transform: translate(-50%, -50%) scale(.6); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+.toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; display: grid; gap: 8px; max-width: min(380px, calc(100vw - 32px)); }
+.toast { padding: 10px 14px; border-radius: 10px; background: var(--velvet-2); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.5); font-size: 14px; animation: pop .25s; }
+.toast.good { border-color: var(--good); } .toast.bad { border-color: var(--crimson); } .toast.warn { border-color: var(--warn); background: #3A2A10; }
+.conf { position: absolute; left: 50%; top: 40%; width: 8px; height: 12px; border-radius: 2px; pointer-events: none; z-index: 40; animation: conf 1.4s cubic-bezier(.2,.7,.4,1) forwards; }
+@keyframes conf { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+.foot { margin-top: 18px; font-size: 12px; color: var(--muted); text-align: center; }
+
+/* ---------- Responsiv ---------- */
+@media (max-width: 980px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .host { position: static; grid-template-columns: 160px minmax(0, 1fr); align-items: start; }
+  .host-card { grid-row: span 5; }
+  .rlayout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .top { grid-template-columns: minmax(0, 1fr); position: static; }
+  .game-tabs .tab { font-size: 16px; padding: 8px 9px; }
+  .host-meta { position: static; background: var(--velvet); padding: 6px 8px 8px; }
+  .host-role { font-size: 11.5px; }
+  .wallet { justify-content: flex-start; }
+  .logo { font-size: 24px; }
+  .game { padding: 12px; }
+  .host { grid-template-columns: 110px minmax(0, 1fr); gap: 10px; }
+  .host-name { font-size: 20px; }
+  .btn.big { min-width: 0; width: 100%; }
+  .spinbox { width: 100%; }
+  .controls { align-items: stretch; }
+  .reels-wrap { padding: 8px; }
+  .reels, .reel { gap: 4px; }
+  svg.lines { inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); }
+  .pcard { width: 52px; height: 74px; }
+  .pcard .cbig { font-size: 24px; }
+  .hand-cards { min-height: 76px; }
+  .crash-stage { height: 240px; }
+  .tier { grid-template-columns: 64px minmax(0, 1fr); }
+  .tier-pic svg { width: 64px; height: 80px; }
+  .tiers { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .wheel-rot, .ball-orbit { transition-duration: 1.2s; }
+}
+
+</style>
+<div id="app" data-tier="0">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">Velvet Room</div>
+      <div class="tier-line"><b id="tierName">Lobby</b><span id="tierLimits"></span></div>
+    </div>
+    <div class="wallet">
+      <div class="bal-box"><span class="lbl">Chips</span><b id="bal" class="num">10.000</b></div>
+      <div class="comp-box"><span class="lbl">Comps</span><b id="comp" class="num">0</b><button id="claimComp" class="btn ghost xs" type="button">Einlösen</button></div>
+      <button id="reload" class="btn gold sm" type="button">+ Nachschub</button>
+      <button id="sndBtn" class="btn ghost sm" type="button" aria-pressed="true">Ton an</button>
+    </div>
+    <div class="prog"><div class="prog-track"><i id="progBar"></i></div><span id="progTxt"></span></div>
+  </header>
+
+  <main class="layout">
+    <section class="stage">
+      <nav id="gameTabs" class="tabs game-tabs" role="tablist" aria-label="Spiele"></nav>
+      <div id="g-slots" class="game"></div>
+      <div id="g-roulette" class="game" hidden></div>
+      <div id="g-bj" class="game" hidden></div>
+      <div id="g-crash" class="game" hidden></div>
+    </section>
+
+    <aside class="host" aria-label="Hostess">
+      <div class="host-card">
+        <div id="hostPortrait" class="host-portrait"></div>
+        <div class="host-meta">
+          <div class="host-name" id="hostName">Mira</div>
+          <div class="host-role" id="hostRole"></div>
+        </div>
+      </div>
+      <p id="hostSay" class="say"></p>
+      <div class="host-row">
+        <button id="chatBtn" class="btn ghost sm" type="button">Plaudern</button>
+        <button id="tipBtn" class="btn ghost sm" type="button">Trinkgeld</button>
+      </div>
+      <div class="meter">
+        <div class="meter-h"><span class="lbl">Sympathie</span><b id="affTitle">Fremde</b><span id="affPerk" class="perk"></span></div>
+        <div class="meter-track aff"><i id="affBar"></i></div>
+      </div>
+      <div class="meter">
+        <div class="meter-h"><span class="lbl">Dopamin-Pegel</span><b id="dopaLbl">Ruhig</b></div>
+        <div class="meter-track dopa"><i id="dopaBar"></i></div>
+      </div>
+      <label class="room-pick" for="roomSel"><span class="lbl">Raum</span><select id="roomSel"></select></label>
+    </aside>
+  </main>
+
+  <section id="side" class="side" aria-label="Stufen, Profil und Statistik"></section>
+
+  <div id="banner" class="banner" hidden role="status"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <footer class="foot">Velvet Room · Spielgeld ohne Wert, kein echtes Glücksspiel · Alle Figuren sind frei erfunden</footer>
+</div>
+<script>
+/* ===== engine.js ===== */
+/* Velvet Room – Spiel-Engine (reine Logik, keine DOM-Zugriffe) */
+var Engine = (function () {
+'use strict';
+
+/* ---------- Zufall ---------- */
+var rng = (function () {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) {
+    var buf = new Uint32Array(2);
+    return function () {
+      globalThis.crypto.getRandomValues(buf);
+      return (buf[0] * 2097152 + (buf[1] >>> 11)) / 9007199254740992;
+    };
+  }
+  return Math.random;
+})();
+function setRng(fn) { rng = fn; }
+function rand() { return rng(); }
+function randInt(n) { return Math.floor(rng() * n); }
+function shuffle(a) {
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = randInt(i + 1), t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/* ---------- Stufen / Räume ---------- */
+var TIERS = [
+  { id: 0, name: 'Lobby',              wager: 0,        min: 10,    max: 500,     comp: 0.002, reload: 10000,    bonus: 0 },
+  { id: 1, name: 'Bronze Lounge',      wager: 15000,    min: 50,    max: 2500,    comp: 0.004, reload: 25000,    bonus: 5000 },
+  { id: 2, name: 'Silver Salon',       wager: 75000,    min: 100,   max: 10000,   comp: 0.006, reload: 100000,   bonus: 10000 },
+  { id: 3, name: 'Gold Suite',         wager: 350000,   min: 500,   max: 50000,   comp: 0.009, reload: 500000,   bonus: 50000 },
+  { id: 4, name: 'Platinum Penthouse', wager: 1500000,  min: 2000,  max: 250000,  comp: 0.012, reload: 2500000,  bonus: 200000 },
+  { id: 5, name: 'Black Room',         wager: 7500000,  min: 10000, max: 1000000, comp: 0.015, reload: 10000000, bonus: 1000000 }
+];
+function tierFor(wagered) {
+  var t = 0;
+  for (var i = 0; i < TIERS.length; i++) if (wagered >= TIERS[i].wager) t = i;
+  return t;
+}
+var BET_LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000];
+var CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000];
+
+/* ---------- Slots: 5 Walzen x 3 Reihen, 10 Linien ---------- */
+var SYM = { T: 0, J: 1, Q: 2, K: 3, A: 4, GEM: 5, BAR: 6, SEVEN: 7, WILD: 8, SCAT: 9 };
+var SLOT_LINES = [
+  [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
+  [0, 0, 1, 2, 2], [2, 2, 1, 0, 0], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [0, 1, 0, 1, 0]
+];
+/* Auszahlung als Vielfaches des Linieneinsatzes */
+var SLOT_PAY = {
+  0: { 3: 7,  4: 22,  5: 70 },
+  1: { 3: 7,  4: 22,  5: 70 },
+  2: { 3: 9,  4: 28,  5: 90 },
+  3: { 3: 11, 4: 34,  5: 135 },
+  4: { 3: 14, 4: 45,  5: 170 },
+  5: { 2: 2, 3: 22, 4: 90,  5: 340 },
+  6: { 2: 3, 3: 34, 4: 135, 5: 680 },
+  7: { 2: 6, 3: 68, 4: 340, 5: 1700 },
+  8: { 3: 68, 4: 340, 5: 1700 }
+};
+/* Scatter: Vielfaches des Gesamteinsatzes + Freispiele */
+var SCATTER_PAY = { 3: 2, 4: 10, 5: 50 };
+var FREE_SPINS = { 3: 8, 4: 12, 5: 20 };
+var FREE_MULT = 2;
+var SLOT_COUNTS = [
+  [7, 7, 6, 6, 5, 3, 2, 2, 0, 1],
+  [6, 6, 6, 5, 5, 3, 2, 2, 3, 1],
+  [6, 6, 6, 5, 5, 3, 2, 2, 3, 1],
+  [6, 6, 6, 5, 5, 3, 2, 2, 3, 1],
+  [7, 7, 6, 6, 5, 3, 2, 2, 0, 1]
+];
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function buildStrip(counts, seed) {
+  var r = mulberry32(seed);
+  var L = counts.reduce(function (a, b) { return a + b; }, 0);
+  var strip = new Array(L).fill(-1);
+  var sc = counts[SYM.SCAT];
+  for (var k = 0; k < sc; k++) strip[Math.floor(k * L / sc + L / (2 * sc))] = SYM.SCAT;
+  var rest = [];
+  for (var s = 0; s < 10; s++) {
+    if (s === SYM.SCAT) continue;
+    for (var i = 0; i < counts[s]; i++) rest.push(s);
+  }
+  for (var a = rest.length - 1; a > 0; a--) {
+    var j = Math.floor(r() * (a + 1)), tmp = rest[a]; rest[a] = rest[j]; rest[j] = tmp;
+  }
+  var ri = 0;
+  for (var p = 0; p < L; p++) if (strip[p] === -1) strip[p] = rest[ri++];
+  return strip;
+}
+var SLOT_STRIPS = SLOT_COUNTS.map(function (c, i) { return buildStrip(c, 1337 + i * 101); });
+
+/* Auswertung einer Linie (5 Symbole, links nach rechts) */
+function lineWin(syms) {
+  var i = 0;
+  while (i < 5 && syms[i] === SYM.WILD) i++;
+  var leadW = i;
+  var best = null;
+  if (leadW >= 3) best = { sym: SYM.WILD, count: leadW, mult: SLOT_PAY[SYM.WILD][leadW] };
+  if (leadW === 5) return best;
+  if (syms[i] === SYM.SCAT) return best;
+  var target = syms[i];
+  var j = i;
+  while (j < 5 && (syms[j] === target || syms[j] === SYM.WILD)) j++;
+  var count = j;
+  var m = SLOT_PAY[target][count];
+  if (m && (!best || m > best.mult)) best = { sym: target, count: count, mult: m };
+  return best;
+}
+function slotResolve(grid, lineBet, mult) {
+  mult = mult || 1;
+  var wins = [], lineTotal = 0;
+  for (var l = 0; l < SLOT_LINES.length; l++) {
+    var syms = [];
+    for (var r = 0; r < 5; r++) syms.push(grid[r][SLOT_LINES[l][r]]);
+    var w = lineWin(syms);
+    if (w) {
+      var pay = w.mult * lineBet * mult;
+      var cells = [];
+      for (var c = 0; c < w.count; c++) cells.push([c, SLOT_LINES[l][c]]);
+      wins.push({ line: l, sym: w.sym, count: w.count, pay: pay, cells: cells });
+      lineTotal += pay;
+    }
+  }
+  var scat = 0, scatCells = [];
+  for (var rr = 0; rr < 5; rr++) for (var row = 0; row < 3; row++) {
+    if (grid[rr][row] === SYM.SCAT) { scat++; scatCells.push([rr, row]); }
+  }
+  var sKey = Math.min(scat, 5);
+  var scatterPay = scat >= 3 ? SCATTER_PAY[sKey] * lineBet * SLOT_LINES.length * mult : 0;
+  var free = scat >= 3 ? FREE_SPINS[sKey] : 0;
+  return {
+    grid: grid, wins: wins, lineTotal: lineTotal, scat: scat, scatCells: scatCells,
+    scatterPay: scatterPay, free: free, total: lineTotal + scatterPay, nearMiss: scat === 2
+  };
+}
+function slotPlay(lineBet, mult, strips) {
+  strips = strips || SLOT_STRIPS;
+  var stops = [], grid = [];
+  for (var r = 0; r < 5; r++) {
+    var L = strips[r].length, p = randInt(L);
+    stops.push(p);
+    grid.push([strips[r][p], strips[r][(p + 1) % L], strips[r][(p + 2) % L]]);
+  }
+  var res = slotResolve(grid, lineBet, mult);
+  res.stops = stops;
+  return res;
+}
+
+/* ---------- Roulette (europäisch, Single-Zero) ---------- */
+var R_REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+var R_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+function rColor(n) { return n === 0 ? 'green' : (R_REDS.indexOf(n) >= 0 ? 'red' : 'black'); }
+function rWins(key, n) {
+  if (key.charAt(0) === 'n') return Number(key.slice(1)) === n;
+  if (n === 0) return false;
+  switch (key) {
+    case 'red': return rColor(n) === 'red';
+    case 'black': return rColor(n) === 'black';
+    case 'odd': return n % 2 === 1;
+    case 'even': return n % 2 === 0;
+    case 'low': return n <= 18;
+    case 'high': return n >= 19;
+    case 'd1': return n <= 12;
+    case 'd2': return n >= 13 && n <= 24;
+    case 'd3': return n >= 25;
+    case 'c1': return n % 3 === 1;
+    case 'c2': return n % 3 === 2;
+    case 'c3': return n % 3 === 0;
+  }
+  return false;
+}
+function rPay(key) {
+  if (key.charAt(0) === 'n') return 35;
+  if (/^[dc][123]$/.test(key)) return 2;
+  return 1;
+}
+function rResolve(bets, n) {
+  var ret = 0, staked = 0, won = {};
+  for (var k in bets) {
+    var a = bets[k];
+    staked += a;
+    if (rWins(k, n)) { ret += a * (rPay(k) + 1); won[k] = a * rPay(k); }
+  }
+  return { ret: ret, staked: staked, won: won };
+}
+function rSpin() { return randInt(37); }
+function rNeighbors(n, k) {
+  var idx = R_ORDER.indexOf(n), out = [];
+  for (var d = -k; d <= k; d++) out.push(R_ORDER[(idx + d + 37 * 4) % 37]);
+  return out;
+}
+
+/* ---------- Blackjack: 6 Decks, Dealer steht auf soft 17, BJ 3:2 ---------- */
+var RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+var SUITS = ['♠', '♥', '♦', '♣'];
+function newShoe(decks) {
+  decks = decks || 6;
+  var cards = [];
+  for (var d = 0; d < decks; d++) for (var s = 0; s < 4; s++) for (var r = 0; r < 13; r++) cards.push({ r: RANKS[r], s: SUITS[s] });
+  shuffle(cards);
+  return { cards: cards, pos: 0, decks: decks };
+}
+function shoeNeedsShuffle(shoe) { return shoe.pos >= shoe.cards.length * 0.75; }
+function draw(shoe) {
+  if (shoe.pos >= shoe.cards.length) { shuffle(shoe.cards); shoe.pos = 0; }
+  return shoe.cards[shoe.pos++];
+}
+function cardVal(c) {
+  if (c.r === 'A') return 11;
+  if (c.r === 'K' || c.r === 'Q' || c.r === 'J' || c.r === '10') return 10;
+  return parseInt(c.r, 10);
+}
+function handValue(cards) {
+  var total = 0, aces = 0;
+  for (var i = 0; i < cards.length; i++) {
+    var v = cardVal(cards[i]);
+    if (v === 11) aces++;
+    total += v;
+  }
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  return { total: total, soft: aces > 0 };
+}
+function newHand(cards, bet, fromSplit) {
+  return { cards: cards, bet: bet, doubled: false, done: false, fromSplit: !!fromSplit, splitAces: false,
+           surrendered: false, result: null, payout: 0 };
+}
+function isNatural(h, st) {
+  return st.hands.length === 1 && !h.fromSplit && h.cards.length === 2 && handValue(h.cards).total === 21;
+}
+function dealerHasBJ(st) {
+  return st.dealer.length === 2 && handValue(st.dealer).total === 21;
+}
+function bjDeal(shoe, bet) {
+  var p1 = draw(shoe), d1 = draw(shoe), p2 = draw(shoe), d2 = draw(shoe);
+  var st = {
+    shoe: shoe, hands: [newHand([p1, p2], bet, false)], active: 0, dealer: [d1, d2],
+    insurance: 0, insuranceReturn: 0, phase: 'player', staked: bet, returned: 0, settled: false, bet0: bet
+  };
+  if (d1.r === 'A') { st.phase = 'insurance'; return st; }
+  afterPeek(st);
+  return st;
+}
+function bjInsurance(st, take) {
+  if (st.phase !== 'insurance') return { cost: 0 };
+  var cost = 0;
+  if (take) { cost = Math.floor(st.bet0 / 2); st.insurance = cost; st.staked += cost; }
+  afterPeek(st);
+  return { cost: cost };
+}
+function afterPeek(st) {
+  var h = st.hands[0];
+  if (dealerHasBJ(st)) { st.phase = 'player'; h.done = true; finish(st); return; }
+  if (isNatural(h, st)) { h.done = true; st.phase = 'player'; finish(st); return; }
+  st.phase = 'player';
+}
+function bjCan(st, balance) {
+  var none = { hit: false, stand: false, double: false, split: false, surrender: false, insurance: false };
+  if (!st) return none;
+  if (st.phase === 'insurance') { none.insurance = balance >= Math.floor(st.bet0 / 2); return none; }
+  if (st.phase !== 'player') return none;
+  var h = st.hands[st.active];
+  if (!h || h.done) return none;
+  var two = h.cards.length === 2;
+  return {
+    hit: true, stand: true,
+    double: two && balance >= h.bet,
+    split: two && st.hands.length < 4 && cardVal(h.cards[0]) === cardVal(h.cards[1]) && balance >= h.bet,
+    surrender: two && st.hands.length === 1 && !h.fromSplit,
+    insurance: false
+  };
+}
+function after(st) {
+  var h = st.hands[st.active];
+  if (!h.done) return;
+  for (var i = st.active + 1; i < st.hands.length; i++) {
+    if (!st.hands[i].done) { st.active = i; return; }
+  }
+  finish(st);
+}
+function bjHit(st) {
+  var h = st.hands[st.active];
+  h.cards.push(draw(st.shoe));
+  var t = handValue(h.cards).total;
+  if (t >= 21) h.done = true;
+  after(st);
+}
+function bjStand(st) { st.hands[st.active].done = true; after(st); }
+function bjDouble(st) {
+  var h = st.hands[st.active], cost = h.bet;
+  st.staked += cost; h.bet *= 2; h.doubled = true;
+  h.cards.push(draw(st.shoe));
+  h.done = true;
+  after(st);
+  return { cost: cost };
+}
+function bjSplit(st) {
+  var h = st.hands[st.active], cost = h.bet;
+  st.staked += cost;
+  var second = newHand([h.cards.pop()], h.bet, true);
+  h.fromSplit = true;
+  var aces = h.cards[0].r === 'A';
+  h.cards.push(draw(st.shoe));
+  second.cards.push(draw(st.shoe));
+  st.hands.splice(st.active + 1, 0, second);
+  if (aces) { h.splitAces = true; second.splitAces = true; h.done = true; second.done = true; }
+  else {
+    if (handValue(h.cards).total >= 21) h.done = true;
+    if (handValue(second.cards).total >= 21) second.done = true;
+  }
+  after(st);
+  return { cost: cost };
+}
+function bjSurrender(st) {
+  var h = st.hands[st.active];
+  h.surrendered = true; h.done = true;
+  after(st);
+}
+function finish(st) {
+  var needDealer = st.hands.some(function (h) {
+    return !h.surrendered && handValue(h.cards).total <= 21 && !isNatural(h, st);
+  });
+  if (needDealer) {
+    while (handValue(st.dealer).total < 17) st.dealer.push(draw(st.shoe));
+  }
+  settle(st);
+}
+function settle(st) {
+  var dv = handValue(st.dealer).total, dBJ = dealerHasBJ(st);
+  var returned = 0;
+  st.hands.forEach(function (h) {
+    var pv = handValue(h.cards).total, pay = 0, res;
+    if (h.surrendered) { pay = Math.floor(h.bet / 2); res = 'surrender'; }
+    else if (isNatural(h, st)) {
+      if (dBJ) { pay = h.bet; res = 'push'; } else { pay = h.bet + h.bet * 3 / 2; res = 'blackjack'; }
+    }
+    else if (pv > 21) { pay = 0; res = 'bust'; }
+    else if (dBJ) { pay = 0; res = 'lose'; }
+    else if (dv > 21) { pay = h.bet * 2; res = 'win'; }
+    else if (pv > dv) { pay = h.bet * 2; res = 'win'; }
+    else if (pv === dv) { pay = h.bet; res = 'push'; }
+    else { pay = 0; res = 'lose'; }
+    h.result = res; h.payout = pay; returned += pay;
+  });
+  if (st.insurance > 0 && dBJ) { st.insuranceReturn = st.insurance * 3; returned += st.insuranceReturn; }
+  st.returned = returned;
+  st.phase = 'done';
+}
+
+/* Basic Strategy (6 Decks, S17, DAS, Late Surrender, Aufteilen bis 4 Hände) */
+function bjAdvice(cards, upCard, can) {
+  var up = cardVal(upCard);
+  var v = handValue(cards), t = v.total;
+  var pair = cards.length === 2 && cardVal(cards[0]) === cardVal(cards[1]);
+  if (pair && can.split) {
+    var p = cardVal(cards[0]), sp = false;
+    if (p === 11 || p === 8) sp = true;
+    else if (p === 9) sp = (up >= 2 && up <= 6) || up === 8 || up === 9;
+    else if (p === 7) sp = up >= 2 && up <= 7;
+    else if (p === 6) sp = up >= 2 && up <= 6;
+    else if (p === 4) sp = up === 5 || up === 6;
+    else if (p === 3 || p === 2) sp = up >= 2 && up <= 7;
+    if (sp) return 'split';
+  }
+  if (cards.length === 2 && can.surrender && !v.soft) {
+    if (t === 16 && (up === 9 || up === 10 || up === 11)) return 'surrender';
+    if (t === 15 && up === 10) return 'surrender';
+  }
+  if (v.soft) {
+    if (t >= 19) return 'stand';
+    if (t === 18) {
+      if (up >= 3 && up <= 6) return can.double ? 'double' : 'stand';
+      if (up === 2 || up === 7 || up === 8) return 'stand';
+      return 'hit';
+    }
+    if (t === 17) return (up >= 3 && up <= 6 && can.double) ? 'double' : 'hit';
+    if (t === 15 || t === 16) return (up >= 4 && up <= 6 && can.double) ? 'double' : 'hit';
+    if (t === 13 || t === 14) return (up >= 5 && up <= 6 && can.double) ? 'double' : 'hit';
+    return 'hit';
+  }
+  if (t >= 17) return 'stand';
+  if (t >= 13) return up <= 6 ? 'stand' : 'hit';
+  if (t === 12) return (up >= 4 && up <= 6) ? 'stand' : 'hit';
+  if (t === 11) return (up !== 11 && can.double) ? 'double' : 'hit';
+  if (t === 10) return (up <= 9 && can.double) ? 'double' : 'hit';
+  if (t === 9) return (up >= 3 && up <= 6 && can.double) ? 'double' : 'hit';
+  return 'hit';
+}
+
+/* ---------- Crash (1 % Hausvorteil) ---------- */
+var CRASH_CAP = 100000;
+function crashPoint() {
+  var r = rand();
+  var c = Math.floor(99 / (1 - r)) / 100;
+  if (c < 1) c = 1;
+  if (c > CRASH_CAP) c = CRASH_CAP;
+  return c;
+}
+function crashMult(t) { return Math.exp(0.08 * t + 0.004 * t * t); }
+function crashTime(m) {
+  var l = Math.log(m);
+  return (-0.08 + Math.sqrt(0.0064 + 0.016 * l)) / 0.008;
+}
+
+/* ---------- Zockerprofil ---------- */
+var PROFILES = {
+  rookie: { name: 'Frischling', game: 'slots', pct: [0.005, 0.02],
+    desc: 'Noch zu wenig Daten. Spiel ein paar Runden, dann erkennt das Haus deinen Typ.',
+    kick: 'Das Haus beobachtet: Spielwahl, Einsatzhöhe im Verhältnis zum Guthaben, Tempo und wie du nach Verlusten reagierst.' },
+  thrill: { name: 'Der Thrill-Jäger', game: 'crash', pct: [0.03, 0.08],
+    desc: 'Du suchst den Moment kurz vor dem Absturz. Hohe Varianz, große Einsätze, Auszahlen auf den letzten Drücker.',
+    kick: 'Variable Belohnung pur: Jede Sekunde kann alles vorbei sein. Der Kick sitzt beim Auszahlen, und danach siehst du, wie hoch es noch gegangen wäre.' },
+  strat: { name: 'Der Stratege', game: 'bj', pct: [0.01, 0.03],
+    desc: 'Du willst Kontrolle. Entscheidungen, Zahlen, ein System. Du spielst gleichmäßig und überlegt.',
+    kick: 'Die Kontrollillusion: Jede Entscheidung fühlt sich nach Können an, obwohl der Hausvorteil bleibt. Kleine Siege halten dich lange am Tisch.' },
+  ritual: { name: 'Der Ritualist', game: 'roulette', pct: [0.01, 0.04],
+    desc: 'Lieblingszahlen, Muster, Heiß-und-Kalt-Listen. Du liest Bedeutung in den Zufall.',
+    kick: 'Der Spielerfehlschluss: Die Hot-and-Cold-Anzeige lässt Zufall wie ein Muster wirken. Dazu kommt das Ritual aus Chips setzen, Warten, Spannung.' },
+  dream: { name: 'Der Jackpot-Träumer', game: 'slots', pct: [0.002, 0.01],
+    desc: 'Kleine Einsätze, lange Sessions, immer auf der Suche nach dem Bonus.',
+    kick: 'Fast-Treffer und Verluste, die als Gewinn gefeiert werden: Zwei Scatter, Lichter und Sound, obwohl du weniger zurückbekommst als eingesetzt.' }
+};
+function profileOf(hist) {
+  var n = hist.length;
+  if (n < 8) return { key: 'rookie', hi: false, shares: { slots: 0, roulette: 0, bj: 0, crash: 0 }, ratio: 0 };
+  var cnt = { slots: 0, roulette: 0, bj: 0, crash: 0 }, ratioSum = 0;
+  hist.forEach(function (h) { cnt[h.g]++; ratioSum += Math.min(1, h.bet / Math.max(1, h.bal)); });
+  var shares = {};
+  for (var g in cnt) shares[g] = cnt[g] / n;
+  var ratio = ratioSum / n;
+  var scores = {
+    thrill: shares.crash + (ratio > 0.05 ? 0.15 : 0),
+    strat: shares.bj,
+    ritual: shares.roulette,
+    dream: shares.slots + (ratio < 0.012 ? 0.1 : 0)
+  };
+  var best = 'dream', bv = -1;
+  ['thrill', 'strat', 'ritual', 'dream'].forEach(function (k) { if (scores[k] > bv) { bv = scores[k]; best = k; } });
+  return { key: best, hi: ratio > 0.06, shares: shares, ratio: ratio };
+}
+function recommend(profileKey, balance, unlocked) {
+  var P = PROFILES[profileKey];
+  var lo = balance * P.pct[0], hi = balance * P.pct[1], mid = (lo + hi) / 2;
+  var bestRoom = 0, bestD = Infinity;
+  for (var i = 0; i <= unlocked; i++) {
+    var T = TIERS[i], d;
+    if (mid >= T.min && mid <= T.max) d = 0;
+    else d = Math.min(Math.abs(Math.log(mid / T.min)), Math.abs(Math.log(mid / T.max)));
+    if (d < bestD) { bestD = d; bestRoom = i; }
+  }
+  var T2 = TIERS[bestRoom];
+  var betLo = Math.min(T2.max, Math.max(T2.min, lo)), betHi = Math.min(T2.max, Math.max(T2.min, hi));
+  return { room: bestRoom, betLo: Math.round(betLo), betHi: Math.round(betHi), game: P.game };
+}
+
+return {
+  setRng: setRng, rand: rand, randInt: randInt, shuffle: shuffle,
+  TIERS: TIERS, tierFor: tierFor, BET_LADDER: BET_LADDER, CHIP_VALUES: CHIP_VALUES,
+  SYM: SYM, SLOT_LINES: SLOT_LINES, SLOT_PAY: SLOT_PAY, SCATTER_PAY: SCATTER_PAY, FREE_SPINS: FREE_SPINS, FREE_MULT: FREE_MULT,
+  SLOT_COUNTS: SLOT_COUNTS, SLOT_STRIPS: SLOT_STRIPS, buildStrip: buildStrip, lineWin: lineWin,
+  slotResolve: slotResolve, slotPlay: slotPlay,
+  R_REDS: R_REDS, R_ORDER: R_ORDER, rColor: rColor, rWins: rWins, rPay: rPay, rResolve: rResolve, rSpin: rSpin, rNeighbors: rNeighbors,
+  RANKS: RANKS, SUITS: SUITS, newShoe: newShoe, shoeNeedsShuffle: shoeNeedsShuffle, draw: draw, cardVal: cardVal, handValue: handValue,
+  bjDeal: bjDeal, bjInsurance: bjInsurance, bjCan: bjCan, bjHit: bjHit, bjStand: bjStand, bjDouble: bjDouble, bjSplit: bjSplit,
+  bjSurrender: bjSurrender, bjAdvice: bjAdvice,
+  crashPoint: crashPoint, crashMult: crashMult, crashTime: crashTime,
+  PROFILES: PROFILES, profileOf: profileOf, recommend: recommend
+};
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
+
+/* ===== art.js ===== */
+/* Velvet Room – Hostessen (fiktive Figuren, als SVG gezeichnet) */
+var Art = (function () {
+'use strict';
+
+var HOSTESSES = [
+  { name: 'Mira', role: 'Empfangsdame', trait: 'herzlich, neugierig',
+    skin: '#F0C7A4', shade: '#DDA982', hair: '#2B1912', hairHi: '#5A3A2A', style: 'bob',
+    eye: '#5A3A22', lip: '#B5173D', dress: '#0F6E56', dressHi: '#1E9577', jewel: '#E8C77A', bgA: '#3C1822', bgB: '#150810', neck: 'v' },
+  { name: 'Sofia', role: 'Cocktail-Hostess', trait: 'verspielt, schlagfertig',
+    skin: '#F6D6BC', shade: '#E4B796', hair: '#D7A64A', hairHi: '#F2D283', style: 'wave',
+    eye: '#3F7F9F', lip: '#D24A5E', dress: '#B58A3E', dressHi: '#E3C16F', jewel: '#FFF1C8', bgA: '#3A2018', bgB: '#150A08', neck: 'scoop' },
+  { name: 'Lena', role: 'Pit-Hostess', trait: 'ruhig, aufmerksam',
+    skin: '#EBC09C', shade: '#D49C76', hair: '#8E3A1E', hairHi: '#C2662F', style: 'long',
+    eye: '#3D6B4A', lip: '#A31E34', dress: '#17141A', dressHi: '#3A3440', jewel: '#C0C6D0', bgA: '#2C1A28', bgB: '#110810', neck: 'sweet' },
+  { name: 'Isabella', role: 'VIP-Hostess', trait: 'elegant, selbstsicher',
+    skin: '#C98E66', shade: '#AE7149', hair: '#120C0C', hairHi: '#3A2A2A', style: 'sleek',
+    eye: '#2A1A12', lip: '#C0243F', dress: '#C79A3A', dressHi: '#F0D37E', jewel: '#FFF1C8', bgA: '#3A1A1A', bgB: '#150808', neck: 'v' },
+  { name: 'Anastasia', role: 'Penthouse-Concierge', trait: 'kühl, charmant',
+    skin: '#F8E0CB', shade: '#E8C2A4', hair: '#E4DAC6', hairHi: '#FFFFFF', style: 'updo',
+    eye: '#5F86A8', lip: '#A91F3C', dress: '#8E9AAA', dressHi: '#D7DEE8', jewel: '#EAF4FF', bgA: '#1E2230', bgB: '#0B0D14', neck: 'scoop' },
+  { name: 'Valentina', role: 'Black-Room-Dame', trait: 'geheimnisvoll, direkt',
+    skin: '#E8B995', shade: '#CE946C', hair: '#0C0709', hairHi: '#2E1A22', style: 'curl',
+    eye: '#2E1B14', lip: '#D0173F', dress: '#8E0E2B', dressHi: '#D0284A', jewel: '#FFD7DE', bgA: '#3A0B18', bgB: '#10040A', neck: 'sweet' }
+];
+
+function esc(s) { return String(s).replace(/[^#a-zA-Z0-9(),. %-]/g, ''); }
+
+function hairBack(h) {
+  var c = h.hair, hi = h.hairHi;
+  switch (h.style) {
+    case 'bob':
+      return '<path d="M74 118 C70 70 94 50 122 50 C150 50 172 72 168 118 C168 152 166 176 158 190 L82 190 C74 176 74 150 74 118 Z" fill="' + c + '"/>';
+    case 'wave':
+      return '<path d="M70 120 C64 66 94 46 122 46 C152 46 178 68 172 122 C172 168 190 196 184 236 C170 246 156 232 152 214 L88 214 C84 232 70 246 56 236 C50 196 70 168 70 120 Z" fill="' + c + '"/>' +
+             '<path d="M66 150 C60 190 74 214 70 238" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>' +
+             '<path d="M176 150 C182 190 168 214 172 238" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>';
+    case 'long':
+      return '<path d="M72 120 C66 66 94 48 122 48 C150 48 176 68 170 122 C172 172 184 214 176 250 L64 250 C56 214 70 172 72 120 Z" fill="' + c + '"/>' +
+             '<path d="M70 160 C64 200 72 226 68 246" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".45" stroke-linecap="round"/>';
+    case 'sleek':
+      return '<path d="M72 118 C68 66 94 48 122 48 C150 48 174 66 170 118 C172 176 180 214 172 256 L68 256 C60 214 70 176 72 118 Z" fill="' + c + '"/>' +
+             '<path d="M72 150 C68 200 74 230 70 250" stroke="' + hi + '" stroke-width="2.5" fill="none" opacity=".5" stroke-linecap="round"/>';
+    case 'updo':
+      return '<ellipse cx="122" cy="42" rx="26" ry="20" fill="' + c + '"/>' +
+             '<path d="M118 28 C124 24 132 26 136 32" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/>' +
+             '<path d="M74 116 C70 70 94 52 122 52 C150 52 172 70 168 116 C168 130 164 138 160 142 L84 142 C78 138 74 130 74 116 Z" fill="' + c + '"/>';
+    case 'curl':
+      return '<path d="M64 124 C52 84 68 46 100 40 C112 34 134 34 146 40 C178 46 192 84 180 124 C190 156 180 198 160 208 L84 208 C62 198 54 156 64 124 Z" fill="' + c + '"/>' +
+             '<circle cx="64" cy="170" r="14" fill="' + c + '"/><circle cx="180" cy="170" r="14" fill="' + c + '"/>' +
+             '<circle cx="70" cy="196" r="12" fill="' + c + '"/><circle cx="174" cy="196" r="12" fill="' + c + '"/>' +
+             '<path d="M66 130 C60 160 66 184 70 200" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".45" stroke-linecap="round"/>';
+  }
+  return '';
+}
+
+function hairFront(h) {
+  var c = h.hair, hi = h.hairHi;
+  switch (h.style) {
+    case 'bob':
+      return '<path d="M78 116 C74 74 98 56 124 56 C150 58 166 78 162 114 C158 92 146 80 128 76 C110 78 94 92 88 124 C84 128 80 124 78 116 Z" fill="' + c + '"/>' +
+             '<path d="M96 70 C110 62 130 62 146 72" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>';
+    case 'wave':
+      return '<path d="M80 114 C76 72 100 54 124 54 C150 56 166 76 162 112 C160 92 148 76 126 74 C106 74 92 86 86 112 C86 124 82 124 80 114 Z" fill="' + c + '"/>' +
+             '<path d="M98 66 C112 60 132 60 148 68" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/>';
+    case 'long':
+      return '<path d="M80 116 C76 70 100 54 124 54 C152 56 168 78 162 116 C158 94 146 80 124 78 C102 80 90 98 90 130 C84 130 80 124 80 116 Z" fill="' + c + '"/>' +
+             '<path d="M100 66 C114 60 134 60 150 70" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>';
+    case 'sleek':
+      return '<path d="M80 118 C76 72 100 54 122 54 C148 54 168 74 164 118 C162 96 144 80 122 78 C100 80 82 98 80 118 Z" fill="' + c + '"/>' +
+             '<path d="M122 56 L122 78" stroke="' + hi + '" stroke-width="2" opacity=".5"/>' +
+             '<path d="M92 72 C106 62 138 62 152 72" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>';
+    case 'updo':
+      return '<path d="M80 114 C78 76 100 58 124 58 C148 58 166 76 162 112 C158 92 146 82 126 82 C108 82 92 94 86 116 C84 120 80 120 80 114 Z" fill="' + c + '"/>';
+    case 'curl':
+      return '<path d="M78 114 C72 70 98 48 124 48 C152 48 172 72 164 114 C162 92 150 76 130 72 C112 70 96 84 90 110 C88 118 80 122 78 114 Z" fill="' + c + '"/>' +
+             '<circle cx="98" cy="62" r="11" fill="' + c + '"/><circle cx="124" cy="52" r="12" fill="' + c + '"/><circle cx="150" cy="62" r="11" fill="' + c + '"/>' +
+             '<path d="M100 56 C112 48 136 48 148 56" stroke="' + hi + '" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>';
+  }
+  return '';
+}
+
+function portrait(i, uid) {
+  var h = HOSTESSES[i % HOSTESSES.length];
+  var id = 'h' + i + (uid || '');
+  var skin = esc(h.skin), shade = esc(h.shade), dress = esc(h.dress), dressHi = esc(h.dressHi), jewel = esc(h.jewel);
+  var nl = { v: 'C96 242 110 258 120 270 C130 258 144 242 152 228',
+             scoop: 'C90 246 106 258 120 258 C134 258 150 246 152 228',
+             sweet: 'C92 240 108 242 120 256 C132 242 148 240 152 228' }[h.neck];
+  var silhouette = 'M10 300 L10 272 C14 240 50 228 84 221 L156 221 C190 228 226 240 230 272 L230 300 Z';
+  var dressBody = 'M10 300 L10 272 C14 247 40 239 62 237 L88 228 ' + nl + ' L178 237 C200 239 226 247 230 272 L230 300 Z';
+  var svg = '';
+  svg += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 300" role="img" aria-label="' + esc(h.name) + ', ' + esc(h.role) + '">';
+  svg += '<defs>';
+  svg += '<radialGradient id="bg' + id + '" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="' + esc(h.bgA) + '"/><stop offset="1" stop-color="' + esc(h.bgB) + '"/></radialGradient>';
+  svg += '<linearGradient id="dr' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + dressHi + '"/><stop offset=".55" stop-color="' + dress + '"/><stop offset="1" stop-color="' + dress + '" stop-opacity=".82"/></linearGradient>';
+  svg += '<linearGradient id="sk' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + skin + '"/><stop offset="1" stop-color="' + shade + '"/></linearGradient>';
+  svg += '</defs>';
+  svg += '<rect width="240" height="300" fill="url(#bg' + id + ')"/>';
+  // Art-Deco-Faecher im Hintergrund
+  svg += '<g fill="none" stroke="' + jewel + '" stroke-opacity=".14" stroke-width="1.2">';
+  svg += '<path d="M120 300 L10 120 M120 300 L50 60 M120 300 L120 30 M120 300 L190 60 M120 300 L230 120"/>';
+  svg += '<circle cx="120" cy="150" r="104"/><circle cx="120" cy="150" r="124"/>';
+  svg += '</g>';
+  svg += hairBack(h);
+  // Haut: Koerper, Hals
+  svg += '<path d="' + silhouette + '" fill="url(#sk' + id + ')"/>';
+  svg += '<path d="M102 160 L102 214 C102 226 138 226 138 214 L138 160 Z" fill="url(#sk' + id + ')"/>';
+  svg += '<path d="M103 196 C112 208 128 208 137 196 L137 216 C128 224 112 224 103 216 Z" fill="' + shade + '" opacity=".4"/>';
+  // Kleid
+  svg += '<path d="' + dressBody + '" fill="url(#dr' + id + ')"/>';
+  svg += '<path d="M88 228 ' + nl + '" fill="none" stroke="' + dressHi + '" stroke-width="2.2" stroke-opacity=".85" stroke-linecap="round"/>';
+  svg += '<path d="M10 272 C14 247 40 239 62 237" stroke="' + dressHi + '" stroke-opacity=".5" stroke-width="2" fill="none"/>';
+  svg += '<path d="M230 272 C226 247 200 239 178 237" stroke="' + dressHi + '" stroke-opacity=".3" stroke-width="2" fill="none"/>';
+  // Kette
+  svg += '<path d="M99 212 C106 238 134 238 141 212" fill="none" stroke="' + jewel + '" stroke-width="1.6" stroke-opacity=".9"/>';
+  svg += '<path d="M120 232 L115 240 L120 248 L125 240 Z" fill="' + jewel + '"/><path d="M120 232 L115 240 L125 240 Z" fill="#fff" opacity=".45"/>';
+  // Ohren
+  svg += '<ellipse cx="82" cy="122" rx="5" ry="9" fill="' + skin + '"/><ellipse cx="158" cy="122" rx="5" ry="9" fill="' + skin + '"/>';
+  // Gesicht
+  svg += '<path d="M82 112 C82 80 98 64 120 64 C142 64 158 80 158 112 C158 144 142 172 120 174 C98 172 82 144 82 112 Z" fill="url(#sk' + id + ')"/>';
+  svg += '<path d="M90 150 C98 168 110 174 120 174 C130 174 142 168 150 150 C144 164 132 172 120 172 C108 172 96 164 90 150 Z" fill="' + shade + '" opacity=".35"/>';
+  // Augenpartie
+  svg += '<ellipse cx="104" cy="111" rx="12" ry="7" fill="' + shade + '" opacity=".28"/><ellipse cx="136" cy="111" rx="12" ry="7" fill="' + shade + '" opacity=".28"/>';
+  svg += '<path d="M93 112 Q104 103 115 112 Q104 119 93 112 Z" fill="#fff"/><path d="M125 112 Q136 103 147 112 Q136 119 125 112 Z" fill="#fff"/>';
+  svg += '<circle cx="104" cy="111.5" r="5" fill="' + esc(h.eye) + '"/><circle cx="136" cy="111.5" r="5" fill="' + esc(h.eye) + '"/>';
+  svg += '<circle cx="104" cy="111.5" r="2.3" fill="#0a0506"/><circle cx="136" cy="111.5" r="2.3" fill="#0a0506"/>';
+  svg += '<circle cx="106" cy="109.6" r="1.4" fill="#fff"/><circle cx="138" cy="109.6" r="1.4" fill="#fff"/>';
+  svg += '<path d="M92 112.5 Q104 102 116 112.5" fill="none" stroke="#120A0A" stroke-width="2.4" stroke-linecap="round"/>';
+  svg += '<path d="M124 112.5 Q136 102 148 112.5" fill="none" stroke="#120A0A" stroke-width="2.4" stroke-linecap="round"/>';
+  svg += '<path d="M92 112.5 L88 109.5 M148 112.5 L152 109.5" stroke="#120A0A" stroke-width="2" stroke-linecap="round"/>';
+  svg += '<path d="M95 119 Q104 123 113 119 M127 119 Q136 123 145 119" fill="none" stroke="' + shade + '" stroke-width="1.1" opacity=".7"/>';
+  // Brauen
+  svg += '<path d="M92 99 Q104 91 117 97" fill="none" stroke="' + esc(h.hair) + '" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>';
+  svg += '<path d="M123 97 Q136 91 148 99" fill="none" stroke="' + esc(h.hair) + '" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>';
+  // Nase
+  svg += '<path d="M120 112 C118 124 116 130 114 134 C117 138 123 138 126 134" fill="none" stroke="' + shade + '" stroke-width="1.5" stroke-linecap="round"/>';
+  svg += '<ellipse cx="120" cy="127" rx="3" ry="6" fill="#fff" opacity=".12"/>';
+  // Wangen
+  svg += '<ellipse cx="97" cy="136" rx="10" ry="6" fill="#E9707F" opacity=".22"/><ellipse cx="143" cy="136" rx="10" ry="6" fill="#E9707F" opacity=".22"/>';
+  // Lippen
+  svg += '<path d="M105 149 Q112 142 120 145.5 Q128 142 135 149 Q120 153.5 105 149 Z" fill="' + esc(h.lip) + '"/>';
+  svg += '<path d="M105 149 Q120 163 135 149 Q120 153 105 149 Z" fill="' + esc(h.lip) + '"/>';
+  svg += '<path d="M110 154 Q120 159 130 154" fill="none" stroke="#fff" stroke-width="1.6" opacity=".28" stroke-linecap="round"/>';
+  svg += '<path d="M105 149 Q120 153.5 135 149" fill="none" stroke="#000" stroke-width="1" opacity=".3"/>';
+  svg += hairFront(h);
+  // Ohrringe
+  svg += '<circle cx="82" cy="134" r="3.6" fill="' + jewel + '"/><path d="M82 137 L82 146" stroke="' + jewel + '" stroke-width="1.4"/><circle cx="82" cy="149" r="3.2" fill="' + jewel + '"/>';
+  svg += '<circle cx="158" cy="134" r="3.6" fill="' + jewel + '"/><path d="M158 137 L158 146" stroke="' + jewel + '" stroke-width="1.4"/><circle cx="158" cy="149" r="3.2" fill="' + jewel + '"/>';
+  svg += '</svg>';
+  return svg;
+}
+
+return { HOSTESSES: HOSTESSES, portrait: portrait };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Art;
+
+/* ===== ui_core.js ===== */
+/* Velvet Room – UI-Kern: Zustand, Speichern, Ton, HUD, Hostess, Bet-Steuerung */
+var V = (function () {
+'use strict';
+var E = Engine, A = Art;
+
+/* ---------- Helfer ---------- */
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function append(n, c) {
+  if (c == null || c === false) return;
+  if (Array.isArray(c)) { c.forEach(function (x) { append(n, x); }); return; }
+  n.appendChild(c.nodeType ? c : document.createTextNode(String(c)));
+}
+function el(tag, props) {
+  var n = document.createElement(tag);
+  if (props) for (var k in props) {
+    var v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v);
+    else if (v === true) n.setAttribute(k, '');
+    else n.setAttribute(k, v);
+  }
+  for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
+  return n;
+}
+function fmt(n) { return Math.round(n).toLocaleString('de-DE'); }
+function fmtX(m) { return m.toFixed(2).replace('.', ',') + '×'; }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function short(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' Mio';
+  if (n >= 1e3) return (n / 1e3).toFixed(n % 1e3 ? 1 : 0).replace('.', ',') + 'k';
+  return String(n);
+}
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function clock(ms) {
+  var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return (h ? h + ':' + pad2(m) : pad2(m)) + ':' + pad2(s % 60);
+}
+
+/* ---------- Zustand ---------- */
+var KEY = 'velvet-room-v1';
+function emptyG() { return { r: 0, w: 0, ret: 0 }; }
+function fresh() {
+  return {
+    balance: 10000, escrow: 0, wagered: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
+    comps: 0, compsClaimed: 0, room: 0, unlocked: 0, aff: [0, 0, 0, 0, 0, 0], tips: 0,
+    hist: [], series: [10000], gst: { slots: emptyG(), roulette: emptyG(), bj: emptyG(), crash: emptyG() },
+    sound: true, hint: true, game: 'slots', bets: { slots: 100, bj: 100, crash: 100 }, rchip: 100,
+    rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
+    playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'stufen'
+  };
+}
+var S = fresh();
+function isNum(x) { return typeof x === 'number' && isFinite(x); }
+function load() {
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (!raw) return;
+    var d = JSON.parse(raw), f = fresh();
+    Object.keys(f).forEach(function (k) {
+      if (!(k in d)) return;
+      var a = f[k], b = d[k];
+      if (isNum(a)) { if (isNum(b)) f[k] = b; }
+      else if (typeof a === 'boolean' || typeof a === 'string') { if (typeof b === typeof a) f[k] = b; }
+      else if (Array.isArray(a)) { if (Array.isArray(b)) f[k] = b; }
+      else if (a && typeof a === 'object') { if (b && typeof b === 'object') f[k] = Object.assign({}, a, b); }
+    });
+    f.escrow = 0;
+    if (f.aff.length !== 6) f.aff = [0, 0, 0, 0, 0, 0];
+    f.aff = f.aff.map(function (x) { return isNum(x) ? clamp(x, 0, 100) : 0; });
+    f.hist = f.hist.filter(function (h) { return h && isNum(h.bet) && isNum(h.bal) && f.gst[h.g]; }).slice(-80);
+    f.series = f.series.filter(isNum).slice(-400); if (!f.series.length) f.series = [f.balance];
+    f.rhist = f.rhist.filter(function (n) { return isNum(n) && n >= 0 && n <= 36; }).slice(-120);
+    f.chist = f.chist.filter(isNum).slice(-30);
+    f.unlocked = clamp(Math.max(f.unlocked, E.tierFor(f.wagered)), 0, 5);
+    f.room = clamp(f.room, 0, f.unlocked);
+    if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
+    if (['slots', 'roulette', 'bj', 'crash'].indexOf(f.game) < 0) f.game = 'slots';
+    if (['stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0) f.sideTab = 'stufen';
+    S = f;
+  } catch (e) { /* kein Speicher: frisch starten */ }
+}
+function save() {
+  try {
+    var d = Object.assign({}, S);
+    d.balance = S.balance + S.escrow; d.escrow = 0;
+    localStorage.setItem(KEY, JSON.stringify(d));
+  } catch (e) { /* ignorieren */ }
+}
+function room() { return E.TIERS[S.room]; }
+function debit(n) { S.balance -= n; S.escrow += n; }
+function refund(n) { S.balance += n; S.escrow -= n; }
+
+/* ---------- Ton ---------- */
+var Snd = (function () {
+  var ctx = null;
+  function ensure() {
+    if (!ctx) { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) ctx = new AC(); } catch (e) { ctx = null; } }
+    if (ctx && ctx.state === 'suspended') { try { ctx.resume().catch(function () {}); } catch (e) { /* */ } }
+    return ctx;
+  }
+  function tone(f, d, type, vol, delay) {
+    if (!S.sound) return;
+    var c = ensure(); if (!c) return;
+    try {
+      var t = c.currentTime + (delay || 0), o = c.createOscillator(), g = c.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.05, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + d + 0.03);
+    } catch (e) { /* */ }
+  }
+  return {
+    chip: function () { tone(1500, 0.05, 'square', 0.025); tone(1100, 0.06, 'square', 0.02, 0.03); },
+    tick: function () { tone(820, 0.03, 'sine', 0.02); },
+    card: function () { tone(260, 0.06, 'triangle', 0.05); },
+    click: function () { tone(640, 0.04, 'sine', 0.03); },
+    win: function () { [523, 659, 784].forEach(function (f, i) { tone(f, 0.18, 'triangle', 0.05, i * 0.08); }); },
+    big: function () { [523, 659, 784, 1047, 1319, 1568].forEach(function (f, i) { tone(f, 0.22, 'triangle', 0.06, i * 0.07); }); },
+    lose: function () { tone(196, 0.22, 'sawtooth', 0.03); tone(147, 0.3, 'sawtooth', 0.03, 0.12); },
+    crash: function () { tone(150, 0.4, 'sawtooth', 0.07); tone(90, 0.5, 'square', 0.05, 0.05); },
+    cash: function () { tone(880, 0.12, 'triangle', 0.06); tone(1175, 0.2, 'triangle', 0.06, 0.09); },
+    unlock: function () { [392, 523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.25, 'triangle', 0.06, i * 0.1); }); },
+    ensure: ensure
+  };
+})();
+
+/* ---------- Toast, Banner, Konfetti ---------- */
+function toast(msg, kind) {
+  var host = $('#toasts'); if (!host) return;
+  var t = el('div', { class: 'toast ' + (kind || ''), role: 'status', text: msg });
+  host.appendChild(t);
+  while (host.children.length > 3) host.removeChild(host.firstChild);
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3200);
+}
+var bannerTimer = null;
+function banner(title, sub, opts) {
+  opts = opts || {};
+  var b = $('#banner'); if (!b) return;
+  b.className = 'banner ' + (opts.kind || '');
+  b.innerHTML = '';
+  b.appendChild(el('div', { class: 'bn-title', text: title }));
+  if (sub) b.appendChild(el('div', { class: 'bn-sub', text: sub }));
+  if (opts.actions) {
+    var row = el('div', { class: 'bn-actions' });
+    opts.actions.forEach(function (a) {
+      row.appendChild(el('button', { class: 'btn ' + (a.gold ? 'gold' : 'ghost'), type: 'button', text: a.label, onclick: function () { hideBanner(); a.fn(); } }));
+    });
+    b.appendChild(row);
+  }
+  b.hidden = false;
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(hideBanner, opts.ms || 2600);
+}
+function hideBanner() { var b = $('#banner'); if (b) b.hidden = true; }
+function burst(host, n, colors) {
+  if (!host) return;
+  colors = colors || ['#F2D68E', '#D4AB52', '#C4203F', '#F4EBDB'];
+  for (var i = 0; i < n; i++) {
+    var s = el('span', { class: 'conf' });
+    var ang = Math.random() * Math.PI * 2, dist = 80 + Math.random() * 220;
+    s.style.setProperty('--dx', Math.round(Math.cos(ang) * dist) + 'px');
+    s.style.setProperty('--dy', Math.round(Math.sin(ang) * dist - 60) + 'px');
+    s.style.setProperty('--rot', Math.round(Math.random() * 720 - 360) + 'deg');
+    s.style.background = colors[i % colors.length];
+    s.style.animationDelay = Math.round(Math.random() * 120) + 'ms';
+    host.appendChild(s);
+    (function (n2) { setTimeout(function () { if (n2.parentNode) n2.parentNode.removeChild(n2); }, 1600); })(s);
+  }
+}
+
+/* ---------- Hostess ---------- */
+var LINES = {
+  greet: [
+    'Willkommen im Velvet Room! Ich bin Mira. Such dir einen Tisch aus. Ich bringe dir Glück, oder zumindest gute Laune.',
+    'Na, wer wagt sich denn in die Bronze Lounge? Ich bin Sofia. Dein Drink geht aufs Haus, dein Einsatz nicht.',
+    'Silver Salon. Hier wird nicht gekleckert, sondern geklotzt. Ich bin Lena und behalte den Überblick.',
+    'Gold Suite, Darling. Ich bin Isabella. Hier setzen nur Leute, die wissen, was sie wollen.',
+    'Penthouse. Die Aussicht ist atemberaubend, die Einsätze auch. Anastasia, freut mich.',
+    'Willkommen im Black Room. Keine Fenster, keine Uhren. Ich bin Valentina. Bleib, so lange du magst.'
+  ],
+  smallwin: ['Netter Treffer!', 'Das läuft doch.', 'Ein kleiner Gewinn, aber ein Gewinn.', 'Das Glück flirtet mit dir.', 'Gut gemacht, weiter so.'],
+  win: ['Sauber gespielt!', 'Du hast heute einen Lauf.', 'Das gefällt mir. Mehr davon!', 'Na, wer sagt’s denn.', 'Der Tisch liebt dich gerade.'],
+  bigwin: ['Wow! Das war richtig groß!', 'Alle schauen zu dir rüber.', 'Champagner! … Okay, ich hole erstmal Luft.', 'Das war kein Zufall, das war Schicksal.', 'Mir fehlen die Worte. Na gut, nicht ganz.'],
+  jackpot: ['Das erzählt man sich noch in zehn Jahren!', 'Mir zittern die Knie. Das war gigantisch!', 'Jackpot-Stimmung im ganzen Haus!'],
+  loss: ['Nicht dein Spiel. Aber die nächste Runde gehört dir.', 'So knapp. Nochmal?', 'Das Glück braucht manchmal einen zweiten Anlauf.', 'Kopf hoch, der Tisch dreht sich weiter.', 'Das war nicht fair von der Kugel.'],
+  lossStreak: ['Zäh heute. Aber das Blatt wendet sich bestimmt bald.', 'Noch eine Runde? Ich glaube an dich.', 'Pechsträhnen enden. Irgendwann. Ich bleibe hier.', 'Ich habe dir ein paar Comps gutgeschrieben. Nur zur Aufmunterung.'],
+  near: ['Sooo knapp! Fast wäre es passiert.', 'Zwei Scatter! Beim nächsten Mal klappt’s.', 'Ach, das tut weh. Aber so nah dran!'],
+  bust: ['Bust. Passiert den Besten.', 'Zu gierig, Liebling.', 'Eine Karte zu viel. Das kennt jeder.'],
+  tip: ['Danke, das ist lieb von dir.', 'Du weißt, wie man eine Dame behandelt.', 'Charmant und großzügig. Gefährliche Mischung.'],
+  reload: ['Nachschub kommt sofort.', 'Neue Chips, frisches Glück.', 'Die Bank hat immer Nachschub für gute Gäste.'],
+  levelup: ['Neue Stufe, neue Regeln. Ich zeige dir das Haus.', 'Du bist aufgestiegen. Die Limits steigen mit.'],
+  chat: [
+    'Weißt du, warum es hier keine Uhren gibt? Damit du die Zeit vergisst. Ich habe nichts gesagt.',
+    'Roulette hat 2,7 % Hausvorteil. Klingt wenig. Aber das Haus muss nur oft genug zusehen.',
+    'Blackjack ist am fairsten, wenn du die Basisstrategie kennst. Ich habe einen Spickzettel für dich.',
+    'Die Lichter und Töne bei einem Gewinn gibt es auch, wenn du weniger zurückbekommst als eingesetzt.',
+    'Beim Crash-Spiel ist der Hausvorteil nur 1 %. Aber du spielst eben viel schneller.',
+    'Mein Lieblingsgetränk? Mineralwasser mit Zitrone. Ich muss hier ja den klaren Kopf behalten.',
+    'Zahlen haben kein Gedächtnis. Die Kugel weiß nicht, was sie zuletzt gemacht hat.',
+    'Comps sind keine Geschenke. Das Casino rechnet sie dir aus deinem erwarteten Verlust zurück.'
+  ]
+};
+var affTitles = [[0, 'Fremde'], [20, 'Bekannte'], [40, 'Stammgast'], [65, 'Favorit'], [90, 'Vertraute']];
+function affTitle(v) { var t = affTitles[0][1]; affTitles.forEach(function (a) { if (v >= a[0]) t = a[1]; }); return t; }
+function compMult() { return 1 + 0.25 * (S.aff[S.room] / 100); }
+function tipCost() { return room().min * 10; }
+var lastSay = 0;
+function say(kind, force) {
+  var now = Date.now();
+  if (!force && now - lastSay < 2200) return;
+  lastSay = now;
+  var txt;
+  if (kind === 'greet') txt = LINES.greet[S.room];
+  else txt = pick(LINES[kind] || LINES.chat);
+  var b = $('#hostSay'); if (!b) return;
+  b.textContent = txt;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+}
+function renderHost() {
+  var h = A.HOSTESSES[S.room];
+  $('#hostPortrait').innerHTML = A.portrait(S.room);
+  $('#hostName').textContent = h.name;
+  $('#hostRole').textContent = h.role + ' · ' + h.trait;
+  renderAff();
+  $('#tipBtn').textContent = 'Trinkgeld ' + fmt(tipCost());
+}
+function renderAff() {
+  var v = S.aff[S.room];
+  $('#affTitle').textContent = affTitle(v);
+  $('#affBar').style.width = v.toFixed(1) + '%';
+  $('#affPerk').textContent = '+' + Math.round(25 * v / 100) + ' % Comps';
+}
+function addAff(v) { S.aff[S.room] = clamp(S.aff[S.room] + v * (1 - S.aff[S.room] / 140), 0, 100); }
+function tip() {
+  var c = tipCost();
+  if (S.balance < c) { toast('Zu wenig Chips für Trinkgeld.', 'bad'); return; }
+  S.balance -= c; S.tips++; addAff(7);
+  Snd.chip(); say('tip', true); renderAff(); hud(); save();
+}
+
+/* ---------- Dopamin-Pegel ---------- */
+var dopaStages = [[0, 'Ruhig'], [15, 'Kribbeln'], [35, 'Flow'], [60, 'Rausch'], [85, 'Tunnelblick']];
+function dopaLabel(v) { var t = dopaStages[0][1]; dopaStages.forEach(function (a) { if (v >= a[0]) t = a[1]; }); return t; }
+function renderDopa() {
+  $('#dopaBar').style.width = S.dopa.toFixed(1) + '%';
+  $('#dopaLbl').textContent = dopaLabel(S.dopa);
+}
+
+/* ---------- Abrechnung ---------- */
+var busyFns = [];
+function isBusy() { return busyFns.some(function (f) { return f(); }); }
+function settle(game, staked, ret, opt) {
+  opt = opt || {};
+  var net = ret - staked, before = Math.max(1, S.balance + S.escrow - net);
+  S.balance += ret; S.escrow -= staked;
+  if (S.escrow < 0) S.escrow = 0;
+  S.returned += ret;
+  if (staked > 0) {
+    S.wagered += staked; S.rounds++;
+    var g = S.gst[game]; g.r++; g.w += staked; g.ret += ret;
+    S.comps += staked * room().comp * compMult();
+    S.hist.push({ g: game, bet: staked, ret: ret, bal: before }); if (S.hist.length > 80) S.hist.shift();
+    S.series.push(Math.round(S.balance + S.escrow)); if (S.series.length > 400) S.series.shift();
+    addAff(0.2);
+  } else if (ret > 0) {
+    S.gst[game].ret += ret;
+  }
+  if (net > 0) { S.winStreak++; S.lossStreak = 0; } else if (net < 0) { S.lossStreak++; S.winStreak = 0; }
+  S.biggest = Math.max(S.biggest, net);
+  var d;
+  if (net > 0) { var x = ret / Math.max(1, staked || (opt.refBet || 1)); d = x >= 10 ? 32 : x >= 5 ? 24 : x >= 2 ? 13 : 6; }
+  else d = -2;
+  if (opt.near) d += 9;
+  S.dopa = clamp(S.dopa * 0.94 + d, 0, 100);
+  var t = E.tierFor(S.wagered);
+  if (t > S.unlocked) levelUp(t);
+  else {
+    var ratio = ret / Math.max(1, staked || (opt.refBet || 1));
+    if (opt.near && net <= 0) say('near');
+    else if (net > 0 && ratio >= 15) say('jackpot', true);
+    else if (net > 0 && ratio >= 5) say('bigwin', true);
+    else if (net > 0 && ratio >= 2) say('win');
+    else if (net > 0) say('smallwin');
+    else if (S.lossStreak >= 5 && Math.random() < 0.6) say('lossStreak');
+    else if (net < 0 && Math.random() < 0.5) say('loss');
+  }
+  hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
+  maybeReality();
+}
+function levelUp(t) {
+  S.unlocked = t;
+  var T = E.TIERS[t];
+  S.balance += T.bonus;
+  Snd.unlock();
+  var hn = A.HOSTESSES[t].name;
+  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(T.bonus) + ' Chips · Hostess ' + hn + ' erwartet dich', {
+    kind: 'level', ms: 9000, actions: [{ label: 'Raum betreten', gold: true, fn: function () { enterRoom(t, true); } }, { label: 'Später', fn: function () {} }]
+  });
+  burst($('#app'), 40);
+  hud(); renderTier(); if (V.side) V.side.refresh(); save();
+}
+var realityT = 0;
+function maybeReality() {
+  var mins = S.playMs / 60000;
+  var due = Math.floor(mins / 30);
+  if (due > S.realityShown) {
+    S.realityShown = due;
+    var net = Math.round(S.returned - S.wagered);
+    toast('Realitätscheck: ' + Math.round(mins) + ' Minuten gespielt, Bilanz ' + (net >= 0 ? '+' : '') + fmt(net) + ' Chips. Zeit für eine Pause?', 'warn');
+  }
+}
+
+/* ---------- HUD ---------- */
+var shownBal = null, balAnim = 0;
+function hud() {
+  var total = S.balance;
+  var b = $('#bal'); if (!b) return;
+  if (shownBal === null) { shownBal = total; b.textContent = fmt(total); }
+  else {
+    var from = shownBal, to = total, t0 = performance.now();
+    cancelAnimationFrame(balAnim);
+    var step = function (t) {
+      var k = clamp((t - t0) / 450, 0, 1), e = 1 - Math.pow(1 - k, 3);
+      shownBal = from + (to - from) * e;
+      b.textContent = fmt(shownBal);
+      if (k < 1) balAnim = requestAnimationFrame(step); else { shownBal = to; b.textContent = fmt(to); }
+    };
+    if (from !== to) balAnim = requestAnimationFrame(step);
+  }
+  $('#comp').textContent = fmt(Math.floor(S.comps));
+  $('#claimComp').disabled = S.comps < 1;
+  $('#reload').textContent = '+ Nachschub ' + short(E.TIERS[S.unlocked].reload);
+  $('#reload').classList.toggle('pulse', S.balance < room().min);
+  renderTier();
+}
+function renderTier() {
+  var T = room(), U = E.TIERS[S.unlocked];
+  $('#app').setAttribute('data-tier', String(S.room));
+  $('#tierName').textContent = T.name;
+  $('#tierLimits').textContent = 'Limits ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %';
+  var sel = $('#roomSel');
+  if (sel && sel.options.length === 0) {
+    E.TIERS.forEach(function (t) { sel.appendChild(el('option', { value: t.id, text: t.name })); });
+  }
+  if (sel) {
+    $$('option', sel).forEach(function (o) {
+      var id = Number(o.value), t = E.TIERS[id];
+      o.disabled = id > S.unlocked;
+      o.textContent = id > S.unlocked ? t.name + ' (ab ' + short(t.wager) + ' Umsatz)' : t.name;
+    });
+    sel.value = String(S.room);
+  }
+  var nxt = E.TIERS[S.unlocked + 1];
+  if (nxt) {
+    var base = U.wager, p = clamp((S.wagered - base) / (nxt.wager - base), 0, 1);
+    $('#progBar').style.width = (p * 100).toFixed(1) + '%';
+    $('#progTxt').textContent = 'Umsatz ' + fmt(S.wagered) + ' von ' + fmt(nxt.wager) + ' bis ' + nxt.name;
+  } else {
+    $('#progBar').style.width = '100%';
+    $('#progTxt').textContent = 'Höchste Stufe erreicht · Umsatz ' + fmt(S.wagered);
+  }
+}
+function enterRoom(id, force) {
+  if (id > S.unlocked) { toast('Dieser Raum ist noch gesperrt.', 'bad'); return false; }
+  if (id === S.room) return true;
+  if (!force && isBusy()) { toast('Beende erst die laufende Runde.', 'bad'); renderTier(); return false; }
+  if (force && isBusy()) { toast('Beende erst die laufende Runde, dann kannst du den Raum wechseln.', 'warn'); return false; }
+  S.room = id;
+  clampBets();
+  renderHost(); say('greet', true); hud();
+  V.games.forEach(function (g) { if (g.onRoom) g.onRoom(); });
+  if (V.side) V.side.refresh();
+  save();
+  return true;
+}
+function reload() {
+  var amt = E.TIERS[S.unlocked].reload;
+  S.balance += amt; S.reloads++; S.reloaded += amt;
+  Snd.cash(); say('reload', true); toast('+' + fmt(amt) + ' Chips Nachschub', 'good');
+  hud(); if (V.side) V.side.refresh(); save();
+}
+function claimComps() {
+  var c = Math.floor(S.comps);
+  if (c < 1) return;
+  S.comps -= c; S.compsClaimed += c; S.balance += c;
+  Snd.cash(); toast('Comps eingelöst: +' + fmt(c) + ' Chips', 'good');
+  hud(); if (V.side) V.side.refresh(); save();
+}
+function needChips() {
+  toast('Zu wenig Chips. Hol dir Nachschub oder senke den Einsatz.', 'bad');
+  var r = $('#reload'); if (r) { r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake'); }
+}
+
+/* ---------- Einsatz-Steuerung ---------- */
+function ladder() {
+  var r = room();
+  return E.BET_LADDER.filter(function (v) { return v >= r.min && v <= r.max; });
+}
+function clampBets() {
+  var l = ladder(), lo = l[0], hi = l[l.length - 1];
+  ['slots', 'bj', 'crash'].forEach(function (k) {
+    var v = S.bets[k];
+    if (l.indexOf(v) < 0) {
+      v = clamp(v, lo, hi);
+      var best = l[0];
+      l.forEach(function (x) { if (Math.abs(x - v) < Math.abs(best - v)) best = x; });
+      S.bets[k] = best;
+    }
+  });
+  var chips = chipList();
+  if (chips.indexOf(S.rchip) < 0) S.rchip = chips[0];
+}
+function chipList() {
+  var r = room();
+  var c = E.CHIP_VALUES.filter(function (v) { return v >= r.min && v <= r.max; });
+  return c.length ? c : [r.min];
+}
+function betControl(key, onChange) {
+  var out = el('output', { class: 'betval', 'aria-live': 'polite' });
+  var minus = el('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'Einsatz senken', text: '−' });
+  var plus = el('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'Einsatz erhöhen', text: '+' });
+  var presets = [
+    ['Min', function (l) { return l[0]; }],
+    ['½', function (l, v) { return nearest(l, v / 2); }],
+    ['2×', function (l, v) { return nearest(l, v * 2); }],
+    ['Max', function (l) { return l[l.length - 1]; }]
+  ];
+  function nearest(l, v) { var b = l[0]; l.forEach(function (x) { if (Math.abs(x - v) < Math.abs(b - v)) b = x; }); return b; }
+  var wrap = el('div', { class: 'betctl' }, el('span', { class: 'lbl', text: 'Einsatz' }), el('div', { class: 'betrow' }, minus, out, plus));
+  var pr = el('div', { class: 'presets' });
+  var pbtns = presets.map(function (p) {
+    var b = el('button', { class: 'chipbtn', type: 'button', text: p[0], onclick: function () { set(p[1](ladder(), S.bets[key])); } });
+    pr.appendChild(b); return b;
+  });
+  wrap.appendChild(pr);
+  function set(v) { S.bets[key] = v; Snd.click(); render(); if (onChange) onChange(v); save(); }
+  function step(dir) {
+    var l = ladder(), i = l.indexOf(S.bets[key]);
+    if (i < 0) i = 0;
+    set(l[clamp(i + dir, 0, l.length - 1)]);
+  }
+  minus.addEventListener('click', function () { step(-1); });
+  plus.addEventListener('click', function () { step(1); });
+  function render() {
+    out.textContent = fmt(S.bets[key]);
+    var l = ladder(), i = l.indexOf(S.bets[key]);
+    minus.disabled = wrap.dataset.off === '1' || i <= 0;
+    plus.disabled = wrap.dataset.off === '1' || i >= l.length - 1;
+    pbtns.forEach(function (b) { b.disabled = wrap.dataset.off === '1'; });
+  }
+  render();
+  return {
+    el: wrap, render: render,
+    disable: function (off) { wrap.dataset.off = off ? '1' : '0'; render(); }
+  };
+}
+
+/* ---------- Tabs ---------- */
+function tabs(container, items, current, onPick) {
+  container.innerHTML = '';
+  var btns = items.map(function (it) {
+    var b = el('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(it.id === current), text: it.label,
+      onclick: function () { onPick(it.id); } });
+    container.appendChild(b); return b;
+  });
+  return btns;
+}
+
+return {
+  E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, pick: pick, short: short, clock: clock,
+  get S() { return S; }, load: load, save: save, room: room, debit: debit, refund: refund, Snd: Snd,
+  toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
+  renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
+  needChips: needChips, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
+  busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
+  resetState: function () { S = fresh(); }
+};
+})();
+
+/* ===== ui_slots.js ===== */
+/* Velvet Room – Slots "Golden Velvet" */
+(function () {
+'use strict';
+var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep;
+var SYM = E.SYM;
+
+var NAMES = ['10', 'J', 'Q', 'K', 'A', 'Diamant', 'BAR', 'Sieben', 'Wild', 'Bonus'];
+function symHTML(id) {
+  switch (id) {
+    case 0: case 1: case 2: case 3: case 4:
+      return '<span class="s s-rank rk' + id + '">' + NAMES[id] + '</span>';
+    case 5:
+      return '<svg class="s s-gem" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4 L34 14 L20 36 L6 14 Z" fill="#4DB6C4" stroke="#E9FFFB" stroke-width="1.2"/><path d="M6 14 L14 14 L20 36 Z M20 4 L26 14 L14 14 Z" fill="#C8F6F2" opacity=".75"/><path d="M6 14 L34 14 M14 14 L20 4 L26 14 M14 14 L20 36 L26 14" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/></svg>';
+    case 6:
+      return '<span class="s s-bar">BAR</span>';
+    case 7:
+      return '<span class="s s-seven">7</span>';
+    case 8:
+      return '<span class="s s-wild"><i>WILD</i></span>';
+    case 9:
+      return '<svg class="s s-scat" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="#8E0E2B" stroke="#F2D68E" stroke-width="2.4"/><circle cx="20" cy="20" r="11.5" fill="none" stroke="#F2D68E" stroke-width="1.2" stroke-dasharray="3 3"/><text x="20" y="23.4" text-anchor="middle" font-family="Figtree,sans-serif" font-weight="800" font-size="8.4" fill="#F2D68E">BONUS</text></svg>';
+  }
+  return '';
+}
+
+var root, reels = [], cells = [], linesSvg, msg, spinBtn, bet, freeBanner, turboBtn, resumeNote;
+var spinning = false, turbo = false, freeRunning = false, lastResult = null;
+
+function build() {
+  root = V.$('#g-slots');
+  var wrap = el('div', { class: 'reels-wrap' });
+  var rl = el('div', { class: 'reels' });
+  for (var r = 0; r < 5; r++) {
+    var reel = el('div', { class: 'reel' });
+    var cs = [];
+    for (var row = 0; row < 3; row++) {
+      var c = el('div', { class: 'cell' });
+      c.innerHTML = symHTML(E.SLOT_STRIPS[r][row]);
+      reel.appendChild(c); cs.push(c);
+    }
+    reels.push(reel); cells.push(cs); rl.appendChild(reel);
+  }
+  linesSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  linesSvg.setAttribute('class', 'lines');
+  linesSvg.setAttribute('viewBox', '0 0 100 100');
+  linesSvg.setAttribute('preserveAspectRatio', 'none');
+  linesSvg.setAttribute('aria-hidden', 'true');
+  wrap.appendChild(rl); wrap.appendChild(linesSvg);
+  freeBanner = el('div', { class: 'free-banner', hidden: true });
+  wrap.appendChild(freeBanner);
+  msg = el('div', { class: 'slot-msg', 'aria-live': 'polite', text: 'Drei gleiche Symbole von links nach rechts gewinnen. Wild ersetzt, drei Bonus-Chips starten Freispiele.' });
+
+  bet = V.betControl('slots', function () { updateSpin(); });
+  spinBtn = el('button', { class: 'btn gold big', type: 'button', onclick: function () { onSpin(); } }, el('span', { text: 'Drehen' }));
+  turboBtn = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': 'false', text: 'Turbo aus', onclick: function () {
+    turbo = !turbo; turboBtn.textContent = turbo ? 'Turbo an' : 'Turbo aus'; turboBtn.setAttribute('aria-pressed', String(turbo)); V.Snd.click();
+  } });
+  resumeNote = el('div', { class: 'note', hidden: true });
+  var controls = el('div', { class: 'controls' }, bet.el, el('div', { class: 'spinbox' }, spinBtn, turboBtn));
+
+  var pt = el('details', { class: 'paytable' }, el('summary', { text: 'Gewinntabelle (Vielfaches des Linieneinsatzes)' }));
+  var tb = el('div', { class: 'pt-grid' });
+  [7, 6, 5, 4, 3, 2, 1, 0, 8].forEach(function (id) {
+    var p = E.SLOT_PAY[id], txt = [];
+    [2, 3, 4, 5].forEach(function (k) { if (p[k]) txt.push(k + '× ' + p[k]); });
+    tb.appendChild(el('div', { class: 'pt-row' }, el('span', { class: 'pt-sym cell', html: symHTML(id) }), el('span', { class: 'pt-txt', text: txt.join(' · ') })));
+  });
+  tb.appendChild(el('div', { class: 'pt-row wide' }, el('span', { class: 'pt-sym cell', html: symHTML(9) }),
+    el('span', { class: 'pt-txt', text: '3× = 2× Gesamteinsatz + 8 Freispiele · 4× = 10× + 12 · 5× = 50× + 20. Im Bonus zählt jeder Gewinn doppelt.' })));
+  pt.appendChild(tb);
+  pt.appendChild(el('p', { class: 'fine', text: '10 Gewinnlinien, 5 Walzen. Auszahlungsquote etwa 96 %: Von 100 Chips Einsatz kommen langfristig im Schnitt rund 96 zurück.' }));
+
+  root.appendChild(wrap); root.appendChild(msg); root.appendChild(resumeNote); root.appendChild(controls); root.appendChild(pt);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' && V.S.game === 'slots' && !/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test((e.target.tagName || ''))) {
+      e.preventDefault(); onSpin();
+    }
+  });
+  V.busyFns.push(function () { return spinning || freeRunning || V.S.free.n > 0; });
+  updateSpin();
+}
+
+function updateSpin() {
+  var S = V.S;
+  var off = spinning || freeRunning;
+  spinBtn.disabled = off;
+  bet.disable(off || S.free.n > 0);
+  spinBtn.firstChild.textContent = S.free.n > 0 ? 'Freispiele laufen' : (off ? 'Dreht …' : 'Drehen · ' + fmt(S.bets.slots));
+  if (S.free.n > 0 && !freeRunning && !spinning) { spinBtn.disabled = false; spinBtn.firstChild.textContent = 'Freispiele fortsetzen (' + S.free.n + ')'; }
+}
+
+function randSym() { return Math.floor(Math.random() * 10); }
+function setCell(r, row, id) { cells[r][row].innerHTML = symHTML(id); }
+function clearWins() {
+  cells.forEach(function (cs) { cs.forEach(function (c) { c.classList.remove('win', 'dim'); }); });
+  while (linesSvg.firstChild) linesSvg.removeChild(linesSvg.firstChild);
+}
+
+async function animate(grid) {
+  var stopAt = turbo ? [160, 240, 320, 400, 480] : [700, 1000, 1300, 1600, 1900];
+  var running = [true, true, true, true, true];
+  reels.forEach(function (rl) { rl.classList.add('spinning'); });
+  var iv = setInterval(function () {
+    for (var r = 0; r < 5; r++) if (running[r]) for (var row = 0; row < 3; row++) setCell(r, row, randSym());
+    V.Snd.tick();
+  }, turbo ? 50 : 75);
+  var t0 = Date.now();
+  for (var r = 0; r < 5; r++) {
+    var wait = stopAt[r] - (Date.now() - t0);
+    if (wait > 0) await sleep(wait);
+    running[r] = false;
+    for (var row = 0; row < 3; row++) setCell(r, row, grid[r][row]);
+    reels[r].classList.remove('spinning');
+    reels[r].classList.add('land');
+    (function (rr) { setTimeout(function () { reels[rr].classList.remove('land'); }, 320); })(r);
+    V.Snd.card();
+  }
+  clearInterval(iv);
+}
+
+function showWins(res, bet0, isFree) {
+  clearWins();
+  var S = V.S;
+  var hit = {};
+  res.wins.forEach(function (w) { w.cells.forEach(function (c) { hit[c[0] + ',' + c[1]] = 1; }); });
+  res.scatCells.forEach(function (c) { if (res.scat >= 3) hit[c[0] + ',' + c[1]] = 1; });
+  var any = Object.keys(hit).length > 0;
+  for (var r = 0; r < 5; r++) for (var row = 0; row < 3; row++) {
+    if (any) cells[r][row].classList.add(hit[r + ',' + row] ? 'win' : 'dim');
+  }
+  var NS = 'http://www.w3.org/2000/svg';
+  res.wins.forEach(function (w) {
+    var pts = w.cells.map(function (c) { return ((c[0] + 0.5) / 5 * 100).toFixed(2) + ',' + ((c[1] + 0.5) / 3 * 100).toFixed(2); }).join(' ');
+    var pl = document.createElementNS(NS, 'polyline');
+    pl.setAttribute('points', pts); pl.setAttribute('class', 'wl'); pl.setAttribute('vector-effect', 'non-scaling-stroke');
+    linesSvg.appendChild(pl);
+  });
+}
+
+function winText(res, isFree) {
+  var parts = [];
+  if (res.wins.length) parts.push(res.wins.length + (res.wins.length === 1 ? ' Linie' : ' Linien'));
+  if (res.scatterPay) parts.push('Bonus-Symbole +' + fmt(res.scatterPay));
+  return parts.join(' · ');
+}
+
+async function oneSpin(isFree) {
+  var S = V.S;
+  var bet0 = isFree ? S.free.bet : S.bets.slots;
+  if (!isFree) {
+    if (S.balance < bet0) { V.needChips(); return null; }
+    V.debit(bet0);
+  }
+  spinning = true; updateSpin(); clearWins();
+  var res = E.slotPlay(bet0 / 10, isFree ? E.FREE_MULT : 1);
+  try {
+    await animate(res.grid);
+  } finally { spinning = false; }
+  showWins(res, bet0, isFree);
+  var total = res.total, ratio = total / bet0;
+  V.settle('slots', isFree ? 0 : bet0, total, { near: res.nearMiss && !res.free, refBet: bet0 });
+  if (isFree) { V.S.free.won += total; }
+  if (total > 0) {
+    msg.className = 'slot-msg win';
+    msg.textContent = (isFree ? 'Freispiel: ' : '') + '+' + fmt(total) + ' Chips (' + winText(res, isFree) + ')' + (total < bet0 && !isFree ? ' · weniger als dein Einsatz' : '');
+    if (ratio >= 20) { V.Snd.big(); V.banner(ratio >= 100 ? 'MEGA WIN' : 'BIG WIN', '+' + fmt(total) + ' Chips', { kind: 'win', ms: 2400 }); V.burst(V.$('#g-slots .reels-wrap'), 36); }
+    else if (ratio >= 5) { V.Snd.win(); V.burst(V.$('#g-slots .reels-wrap'), 14); }
+    else if (total >= bet0) V.Snd.win();
+  } else {
+    msg.className = 'slot-msg';
+    msg.textContent = res.nearMiss ? 'Zwei Bonus-Chips! So knapp am Freispiel-Bonus.' : 'Kein Gewinn.';
+    if (res.nearMiss) cells.forEach(function (cs, r) { cs.forEach(function (c, row) { if (res.grid[r][row] === SYM.SCAT) c.classList.add('win'); }); });
+    V.Snd.lose();
+  }
+  return res;
+}
+
+async function runFree() {
+  if (freeRunning) return;
+  freeRunning = true; updateSpin();
+  var S = V.S;
+  try {
+    while (V.S.free.n > 0) {
+      var f = V.S.free;
+      freeBanner.hidden = false;
+      freeBanner.textContent = 'Freispiele: ' + f.n + ' übrig · Gewinne ×' + E.FREE_MULT + ' · bisher +' + fmt(f.won);
+      await sleep(turbo ? 350 : 900);
+      f.n--; V.save();
+      var res = await oneSpin(true);
+      if (res && res.free) { f.n += res.free; msg.textContent += ' · +' + res.free + ' Freispiele!'; }
+      V.save();
+      await sleep(turbo ? 250 : 650);
+    }
+    var won = V.S.free.won;
+    freeBanner.hidden = true;
+    V.banner('Freispiele beendet', 'Gesamt +' + fmt(won) + ' Chips', { kind: 'win', ms: 3200 });
+    V.S.free = { n: 0, bet: 0, won: 0 };
+    V.save();
+  } finally { freeRunning = false; updateSpin(); }
+}
+
+async function onSpin() {
+  var S = V.S;
+  if (spinning || freeRunning) return;
+  V.Snd.ensure();
+  if (S.free.n > 0) { await runFree(); return; }
+  var res = await oneSpin(false);
+  if (res && res.free) {
+    V.S.free = { n: res.free, bet: V.S.bets.slots, won: 0 };
+    V.save();
+    V.banner(res.free + ' Freispiele!', 'Alle Gewinne zählen doppelt', { kind: 'win', ms: 2200 });
+    V.Snd.big();
+    await sleep(1400);
+    await runFree();
+  }
+  updateSpin();
+}
+
+V.games.push({
+  id: 'slots',
+  init: function () {
+    build();
+    if (V.S.free.n > 0) {
+      resumeNote.hidden = false;
+      resumeNote.textContent = 'Du hast ' + V.S.free.n + ' offene Freispiele. Drück auf den Knopf, um sie zu spielen.';
+    }
+  },
+  onRoom: function () { bet.render(); updateSpin(); },
+  refresh: function () { bet.render(); updateSpin(); }
+});
+})();
+
+/* ===== ui_roulette.js ===== */
+/* Velvet Room – Europäisches Roulette */
+(function () {
+'use strict';
+var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep, short = V.short;
+var NS = 'http://www.w3.org/2000/svg';
+
+var root, cellMap = {}, chipsRow, totalEl, msgEl, histEl, hotEl, spinBtn, undoBtn, clearBtn, rebetBtn, dblBtn, neighBtn;
+var wheelRot, ballOrbit, resultBadge;
+var bets = {}, stack = [], last = {}, spinning = false, resolving = false, neigh = false;
+var wheelAngle = 0, ballAngle = 0;
+var COLORS = { red: 'Rot', black: 'Schwarz', green: 'Grün' };
+
+function sum(o) { var t = 0; for (var k in o) t += o[k]; return t; }
+
+function wheelSvg() {
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 240 240'); svg.setAttribute('aria-hidden', 'true');
+  var cx = 120, cy = 120, R = 114, r = 78, d = 360 / 37;
+  function pt(rad, deg) { var a = deg * Math.PI / 180; return [cx + rad * Math.sin(a), cy - rad * Math.cos(a)]; }
+  var bg = document.createElementNS(NS, 'circle');
+  bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', 119); bg.setAttribute('fill', '#2a1a10'); bg.setAttribute('stroke', '#D4AB52'); bg.setAttribute('stroke-width', '3');
+  svg.appendChild(bg);
+  for (var i = 0; i < 37; i++) {
+    var n = E.R_ORDER[i], a0 = i * d, a1 = (i + 1) * d;
+    var p0 = pt(R, a0), p1 = pt(R, a1), q1 = pt(r, a1), q0 = pt(r, a0);
+    var path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', 'M' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) + ' A' + R + ' ' + R + ' 0 0 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+      ' L' + q1[0].toFixed(2) + ' ' + q1[1].toFixed(2) + ' A' + r + ' ' + r + ' 0 0 0 ' + q0[0].toFixed(2) + ' ' + q0[1].toFixed(2) + ' Z');
+    var col = E.rColor(n);
+    path.setAttribute('fill', col === 'red' ? '#B3182F' : col === 'black' ? '#15101A' : '#0F6A4A');
+    path.setAttribute('stroke', '#D4AB52'); path.setAttribute('stroke-width', '0.8');
+    svg.appendChild(path);
+    var mid = (i + 0.5) * d, tp = pt(97, mid);
+    var t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', tp[0].toFixed(2)); t.setAttribute('y', (tp[1] + 3).toFixed(2));
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '9.5'); t.setAttribute('font-weight', '700');
+    t.setAttribute('font-family', 'IBM Plex Mono, monospace'); t.setAttribute('fill', '#F4EBDB');
+    t.setAttribute('transform', 'rotate(' + mid.toFixed(2) + ' ' + tp[0].toFixed(2) + ' ' + tp[1].toFixed(2) + ')');
+    t.textContent = String(n);
+    svg.appendChild(t);
+  }
+  var ring = document.createElementNS(NS, 'circle');
+  ring.setAttribute('cx', cx); ring.setAttribute('cy', cy); ring.setAttribute('r', 66); ring.setAttribute('fill', '#1a0d10'); ring.setAttribute('stroke', '#D4AB52'); ring.setAttribute('stroke-width', '2');
+  svg.appendChild(ring);
+  var hub = document.createElementNS(NS, 'path');
+  hub.setAttribute('d', 'M120 78 L126 114 L162 120 L126 126 L120 162 L114 126 L78 120 L114 114 Z');
+  hub.setAttribute('fill', '#D4AB52'); hub.setAttribute('opacity', '.9');
+  svg.appendChild(hub);
+  return svg;
+}
+
+function build() {
+  root = V.$('#g-roulette');
+  /* Rad */
+  wheelRot = el('div', { class: 'wheel-rot' });
+  wheelRot.appendChild(wheelSvg());
+  ballOrbit = el('div', { class: 'ball-orbit' }, el('i', { class: 'ball' }));
+  resultBadge = el('div', { class: 'result-badge', 'aria-live': 'polite', text: '–' });
+  var wheel = el('div', { class: 'wheel' }, wheelRot, ballOrbit, el('div', { class: 'pointer' }), resultBadge);
+  histEl = el('div', { class: 'rhist', 'aria-label': 'Letzte Zahlen' });
+  hotEl = el('div', { class: 'hotcold' });
+  var left = el('div', { class: 'rleft' }, wheel, histEl, hotEl);
+
+  /* Tisch */
+  var board = el('div', { class: 'rboard' });
+  function cell(key, label, cls, col, row) {
+    var c = el('button', { class: 'rcell ' + cls, type: 'button', 'data-key': key, 'aria-label': label.label || label, onclick: function () { onCell(key); },
+      oncontextmenu: function (e) { e.preventDefault(); clearSpot(key); } },
+      el('span', { class: 'rl', html: label.html || label }), el('span', { class: 'rchip', hidden: true }));
+    c.style.gridColumn = col; c.style.gridRow = row;
+    board.appendChild(c); cellMap[key] = c;
+    return c;
+  }
+  cell('n0', '0', 'green', '1', '1 / 4');
+  for (var n = 1; n <= 36; n++) {
+    var col = Math.ceil(n / 3) + 1, row = 3 - ((n - 1) % 3);
+    cell('n' + n, String(n), E.rColor(n), String(col), String(row));
+  }
+  cell('c3', '2:1', 'out', '14', '1'); cell('c2', '2:1', 'out', '14', '2'); cell('c1', '2:1', 'out', '14', '3');
+  cell('d1', '1. Dutzend', 'out', '2 / 6', '4'); cell('d2', '2. Dutzend', 'out', '6 / 10', '4'); cell('d3', '3. Dutzend', 'out', '10 / 14', '4');
+  cell('low', '1 – 18', 'out', '2 / 4', '5'); cell('even', 'Gerade', 'out', '4 / 6', '5');
+  cell('red', { label: 'Rot', html: '<i class="dia red"></i>' }, 'out', '6 / 8', '5');
+  cell('black', { label: 'Schwarz', html: '<i class="dia black"></i>' }, 'out', '8 / 10', '5');
+  cell('odd', 'Ungerade', 'out', '10 / 12', '5'); cell('high', '19 – 36', 'out', '12 / 14', '5');
+  var scroll = el('div', { class: 'rscroll' }, board);
+
+  /* Steuerung */
+  chipsRow = el('div', { class: 'chips', role: 'group', 'aria-label': 'Chipwert' });
+  neighBtn = el('button', { class: 'chipbtn', type: 'button', 'aria-pressed': 'false', text: 'Nachbarn ±2', title: 'Setzt auf die Zahl und die je zwei Nachbarn im Kessel',
+    onclick: function () { neigh = !neigh; neighBtn.setAttribute('aria-pressed', String(neigh)); neighBtn.classList.toggle('on', neigh); V.Snd.click(); } });
+  undoBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Zurück', onclick: undo });
+  clearBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Leeren', onclick: clearAll });
+  rebetBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Wiederholen', onclick: rebet });
+  dblBtn = el('button', { class: 'btn ghost sm', type: 'button', text: 'Verdoppeln', onclick: dbl });
+  spinBtn = el('button', { class: 'btn gold big', type: 'button', text: 'Kugel rollen lassen', onclick: spin });
+  totalEl = el('div', { class: 'rtotal', text: 'Auf dem Tisch: 0' });
+  msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite', text: 'Setz Chips auf Zahlen oder Felder. Rechtsklick entfernt ein Feld. Einzelzahl zahlt 35:1.' });
+  var ctl = el('div', { class: 'rctl' },
+    el('div', { class: 'rrow' }, el('span', { class: 'lbl', text: 'Chip' }), chipsRow, neighBtn),
+    el('div', { class: 'rrow' }, undoBtn, clearBtn, rebetBtn, dblBtn, totalEl),
+    spinBtn);
+  var right = el('div', { class: 'rright' }, scroll, ctl, msgEl);
+  root.appendChild(el('div', { class: 'rlayout' }, left, right));
+  root.appendChild(el('p', { class: 'fine', text: 'Europäisches Roulette mit einer Null: Jede Wette hat 97,3 % Auszahlungsquote (2,7 % Hausvorteil). Die Kugel hat kein Gedächtnis, heiß und kalt sind reiner Zufall.' }));
+  V.busyFns.push(function () { return spinning || resolving || Object.keys(bets).length > 0; });
+  renderChips(); renderHist(); renderBets();
+}
+
+function renderChips() {
+  var S = V.S, list = V.chipList();
+  if (list.indexOf(S.rchip) < 0) S.rchip = list[0];
+  chipsRow.innerHTML = '';
+  list.forEach(function (v) {
+    chipsRow.appendChild(el('button', { class: 'chip c' + String(v).length, type: 'button', 'aria-pressed': String(v === S.rchip), text: short(v), 'aria-label': 'Chip ' + fmt(v),
+      onclick: function () { S.rchip = v; V.Snd.click(); renderChips(); V.save(); } }));
+  });
+}
+
+function renderBets() {
+  var t = sum(bets);
+  for (var k in cellMap) {
+    var c = cellMap[k], amt = bets[k] || 0, ch = c.querySelector('.rchip');
+    ch.hidden = amt <= 0; ch.textContent = amt > 0 ? short(amt) : '';
+    c.classList.toggle('has', amt > 0);
+  }
+  totalEl.textContent = 'Auf dem Tisch: ' + fmt(t);
+  var off = spinning || resolving;
+  spinBtn.disabled = off || t <= 0;
+  undoBtn.disabled = off || stack.length === 0;
+  clearBtn.disabled = off || t <= 0;
+  rebetBtn.disabled = off || t > 0 || sum(last) <= 0;
+  dblBtn.disabled = off || t <= 0;
+  chipsRow.querySelectorAll('button').forEach(function (b) { b.disabled = off; });
+  neighBtn.disabled = off;
+}
+
+function place(keys, amt) {
+  var S = V.S, r = V.room();
+  if (spinning || resolving) return false;
+  if (amt < r.min) { V.toast('Mindesteinsatz in diesem Raum: ' + fmt(r.min), 'bad'); return false; }
+  var cost = amt * keys.length;
+  if (S.balance < cost) { V.needChips(); return false; }
+  for (var i = 0; i < keys.length; i++) {
+    if ((bets[keys[i]] || 0) + amt > r.max) { V.toast('Tischlimit pro Feld: ' + fmt(r.max), 'bad'); return false; }
+  }
+  V.debit(cost);
+  keys.forEach(function (k) { bets[k] = (bets[k] || 0) + amt; });
+  stack.push(keys.map(function (k) { return { key: k, amount: amt }; }));
+  V.Snd.chip(); V.hud(); renderBets();
+  return true;
+}
+function onCell(key) {
+  var amt = V.S.rchip, keys = [key];
+  if (neigh && key.charAt(0) === 'n') {
+    keys = E.rNeighbors(Number(key.slice(1)), 2).map(function (n) { return 'n' + n; });
+  }
+  place(keys, amt);
+}
+function undo() {
+  if (spinning || resolving || !stack.length) return;
+  var g = stack.pop(), back = 0;
+  g.forEach(function (x) {
+    bets[x.key] -= x.amount; back += x.amount;
+    if (bets[x.key] <= 0) delete bets[x.key];
+  });
+  V.refund(back); V.hud(); renderBets(); V.Snd.click();
+}
+function clearAll() {
+  if (spinning || resolving) return;
+  var t = sum(bets);
+  if (t > 0) V.refund(t);
+  bets = {}; stack = [];
+  V.hud(); renderBets();
+}
+function clearSpot(key) {
+  if (spinning || resolving || !bets[key]) return;
+  V.refund(bets[key]);
+  delete bets[key];
+  stack = stack.map(function (g) { return g.filter(function (x) { return x.key !== key; }); }).filter(function (g) { return g.length; });
+  V.hud(); renderBets();
+}
+function rebet() {
+  if (spinning || resolving || sum(bets) > 0 || sum(last) <= 0) return;
+  var r = V.room(), t = sum(last), ok = true;
+  for (var k in last) if (last[k] < r.min || last[k] > r.max) ok = false;
+  if (!ok) { V.toast('Die letzte Wette passt nicht zu den Limits dieses Raums.', 'bad'); return; }
+  if (V.S.balance < t) { V.needChips(); return; }
+  V.debit(t);
+  bets = Object.assign({}, last);
+  stack = [Object.keys(last).map(function (k2) { return { key: k2, amount: last[k2] }; })];
+  V.Snd.chip(); V.hud(); renderBets();
+}
+function dbl() {
+  if (spinning || resolving) return;
+  var t = sum(bets), r = V.room();
+  if (t <= 0) return;
+  for (var k in bets) if (bets[k] * 2 > r.max) { V.toast('Tischlimit pro Feld: ' + fmt(r.max), 'bad'); return; }
+  if (V.S.balance < t) { V.needChips(); return; }
+  V.debit(t);
+  var g = [];
+  for (var k2 in bets) { g.push({ key: k2, amount: bets[k2] }); bets[k2] *= 2; }
+  stack.push(g);
+  V.Snd.chip(); V.hud(); renderBets();
+}
+
+function renderHist() {
+  var S = V.S;
+  histEl.innerHTML = '';
+  S.rhist.slice(-14).reverse().forEach(function (n) {
+    histEl.appendChild(el('span', { class: 'hp ' + E.rColor(n), text: String(n) }));
+  });
+  hotEl.innerHTML = '';
+  if (S.rhist.length < 10) { hotEl.appendChild(el('span', { text: 'Heiß-und-Kalt-Liste ab 10 Spins.' })); return; }
+  var cnt = []; for (var i = 0; i < 37; i++) cnt.push({ n: i, c: 0 });
+  S.rhist.forEach(function (n) { cnt[n].c++; });
+  var sorted = cnt.slice().sort(function (a, b) { return b.c - a.c || a.n - b.n; });
+  var hot = sorted.slice(0, 3), cold = sorted.slice(-3).reverse();
+  hotEl.appendChild(el('span', { class: 'hot', text: 'Heiß: ' + hot.map(function (x) { return x.n + ' (' + x.c + '×)'; }).join(', ') }));
+  hotEl.appendChild(el('span', { class: 'cold', text: 'Kalt: ' + cold.map(function (x) { return x.n + ' (' + x.c + '×)'; }).join(', ') }));
+  hotEl.appendChild(el('span', { class: 'fine', text: 'Beliebt, aber ohne Aussagekraft: Jede Zahl hat jedes Mal dieselbe Chance.' }));
+}
+
+async function spin() {
+  if (spinning || resolving) return;
+  var t = sum(bets);
+  if (t <= 0) { V.toast('Setz zuerst Chips auf den Tisch.', 'bad'); return; }
+  V.Snd.ensure();
+  spinning = true; renderBets();
+  last = Object.assign({}, bets);
+  var n = E.rSpin(), idx = E.R_ORDER.indexOf(n), d = 360 / 37;
+  msgEl.className = 'slot-msg'; msgEl.textContent = 'Rien ne va plus …';
+  resultBadge.textContent = '…'; resultBadge.className = 'result-badge';
+  ballOrbit.classList.remove('drop');
+  wheelAngle = Math.ceil(wheelAngle / 360) * 360 + 1800 - (idx + 0.5) * d;
+  ballAngle = Math.floor(ballAngle / 360) * 360 - 2160;
+  wheelRot.style.transform = 'rotate(' + wheelAngle.toFixed(3) + 'deg)';
+  ballOrbit.style.transform = 'rotate(' + ballAngle.toFixed(3) + 'deg)';
+  var tk = setInterval(function () { V.Snd.tick(); }, 180);
+  setTimeout(function () { ballOrbit.classList.add('drop'); }, 3900);
+  await sleep(5300);
+  clearInterval(tk);
+  var res = E.rResolve(bets, n);
+  var S = V.S;
+  S.rhist.push(n); if (S.rhist.length > 120) S.rhist.shift();
+  resultBadge.textContent = String(n); resultBadge.className = 'result-badge ' + E.rColor(n);
+  spinning = false; resolving = true;
+  V.settle('roulette', res.staked, res.ret, {});
+  var net = res.ret - res.staked;
+  for (var k in res.won) if (cellMap[k]) cellMap[k].classList.add('won');
+  msgEl.className = 'slot-msg ' + (net > 0 ? 'win' : '');
+  msgEl.textContent = 'Gewinnzahl ' + n + ' (' + COLORS[E.rColor(n)] + '). ' + (res.ret > 0
+    ? 'Zurück: ' + fmt(res.ret) + ' Chips (' + (net >= 0 ? '+' : '') + fmt(net) + ')' : 'Kein Treffer, ' + fmt(res.staked) + ' Chips gehen ans Haus.');
+  if (net > 0) {
+    var ratio = res.ret / res.staked;
+    if (ratio >= 8) { V.Snd.big(); V.burst(V.$('#g-roulette .wheel'), 30); V.banner(ratio >= 20 ? 'VOLLTREFFER' : 'BIG WIN', '+' + fmt(net) + ' Chips', { kind: 'win', ms: 2400 }); }
+    else V.Snd.win();
+  } else V.Snd.lose();
+  renderHist(); renderBets();
+  await sleep(2200);
+  for (var k2 in cellMap) cellMap[k2].classList.remove('won');
+  bets = {}; stack = []; resolving = false;
+  renderBets();
+}
+
+V.games.push({
+  id: 'roulette',
+  init: build,
+  onRoom: function () { renderChips(); renderBets(); },
+  refresh: function () { renderBets(); }
+});
+})();
+
+/* ===== ui_bj.js ===== */
+/* Velvet Room – Blackjack (6 Decks, Dealer steht auf soft 17, Blackjack zahlt 3:2) */
+(function () {
+'use strict';
+var E = V.E, el = V.el, fmt = V.fmt, sleep = V.sleep;
+
+var root, dealerEl, handsEl, msgEl, ctlEl, betCtl, dealBtn, hintBtn, shoeEl, btns = {}, insRow, adviceEl;
+var st = null, shoe = null, dealerShown = 1, busy = false, seen = new Map();
+var NAMEACT = { hit: 'Karte', stand: 'Halten', double: 'Verdoppeln', split: 'Teilen', surrender: 'Aufgeben' };
+
+function isRed(c) { return c.s === '♥' || c.s === '♦'; }
+function cardEl(c, down) {
+  var key = down ? 'down' : 'up', prev = seen.get(c);
+  var n;
+  if (down) n = el('div', { class: 'pcard back', 'aria-label': 'Verdeckte Karte' });
+  else n = el('div', { class: 'pcard ' + (isRed(c) ? 'red' : 'blk'), 'aria-label': c.r + ' ' + c.s },
+    el('span', { class: 'cr', text: c.r }), el('span', { class: 'cs', text: c.s }), el('span', { class: 'cbig', text: c.s }));
+  if (prev !== key) { n.classList.add('deal'); seen.set(c, key); }
+  return n;
+}
+function valText(cards) {
+  var v = E.handValue(cards);
+  return v.soft && v.total < 21 ? (v.total - 10) + ' / ' + v.total : String(v.total);
+}
+
+function build() {
+  root = V.$('#g-bj');
+  dealerEl = el('div', { class: 'bj-dealer' });
+  handsEl = el('div', { class: 'bj-hands' });
+  msgEl = el('div', { class: 'bj-msg', 'aria-live': 'polite', text: 'Schlag den Dealer, ohne über 21 zu kommen. Blackjack zahlt 3:2.' });
+  shoeEl = el('div', { class: 'fine bj-shoe' });
+  var table = el('div', { class: 'bj-table' }, dealerEl, msgEl, handsEl, shoeEl);
+
+  betCtl = V.betControl('bj');
+  dealBtn = el('button', { class: 'btn gold big', type: 'button', text: 'Austeilen', onclick: deal });
+  ['hit', 'stand', 'double', 'split', 'surrender'].forEach(function (k) {
+    btns[k] = el('button', { class: 'btn act', type: 'button', text: NAMEACT[k], onclick: function () { act(k); } });
+  });
+  insRow = el('div', { class: 'ins-row', hidden: true },
+    el('span', { class: 'ins-txt' }),
+    el('button', { class: 'btn ghost', type: 'button', text: 'Versichern', onclick: function () { insure(true); } }),
+    el('button', { class: 'btn ghost', type: 'button', text: 'Nein danke', onclick: function () { insure(false); } }));
+  hintBtn = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(V.S.hint), text: V.S.hint ? 'Strategie-Tipp an' : 'Strategie-Tipp aus', onclick: function () {
+    V.S.hint = !V.S.hint; V.save(); renderBJ(); V.Snd.click();
+  } });
+  adviceEl = el('div', { class: 'advice', 'aria-live': 'polite' });
+  var acts = el('div', { class: 'acts' }, btns.hit, btns.stand, btns.double, btns.split, btns.surrender);
+  ctlEl = el('div', { class: 'controls' }, betCtl.el, el('div', { class: 'spinbox' }, dealBtn, hintBtn));
+  root.appendChild(table); root.appendChild(insRow); root.appendChild(acts); root.appendChild(adviceEl); root.appendChild(ctlEl);
+  root.appendChild(el('p', { class: 'fine', text: '6 Decks, Dealer steht auf soft 17, Verdoppeln nach dem Teilen, bis zu 4 Hände, späte Aufgabe, Versicherung 2:1. Mit Basisstrategie liegt der Hausvorteil bei etwa 0,4 %. Ohne sie deutlich höher.' }));
+  V.busyFns.push(function () { return busy || (st && st.phase !== 'done'); });
+  renderBJ();
+}
+
+function active() { return st && st.phase !== 'done'; }
+
+function renderBJ() {
+  var S = V.S;
+  dealerEl.innerHTML = '';
+  handsEl.innerHTML = '';
+  var inRound = st && !busy && st.phase !== 'done';
+  if (!st) {
+    dealerEl.appendChild(el('div', { class: 'hand-h' }, el('b', { text: 'Dealer' })));
+    dealerEl.appendChild(el('div', { class: 'hand-cards empty', text: 'Setz deinen Einsatz und teile aus.' }));
+  } else {
+    var shownCards = st.dealer.slice(0, dealerShown);
+    var head = el('div', { class: 'hand-h' }, el('b', { text: 'Dealer' }), el('span', { class: 'hv', text: valText(shownCards) }));
+    var cards = el('div', { class: 'hand-cards' });
+    st.dealer.forEach(function (c, i) {
+      if (i === 1 && dealerShown < 2) cards.appendChild(cardEl(c, true));
+      else if (i < dealerShown) cards.appendChild(cardEl(c, false));
+    });
+    dealerEl.appendChild(head); dealerEl.appendChild(cards);
+    st.hands.forEach(function (h, i) {
+      var isAct = st.phase === 'player' && i === st.active && !busy;
+      var wrap = el('div', { class: 'hand' + (isAct ? ' active' : '') + (h.result ? ' res-' + h.result : '') });
+      var hh = el('div', { class: 'hand-h' }, el('b', { text: st.hands.length > 1 ? 'Hand ' + (i + 1) : 'Du' }),
+        el('span', { class: 'hv', text: valText(h.cards) }), el('span', { class: 'hbet', text: fmt(h.bet) }));
+      var hc = el('div', { class: 'hand-cards' });
+      h.cards.forEach(function (c) { hc.appendChild(cardEl(c, false)); });
+      wrap.appendChild(hh); wrap.appendChild(hc);
+      if (h.result && st.settled) {
+        var L = { win: 'Gewonnen', blackjack: 'Blackjack', push: 'Push', lose: 'Verloren', bust: 'Bust', surrender: 'Aufgegeben' }[h.result];
+        var d = h.payout - h.bet;
+        wrap.appendChild(el('div', { class: 'hres ' + h.result, text: L + (d !== 0 && h.result !== 'surrender' ? ' ' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)) : (h.result === 'surrender' ? ' −' + fmt(h.bet - h.payout) : '')) }));
+      }
+      handsEl.appendChild(wrap);
+    });
+  }
+  /* Schuh */
+  if (shoe) {
+    var left = Math.round((1 - shoe.pos / shoe.cards.length) * 100);
+    shoeEl.textContent = 'Schuh: ' + left + ' % übrig, Mischen bei 25 %.';
+  } else shoeEl.textContent = 'Frischer Schuh mit 6 Decks.';
+  /* Knöpfe */
+  var can = inRound ? E.bjCan(st, S.balance) : { hit: false, stand: false, double: false, split: false, surrender: false, insurance: false };
+  var inIns = st && st.phase === 'insurance' && !busy;
+  insRow.hidden = !inIns;
+  if (inIns) {
+    var cost = Math.floor(st.bet0 / 2);
+    insRow.querySelector('.ins-txt').textContent = 'Dealer zeigt ein Ass. Versicherung für ' + fmt(cost) + ' Chips (zahlt 2:1)?';
+    insRow.querySelectorAll('button')[0].disabled = S.balance < cost;
+  }
+  ['hit', 'stand', 'double', 'split', 'surrender'].forEach(function (k) {
+    btns[k].disabled = !can[k];
+    btns[k].classList.remove('rec');
+  });
+  var canDeal = !busy && (!st || st.phase === 'done');
+  dealBtn.disabled = !canDeal;
+  dealBtn.textContent = canDeal ? 'Austeilen · ' + fmt(S.bets.bj) : 'Läuft …';
+  betCtl.disable(!canDeal);
+  hintBtn.setAttribute('aria-pressed', String(S.hint));
+  hintBtn.textContent = S.hint ? 'Strategie-Tipp an' : 'Strategie-Tipp aus';
+  adviceEl.textContent = '';
+  if (S.hint && inRound) {
+    var h2 = st.hands[st.active];
+    var a = E.bjAdvice(h2.cards, st.dealer[0], can);
+    if (!can[a]) a = can.stand ? 'stand' : 'hit';
+    if (btns[a]) btns[a].classList.add('rec');
+    adviceEl.textContent = 'Basisstrategie empfiehlt: ' + NAMEACT[a] + '.';
+  } else if (S.hint && inIns) {
+    adviceEl.textContent = 'Basisstrategie empfiehlt: keine Versicherung. Auf lange Sicht ist sie eine Verlustwette.';
+  }
+}
+
+async function deal() {
+  var S = V.S;
+  if (busy || (st && st.phase !== 'done')) return;
+  var bet = S.bets.bj;
+  if (S.balance < bet) { V.needChips(); return; }
+  V.Snd.ensure();
+  if (!shoe || E.shoeNeedsShuffle(shoe)) { if (shoe) V.toast('Der Dealer mischt einen neuen Schuh.', ''); shoe = E.newShoe(6); }
+  V.debit(bet);
+  seen = new Map();
+  dealerShown = 1;
+  st = E.bjDeal(shoe, bet);
+  msgEl.className = 'bj-msg'; msgEl.textContent = '';
+  V.Snd.card();
+  V.hud();
+  renderBJ();
+  if (st.phase === 'done') await finishRound();
+  else if (st.phase === 'insurance') msgEl.textContent = 'Dealer zeigt ein Ass.';
+}
+
+async function act(name) {
+  var S = V.S;
+  if (busy || !st || st.phase !== 'player') return;
+  var can = E.bjCan(st, S.balance);
+  if (!can[name]) return;
+  V.Snd.card();
+  if (name === 'hit') E.bjHit(st);
+  else if (name === 'stand') E.bjStand(st);
+  else if (name === 'surrender') E.bjSurrender(st);
+  else if (name === 'double') {
+    var c1 = st.hands[st.active].bet; V.debit(c1); E.bjDouble(st);
+  } else if (name === 'split') {
+    var c2 = st.hands[st.active].bet; V.debit(c2); E.bjSplit(st);
+  }
+  V.hud();
+  renderBJ();
+  if (st.phase === 'done') await finishRound();
+  else {
+    var h = st.hands[st.active];
+    if (h && E.handValue(h.cards).total > 21) msgEl.textContent = '';
+  }
+}
+
+async function insure(take) {
+  if (busy || !st || st.phase !== 'insurance') return;
+  var S = V.S, cost = Math.floor(st.bet0 / 2);
+  if (take) {
+    if (S.balance < cost) { V.needChips(); return; }
+    V.debit(cost);
+  }
+  E.bjInsurance(st, take);
+  V.hud();
+  msgEl.textContent = '';
+  renderBJ();
+  if (st.phase === 'done') await finishRound();
+}
+
+async function finishRound() {
+  busy = true; renderBJ();
+  dealerShown = Math.max(dealerShown, 2); renderBJ(); V.Snd.card();
+  await sleep(600);
+  for (var i = 2; i < st.dealer.length; i++) {
+    dealerShown = i + 1; renderBJ(); V.Snd.card(); await sleep(650);
+  }
+  st.settled = true;
+  var net = st.returned - st.staked;
+  var bust = st.hands.length === 1 && st.hands[0].result === 'bust';
+  var nat = st.hands.some(function (h) { return h.result === 'blackjack'; });
+  V.settle('bj', st.staked, st.returned, {});
+  var txt;
+  if (nat) txt = 'Blackjack! ' + (net > 0 ? '+' + fmt(net) + ' Chips' : '');
+  else if (net > 0) txt = 'Gewonnen: +' + fmt(net) + ' Chips';
+  else if (net < 0) txt = (bust ? 'Bust. ' : '') + 'Verloren: −' + fmt(-net) + ' Chips';
+  else txt = 'Push: Einsatz zurück.';
+  if (st.insuranceReturn > 0) txt += ' Versicherung zahlt +' + fmt(st.insuranceReturn - st.insurance) + '.';
+  msgEl.className = 'bj-msg ' + (net > 0 ? 'win' : net < 0 ? 'lose' : '');
+  msgEl.textContent = txt;
+  if (bust && net < 0 && Math.random() < 0.6) V.say('bust', true);
+  if (net > 0) { if (nat || net >= st.bet0 * 3) { V.Snd.big(); V.burst(V.$('#g-bj .bj-table'), 26); } else V.Snd.win(); }
+  else if (net < 0) V.Snd.lose();
+  busy = false;
+  renderBJ();
+}
+
+V.games.push({
+  id: 'bj',
+  init: build,
+  onRoom: function () { betCtl.render(); renderBJ(); },
+  refresh: function () { if (betCtl) { betCtl.render(); renderBJ(); } }
+});
+})();
+
+/* ===== ui_crash.js ===== */
+/* Velvet Room – Crash ("Rocket Lounge") */
+(function () {
+'use strict';
+var E = V.E, el = V.el, fmt = V.fmt, fmtX = V.fmtX;
+
+var root, canvas, ctx, multEl, subEl, histEl, betCtl, goBtn, autoIn, autoChk, msgEl;
+var running = false, cashed = false, cp = 1, t0 = 0, raf = 0, bet = 0, cashAt = 0, curM = 1, curT = 0, crashedAt = 0;
+var colors = {};
+
+function readColors() {
+  var cs = getComputedStyle(document.documentElement);
+  ['--gold', '--gold-hi', '--crimson', '--ivory', '--muted', '--line', '--felt', '--good'].forEach(function (k) { colors[k] = cs.getPropertyValue(k).trim() || '#ccc'; });
+}
+
+function build() {
+  root = V.$('#g-crash');
+  canvas = el('canvas', { class: 'crash-cv', 'aria-hidden': 'true' });
+  multEl = el('div', { class: 'crash-mult', text: '1,00×' });
+  subEl = el('div', { class: 'crash-sub', 'aria-live': 'polite', text: 'Steig ein und zahl aus, bevor die Kurve abstürzt.' });
+  var stage = el('div', { class: 'crash-stage' }, canvas, el('div', { class: 'crash-over' }, multEl, subEl));
+  histEl = el('div', { class: 'chist', 'aria-label': 'Letzte Crash-Punkte' });
+
+  betCtl = V.betControl('crash');
+  autoChk = el('input', { type: 'checkbox', id: 'crashAutoChk' });
+  autoIn = el('input', { type: 'number', id: 'crashAuto', min: '1.01', max: '10000', step: '0.01', value: '2.00', inputmode: 'decimal' });
+  var autoRow = el('label', { class: 'autorow', for: 'crashAutoChk' }, autoChk, el('span', { text: 'Auto-Auszahlen bei' }), autoIn, el('span', { text: '×' }));
+  goBtn = el('button', { class: 'btn gold big', type: 'button', onclick: onGo });
+  msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
+  root.appendChild(stage); root.appendChild(histEl); root.appendChild(msgEl);
+  root.appendChild(el('div', { class: 'controls' }, betCtl.el, el('div', { class: 'spinbox' }, goBtn, autoRow)));
+  root.appendChild(el('p', { class: 'fine', text: 'Der Multiplikator steigt, bis er an einem zufälligen Punkt abstürzt. Zahlst du vorher aus, bekommst du Einsatz × Multiplikator. Hausvorteil 1 %: Die Chance, 2,00× zu erreichen, liegt bei 49,5 %, für 10× bei 9,9 %.' }));
+  V.busyFns.push(function () { return running; });
+  window.addEventListener('resize', function () { size(); draw(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' && V.S.game === 'crash' && !/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName || '')) { e.preventDefault(); onGo(); }
+  });
+  readColors(); renderHist(); renderBtn();
+}
+
+function size() {
+  if (!canvas) return;
+  var r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  var w = Math.max(10, Math.round(r.width * d)), h = Math.max(10, Math.round(r.height * d));
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  ctx = canvas.getContext('2d');
+}
+
+function autoVal() {
+  if (!autoChk.checked) return 0;
+  var v = parseFloat(String(autoIn.value).replace(',', '.'));
+  if (!isFinite(v) || v < 1.01) return 0;
+  return Math.floor(v * 100) / 100;
+}
+
+function renderBtn() {
+  if (!running) { goBtn.textContent = 'Einsteigen · ' + fmt(V.S.bets.crash); goBtn.disabled = false; goBtn.classList.remove('cash'); }
+  else if (!cashed) { goBtn.textContent = 'Auszahlen · ' + fmt(Math.floor(bet * Math.floor(curM * 100) / 100)); goBtn.disabled = false; goBtn.classList.add('cash'); }
+  else { goBtn.textContent = 'Überspringen'; goBtn.disabled = false; goBtn.classList.remove('cash'); }
+  betCtl.disable(running);
+  autoIn.disabled = running; autoChk.disabled = running;
+}
+
+function renderHist() {
+  histEl.innerHTML = '';
+  V.S.chist.slice(-16).reverse().forEach(function (c) {
+    histEl.appendChild(el('span', { class: 'cp ' + (c >= 10 ? 'hi' : c >= 2 ? 'mid' : 'lo'), text: fmtX(c) }));
+  });
+}
+
+function draw() {
+  if (!ctx) size();
+  if (!ctx) return;
+  var w = canvas.width, h = canvas.height, d = window.devicePixelRatio || 1;
+  ctx.clearRect(0, 0, w, h);
+  var padL = 44 * d, padB = 26 * d, padT = 14 * d, padR = 14 * d;
+  var tMax = Math.max(8, curT * 1.12), mMax = Math.max(2, 1 + (curM - 1) * 1.15);
+  function X(t) { return padL + (t / tMax) * (w - padL - padR); }
+  function Y(m) { return h - padB - ((m - 1) / (mMax - 1)) * (h - padB - padT); }
+  ctx.font = (11 * d) + 'px "IBM Plex Mono", monospace';
+  ctx.fillStyle = colors['--muted']; ctx.strokeStyle = colors['--line']; ctx.lineWidth = 1 * d;
+  var steps = niceSteps(mMax - 1);
+  for (var v = 0; v <= mMax - 1 + 1e-9; v += steps) {
+    var y = Y(1 + v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.fillText((1 + v).toFixed(steps < 1 ? 1 : 0).replace('.', ',') + '×', padL - 6 * d, y + 4 * d);
+  }
+  var ts = tMax > 30 ? 10 : tMax > 14 ? 4 : 2;
+  ctx.textAlign = 'center';
+  for (var t = 0; t <= tMax; t += ts) ctx.fillText(t + 's', X(t), h - 8 * d);
+  if (curT <= 0) return;
+  var col = crashedAt ? colors['--crimson'] : colors['--gold-hi'];
+  ctx.beginPath(); ctx.moveTo(X(0), Y(1));
+  var n = 80;
+  for (var i = 1; i <= n; i++) { var tt = curT * i / n; ctx.lineTo(X(tt), Y(Math.min(E.crashMult(tt), curM))); }
+  ctx.lineTo(X(curT), Y(1)); ctx.closePath();
+  var g = ctx.createLinearGradient(0, padT, 0, h - padB);
+  g.addColorStop(0, hexA(col, 0.35)); g.addColorStop(1, hexA(col, 0));
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(X(0), Y(1));
+  for (var j = 1; j <= n; j++) { var t2 = curT * j / n; ctx.lineTo(X(t2), Y(Math.min(E.crashMult(t2), curM))); }
+  ctx.strokeStyle = col; ctx.lineWidth = 3 * d; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(X(curT), Y(curM), 5 * d, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+  if (cashed && cashAt > 0) {
+    var tc = E.crashTime(cashAt);
+    if (tc <= curT) {
+      ctx.setLineDash([4 * d, 4 * d]); ctx.strokeStyle = colors['--good']; ctx.lineWidth = 1.5 * d;
+      ctx.beginPath(); ctx.moveTo(padL, Y(cashAt)); ctx.lineTo(w - padR, Y(cashAt)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = colors['--good']; ctx.textAlign = 'left';
+      ctx.fillText('ausgezahlt ' + fmtX(cashAt), padL + 6 * d, Y(cashAt) - 6 * d);
+    }
+  }
+}
+function niceSteps(range) {
+  var raw = range / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+}
+function hexA(c, a) {
+  var m = /^#([0-9a-f]{6})$/i.exec(c);
+  if (!m) return c;
+  var n = parseInt(m[1], 16);
+  return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+function onGo() {
+  V.Snd.ensure();
+  if (!running) start();
+  else if (!cashed) cashout(Math.floor(curM * 100) / 100);
+  else finish();
+}
+
+function start() {
+  var S = V.S;
+  bet = S.bets.crash;
+  if (S.balance < bet) { V.needChips(); return; }
+  V.debit(bet); V.hud();
+  readColors(); size();
+  cp = E.crashPoint();
+  running = true; cashed = false; cashAt = 0; curM = 1; curT = 0; crashedAt = 0;
+  multEl.className = 'crash-mult live'; subEl.textContent = 'Läuft …'; msgEl.textContent = ''; msgEl.className = 'slot-msg';
+  t0 = performance.now();
+  renderBtn();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(loop);
+}
+
+var lastTick = 0;
+function loop(now) {
+  if (!running) return;
+  curT = (now - t0) / 1000;
+  curM = E.crashMult(curT);
+  var auto = autoVal();
+  if (!cashed && auto && auto <= cp && curM >= auto) cashout(auto);
+  if (curM >= cp) { curM = cp; curT = E.crashTime(cp); crash(); return; }
+  multEl.textContent = fmtX(Math.floor(curM * 100) / 100);
+  if (!cashed) renderBtn();
+  if (now - lastTick > Math.max(70, 260 - curM * 20)) { V.Snd.tick(); lastTick = now; }
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+
+function cashout(at) {
+  if (!running || cashed || at > cp) return;
+  cashed = true; cashAt = at;
+  var ret = Math.floor(bet * at);
+  V.settle('crash', bet, ret, {});
+  V.S.bestMult = Math.max(V.S.bestMult, at);
+  V.Snd.cash();
+  subEl.textContent = 'Ausgezahlt bei ' + fmtX(at) + ': +' + fmt(ret - bet) + ' Chips';
+  msgEl.className = 'slot-msg win';
+  msgEl.textContent = 'Ausgezahlt: ' + fmt(ret) + ' Chips. Die Kurve läuft weiter, du kannst überspringen.';
+  if (at >= 10) { V.Snd.big(); V.burst(V.$('#g-crash .crash-stage'), 30); V.banner('BIG CASHOUT', fmtX(at) + ' · +' + fmt(ret - bet), { kind: 'win', ms: 2400 }); }
+  renderBtn();
+}
+
+function crash() {
+  running = false; crashedAt = cp;
+  cancelAnimationFrame(raf);
+  multEl.textContent = fmtX(cp); multEl.className = 'crash-mult dead';
+  V.S.chist.push(cp); if (V.S.chist.length > 30) V.S.chist.shift();
+  if (!cashed) {
+    V.settle('crash', bet, 0, {});
+    V.Snd.crash();
+    subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + '. Einsatz verloren.';
+    msgEl.className = 'slot-msg';
+    msgEl.textContent = cp <= 1.0 ? 'Sofort-Crash bei 1,00×. Das passiert in etwa 2 von 100 Runden.' : 'Zu spät. ' + fmt(bet) + ' Chips gehen ans Haus.';
+  } else {
+    subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + ' · du hattest bei ' + fmtX(cashAt) + ' ausgezahlt.';
+    if (cp > cashAt * 1.5) msgEl.textContent = 'Hättest du gewartet: ' + fmtX(cp) + '. Genau dieses Gefühl hält Spieler am Tisch.';
+    V.save();
+  }
+  draw(); renderHist(); renderBtn();
+}
+
+function finish() {
+  if (!running) return;
+  curM = cp; curT = E.crashTime(cp);
+  crash();
+}
+
+V.games.push({
+  id: 'crash',
+  init: build,
+  onShow: function () { readColors(); size(); draw(); },
+  onRoom: function () { betCtl.render(); renderBtn(); },
+  refresh: function () { if (betCtl) { betCtl.render(); if (!running) renderBtn(); } }
+});
+})();
+
+/* ===== ui_side.js ===== */
+/* Velvet Room – Seitenpanel: Stufen, Zockerprofil, Statistik, Haus */
+(function () {
+'use strict';
+var E = V.E, A = V.A, el = V.el, fmt = V.fmt, short = V.short;
+
+var tabsEl, body, confirmReset = false;
+var EDGE = { slots: 0.04, roulette: 1 / 37, bj: 0.005, crash: 0.01 };
+var GNAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
+var TABS = [{ id: 'stufen', label: 'Stufen' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Hinter den Kulissen' }];
+
+function build() {
+  var host = V.$('#side');
+  tabsEl = el('div', { class: 'tabs', role: 'tablist' });
+  body = el('div', { class: 'side-body', role: 'tabpanel' });
+  host.appendChild(tabsEl); host.appendChild(body);
+  refresh();
+}
+
+function refresh() {
+  if (!body) return;
+  var S = V.S;
+  V.tabs(tabsEl, TABS, S.sideTab, function (id) { S.sideTab = id; confirmReset = false; V.Snd.click(); V.save(); refresh(); });
+  body.innerHTML = '';
+  if (S.sideTab === 'stufen') stufen();
+  else if (S.sideTab === 'profil') profil();
+  else if (S.sideTab === 'stats') stats();
+  else haus();
+}
+
+function stufen() {
+  var S = V.S, list = el('div', { class: 'tiers' });
+  E.TIERS.forEach(function (T, i) {
+    var h = A.HOSTESSES[i], locked = i > S.unlocked, here = i === S.room;
+    var card = el('div', { class: 'tier' + (locked ? ' locked' : '') + (here ? ' here' : '') });
+    var pic = el('div', { class: 'tier-pic', html: A.portrait(i, 't') });
+    var info = el('div', { class: 'tier-info' },
+      el('div', { class: 'tier-h' }, el('b', { text: T.name }), el('span', { class: 'tag', text: here ? 'Du bist hier' : locked ? 'Gesperrt' : 'Offen' })),
+      el('div', { class: 'tier-l', text: h.name + ' · ' + h.role }),
+      el('div', { class: 'tier-k' },
+        el('span', { text: 'Einsatz ' + short(T.min) + ' bis ' + short(T.max) }),
+        el('span', { text: 'Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %' }),
+        el('span', { text: i === 0 ? 'Startraum' : 'ab ' + short(T.wager) + ' Umsatz' }),
+        T.bonus ? el('span', { text: 'Aufstiegsbonus ' + short(T.bonus) }) : null,
+        el('span', { text: 'Sympathie ' + V.affTitle(S.aff[i]) })));
+    var btn = el('button', { class: 'btn ' + (here ? 'ghost' : 'gold') + ' sm', type: 'button', text: here ? 'Aktueller Raum' : locked ? 'Noch ' + short(Math.max(0, T.wager - S.wagered)) + ' Umsatz' : 'Betreten',
+      disabled: here || locked, onclick: function () { V.enterRoom(i); refresh(); } });
+    info.appendChild(btn);
+    card.appendChild(pic); card.appendChild(info);
+    list.appendChild(card);
+  });
+  body.appendChild(el('p', { class: 'side-intro', text: 'Jeder Chip, den du setzt, zählt als Umsatz und bringt dich näher an die nächste Stufe. Höhere Stufen haben höhere Limits, mehr Comps und eine eigene Hostess.' }));
+  body.appendChild(list);
+}
+
+function profil() {
+  var S = V.S, p = E.profileOf(S.hist), P = E.PROFILES[p.key];
+  var rec = E.recommend(p.key, S.balance, S.unlocked);
+  var head = el('div', { class: 'prof-h' }, el('div', { class: 'prof-type', text: P.name }), p.hi ? el('span', { class: 'tag warn', text: 'Hohe Einsätze' }) : null);
+  body.appendChild(head);
+  body.appendChild(el('p', { text: P.desc }));
+  var bars = el('div', { class: 'shares' });
+  ['slots', 'roulette', 'bj', 'crash'].forEach(function (g) {
+    var v = p.shares[g] || 0;
+    var bar = el('i'); bar.style.width = (v * 100).toFixed(1) + '%';
+    bars.appendChild(el('div', { class: 'share' }, el('span', { text: GNAME[g] }), el('div', { class: 'sbar' }, bar), el('span', { class: 'num', text: Math.round(v * 100) + ' %' })));
+  });
+  body.appendChild(el('h4', { text: 'Deine letzten ' + S.hist.length + ' Runden' }));
+  body.appendChild(bars);
+  body.appendChild(el('div', { class: 'kv' },
+    el('span', { text: 'Ø Einsatz vom Guthaben' }), el('b', { class: 'num', text: (p.ratio * 100).toFixed(1).replace('.', ',') + ' %' })));
+  body.appendChild(el('h4', { text: 'Dein Dopamin-Kick' }));
+  body.appendChild(el('p', { text: P.kick }));
+  var T = E.TIERS[rec.room];
+  var box = el('div', { class: 'recbox' },
+    el('div', { class: 'rec-h', text: 'Empfehlung des Hauses' }),
+    el('div', { class: 'kv' }, el('span', { text: 'Spiel' }), el('b', { text: GNAME[rec.game] })),
+    el('div', { class: 'kv' }, el('span', { text: 'Raum' }), el('b', { text: T.name })),
+    el('div', { class: 'kv' }, el('span', { text: 'Einsatz' }), el('b', { class: 'num', text: fmt(rec.betLo) + ' bis ' + fmt(rec.betHi) })),
+    el('button', { class: 'btn gold sm', type: 'button', text: 'Empfehlung übernehmen', onclick: function () { apply(rec); } }),
+    el('p', { class: 'fine', text: 'So arbeiten echte Casinos: Sie messen dein Verhalten und schneiden Spiel und Einsatz auf den Moment zu, in dem du am längsten bleibst. Das hält dich am Tisch, macht dich aber nicht reicher.' }));
+  body.appendChild(box);
+}
+
+function apply(rec) {
+  var S = V.S;
+  if (V.isBusy()) { V.toast('Beende erst die laufende Runde.', 'bad'); return; }
+  if (rec.room !== S.room) V.enterRoom(rec.room);
+  var target = Math.sqrt(rec.betLo * rec.betHi);
+  var l = V.ladder(), best = l[0];
+  l.forEach(function (x) { if (Math.abs(Math.log(x / target)) < Math.abs(Math.log(best / target))) best = x; });
+  if (rec.game === 'roulette') {
+    var c = V.chipList(), bc = c[0];
+    c.forEach(function (x) { if (Math.abs(Math.log(x / target)) < Math.abs(Math.log(bc / target))) bc = x; });
+    S.rchip = bc;
+  } else S.bets[rec.game] = best;
+  V.showGame(rec.game);
+  V.games.forEach(function (g) { if (g.onRoom) g.onRoom(); });
+  V.toast('Empfehlung übernommen.', 'good');
+  V.save(); refresh();
+}
+
+function spark(series) {
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 300 90'); svg.setAttribute('class', 'spark'); svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Verlauf deines Guthabens');
+  var s = series.length > 1 ? series : [series[0] || 0, series[0] || 0];
+  var mn = Math.min.apply(null, s), mx = Math.max.apply(null, s);
+  if (mx === mn) { mx += 1; mn -= 1; }
+  var pts = s.map(function (v, i) { return [(i / (s.length - 1) * 292 + 4), (82 - (v - mn) / (mx - mn) * 72)]; });
+  var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+  var area = document.createElementNS(NS, 'path');
+  area.setAttribute('d', d + ' L296 86 L4 86 Z'); area.setAttribute('class', 'sp-area');
+  var line = document.createElementNS(NS, 'path');
+  line.setAttribute('d', d); line.setAttribute('class', 'sp-line');
+  var last = pts[pts.length - 1], dot = document.createElementNS(NS, 'circle');
+  dot.setAttribute('cx', last[0]); dot.setAttribute('cy', last[1]); dot.setAttribute('r', '3.5'); dot.setAttribute('class', 'sp-dot');
+  svg.appendChild(area); svg.appendChild(line); svg.appendChild(dot);
+  return svg;
+}
+
+function stats() {
+  var S = V.S, net = S.returned - S.wagered;
+  body.appendChild(el('div', { class: 'big-kv' },
+    el('div', {}, el('span', { text: 'Bilanz an den Tischen' }), el('b', { class: 'num ' + (net >= 0 ? 'pos' : 'neg'), text: (net >= 0 ? '+' : '−') + fmt(Math.abs(net)) })),
+    el('div', {}, el('span', { text: 'Umsatz' }), el('b', { class: 'num', text: fmt(S.wagered) })),
+    el('div', {}, el('span', { text: 'Runden' }), el('b', { class: 'num', text: fmt(S.rounds) }))));
+  body.appendChild(el('h4', { text: 'Guthaben, letzte ' + S.series.length + ' Stände' }));
+  body.appendChild(spark(S.series));
+  var tbl = el('table', { class: 'stbl' },
+    el('thead', {}, el('tr', {}, el('th', { text: 'Spiel' }), el('th', { text: 'Runden' }), el('th', { text: 'Umsatz' }), el('th', { text: 'Deine Quote' }), el('th', { text: 'Theorie' }))));
+  var tb = el('tbody');
+  ['slots', 'roulette', 'bj', 'crash'].forEach(function (g) {
+    var x = S.gst[g], q = x.w > 0 ? (x.ret / x.w * 100).toFixed(1).replace('.', ',') + ' %' : '–';
+    tb.appendChild(el('tr', {}, el('td', { text: GNAME[g] }), el('td', { class: 'num', text: fmt(x.r) }), el('td', { class: 'num', text: short(x.w) }),
+      el('td', { class: 'num', text: q }), el('td', { class: 'num', text: ((1 - EDGE[g]) * 100).toFixed(1).replace('.', ',') + ' %' })));
+  });
+  tbl.appendChild(tb);
+  body.appendChild(el('div', { class: 'tscroll' }, tbl));
+  body.appendChild(el('div', { class: 'kvs' },
+    el('div', { class: 'kv' }, el('span', { text: 'Größter Gewinn' }), el('b', { class: 'num', text: fmt(S.biggest) })),
+    el('div', { class: 'kv' }, el('span', { text: 'Bester Crash-Cashout' }), el('b', { class: 'num', text: S.bestMult ? V.fmtX(S.bestMult) : '–' })),
+    el('div', { class: 'kv' }, el('span', { text: 'Nachschub geholt' }), el('b', { class: 'num', text: S.reloads + '× · ' + fmt(S.reloaded) })),
+    el('div', { class: 'kv' }, el('span', { text: 'Comps eingelöst' }), el('b', { class: 'num', text: fmt(S.compsClaimed) })),
+    el('div', { class: 'kv' }, el('span', { text: 'Trinkgeld gegeben' }), el('b', { class: 'num', text: S.tips + '×' })),
+    el('div', { class: 'kv' }, el('span', { text: 'Spielzeit' }), el('b', { class: 'num', text: V.clock(S.playMs) }))));
+  body.appendChild(el('p', { class: 'fine', text: 'Kurzfristig schwankt deine Quote stark. Je mehr du spielst, desto näher rückt sie an den theoretischen Wert.' }));
+}
+
+function haus() {
+  var S = V.S, exp = 0;
+  ['slots', 'roulette', 'bj', 'crash'].forEach(function (g) { exp += S.gst[g].w * EDGE[g]; });
+  body.appendChild(el('p', { class: 'side-intro', text: 'Was ein echtes Casino nie anzeigen würde.' }));
+  body.appendChild(el('div', { class: 'kvs' },
+    el('div', { class: 'kv' }, el('span', { text: 'Erwarteter Verlust bisher' }), el('b', { class: 'num neg', text: '−' + fmt(exp) })),
+    el('div', { class: 'kv' }, el('span', { text: 'Tatsächlich' }), el('b', { class: 'num ' + (S.returned - S.wagered >= 0 ? 'pos' : 'neg'), text: (S.returned - S.wagered >= 0 ? '+' : '−') + fmt(Math.abs(S.returned - S.wagered)) })),
+    el('div', { class: 'kv' }, el('span', { text: 'Comps verdient' }), el('b', { class: 'num', text: fmt(S.comps + S.compsClaimed) }))));
+  var tricks = [
+    ['Keine Uhren, keine Fenster', 'Die Zeit verschwimmt. Deshalb meldet sich hier alle 30 Minuten ein Realitätscheck.'],
+    ['Chips statt Geld', 'Ein Stapel Plastik fühlt sich nicht wie Miete an. Große Zahlen verlieren ihre Schwere.'],
+    ['Verluste als Gewinn verkleidet', 'Bei Slots blinkt und klingelt es auch, wenn du weniger zurückbekommst als eingesetzt.'],
+    ['Fast-Treffer', 'Zwei Bonus-Symbole fühlen sich an wie „beinahe“. Für die Walzen ist es einfach ein Verlust.'],
+    ['Stufen und Comps', 'Aufstieg belohnt Umsatz, nicht Gewinn. Comps sind ein kleiner Teil deines erwarteten Verlusts.'],
+    ['Persönliche Ansprache', 'Eine Hostess, die dich kennt, macht das Gehen schwerer. Sympathie steigt mit jedem Einsatz.']
+  ];
+  var ul = el('div', { class: 'tricks' });
+  tricks.forEach(function (t) { ul.appendChild(el('div', { class: 'trick' }, el('b', { text: t[0] }), el('span', { text: t[1] }))); });
+  body.appendChild(el('h4', { text: 'Die Tricks des Hauses' }));
+  body.appendChild(ul);
+  body.appendChild(el('h4', { text: 'Einstellungen' }));
+  var snd = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(S.sound), text: S.sound ? 'Ton an' : 'Ton aus', onclick: function () { S.sound = !S.sound; V.save(); refresh(); V.syncSound(); } });
+  var reset;
+  if (!confirmReset) reset = el('button', { class: 'btn ghost sm', type: 'button', text: 'Spielstand zurücksetzen', onclick: function () { confirmReset = true; refresh(); } });
+  else reset = el('span', { class: 'confirm' }, el('span', { text: 'Wirklich alles löschen?' }),
+    el('button', { class: 'btn crimson sm', type: 'button', text: 'Ja, zurücksetzen', onclick: function () { V.hardReset(); } }),
+    el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { confirmReset = false; refresh(); } }));
+  body.appendChild(el('div', { class: 'rrow' }, snd, reset));
+  body.appendChild(el('p', { class: 'fine', text: 'Alles hier ist Spielgeld ohne Wert. Wenn echtes Glücksspiel für dich oder jemanden in deiner Nähe zum Problem wird: Die Telefonberatung zur Glücksspielsucht des BIÖG (früher BZgA) ist kostenlos und anonym: 0800 1 37 27 00.' }));
+}
+
+V.side = { build: build, refresh: refresh };
+})();
+
+/* ===== ui_main.js ===== */
+/* Velvet Room – Start, Navigation, Spielzeit */
+(function () {
+'use strict';
+var $ = V.$, $$ = V.$$;
+var GAMES = [{ id: 'slots', label: 'Slots' }, { id: 'roulette', label: 'Roulette' }, { id: 'bj', label: 'Blackjack' }, { id: 'crash', label: 'Crash' }];
+
+function showGame(id) {
+  var S = V.S;
+  if (id !== S.game && V.isBusy()) {
+    V.toast('Beende erst die laufende Runde oder nimm deine Chips vom Tisch.', 'bad'); renderNav(); return;
+  }
+  S.game = id;
+  GAMES.forEach(function (g2) { $('#g-' + g2.id).hidden = g2.id !== id; });
+  renderNav();
+  V.games.forEach(function (g3) { if (g3.id === id && g3.onShow) g3.onShow(); });
+  V.save();
+}
+function renderNav() {
+  V.tabs($('#gameTabs'), GAMES, V.S.game, function (id) { V.Snd.click(); showGame(id); });
+}
+function syncSound() {
+  var b = $('#sndBtn');
+  b.setAttribute('aria-pressed', String(V.S.sound));
+  b.textContent = V.S.sound ? 'Ton an' : 'Ton aus';
+}
+function hardReset() {
+  try { localStorage.removeItem('velvet-room-v1'); } catch (e) { /* */ }
+  location.reload();
+}
+V.showGame = showGame; V.syncSound = syncSound; V.hardReset = hardReset;
+
+function init() {
+  V.load();
+  V.clampBets();
+  V.games.forEach(function (g) { g.init(); });
+  V.side.build();
+  $('#reload').addEventListener('click', V.reload);
+  $('#claimComp').addEventListener('click', V.claimComps);
+  $('#tipBtn').addEventListener('click', V.tip);
+  $('#chatBtn').addEventListener('click', function () { V.say('chat', true); });
+  $('#roomSel').addEventListener('change', function (e) { if (!V.enterRoom(Number(e.target.value))) V.renderTier(); });
+  $('#sndBtn').addEventListener('click', function () { V.S.sound = !V.S.sound; syncSound(); V.save(); if (V.S.sound) V.Snd.click(); });
+  V.renderHost(); V.hud(); V.renderDopa(); syncSound();
+  showGame(V.S.game);
+  V.say('greet', true);
+  var last = Date.now();
+  setInterval(function () {
+    var now = Date.now(), dt = now - last; last = now;
+    if (!document.hidden && dt < 5000) {
+      V.S.playMs += dt;
+      V.S.dopa = Math.max(0, V.S.dopa - 0.15);
+      V.renderDopa();
+      if (Math.floor(V.S.playMs / 1000) % 15 === 0) { V.save(); V.maybeReality(); }
+    }
+  }, 1000);
+  setInterval(function () { if (!V.isBusy() && Math.random() < 0.35) V.say('chat'); }, 45000);
+  window.addEventListener('pagehide', V.save);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+
+</body></html>
