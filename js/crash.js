@@ -186,13 +186,13 @@ function crash() {
   multEl.textContent = fmtX(cp); multEl.className = 'crash-mult dead';
   V.S.chist.push(cp); if (V.S.chist.length > 30) V.S.chist.shift();
   if (!cashed) {
-    /* Talent Fallschirm: Sofort-Crash bei 1,00× kostet nichts */
-    var safe = cp <= 1 && V.meta.perk('crashSafe') ? bet : 0;
+    /* Talent Fallschirm: Sofort-Crash bei 1,00× erstattet die Hälfte */
+    var safe = cp <= 1 ? Math.floor(bet * V.meta.perk('crashSafe')) : 0;
     V.settle('crash', bet, safe, {});
     V.Snd.crash();
     subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + '. Einsatz verloren.';
     msgEl.className = 'slot-msg';
-    msgEl.textContent = safe ? 'Sofort-Crash, aber dein Fallschirm hat den Einsatz gerettet.' : cp <= 1.0 ? 'Sofort-Crash bei 1,00×. Das passiert in etwa 2 von 100 Runden.' : 'Zu spät. ' + fmt(bet) + ' Chips gehen ans Haus.';
+    msgEl.textContent = safe ? 'Sofort-Crash, aber dein Fallschirm hat ' + fmt(safe) + ' Chips gerettet.' : cp <= 1.0 ? 'Sofort-Crash bei 1,00×. Das passiert in etwa 2 von 100 Runden.' : 'Zu spät. ' + fmt(bet) + ' Chips gehen ans Haus.';
   } else {
     subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + ' · du hattest bei ' + fmtX(cashAt) + ' ausgezahlt.';
     if (cp > cashAt * 1.5) msgEl.textContent = 'Hättest du gewartet: ' + fmtX(cp) + '. Genau dieses Gefühl hält Spieler am Tisch.';

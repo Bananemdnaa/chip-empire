@@ -3,7 +3,8 @@
 'use strict';
 var $ = V.$, $$ = V.$$;
 var GAMES = [{ id: 'slots', label: 'Slots' }, { id: 'roulette', label: 'Roulette' }, { id: 'bj', label: 'Blackjack' }, { id: 'crash', label: 'Crash' }];
-var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Kulissen' }];
+/* In der Leiste nur das Wichtigste; Statistik, Profil und Kulissen sind Reiter im selben Fenster */
+var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
 var SIDE = SIDE_ALL;
 function sideItems() { return SIDE_ALL.filter(function (t) { return !t.empire || V.S.mode === 'empire'; }); }
 

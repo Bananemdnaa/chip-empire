@@ -8,8 +8,9 @@ function isEmpire() { return V.S.mode === 'empire'; }
 function tierMin() { return E.TIERS[V.S.unlocked].min; }
 
 /* ================= Level ================= */
-/* XP, um von Level L auf L+1 zu kommen */
-function xpFor(level) { return Math.round(60 * Math.pow(level, 1.4)); }
+/* XP, um von Level L auf L+1 zu kommen (Version 2: deutlich steiler) */
+function xpFor(level) { return Math.round(100 * Math.pow(level, 1.6)); }
+function xpForOld(level) { return Math.round(60 * Math.pow(level, 1.4)); }
 function addXp(n) {
   var S = V.S;
   n = Math.round(n * (1 + perk('xp')));
@@ -24,7 +25,7 @@ function addXp(n) {
   }
 }
 /* Pro Runde: mehr XP in höheren Räumen, Gewinne zählen 50 % mehr */
-function roundXp(net) { return 10 * (1 + 0.5 * V.S.room) * (net > 0 ? 1.5 : 1); }
+function roundXp(net) { return 6 * (1 + 0.4 * V.S.room) * (net > 0 ? 1.3 : 1); }
 
 /* ================= Talentbaum ================= */
 /* Jeder Ast ist eine Kette: Ein Talent braucht mindestens eine Stufe im Talent darüber. */
@@ -36,11 +37,11 @@ var BRANCHES = [
 var TALENTS = [
   { id: 'slotLuck', br: 'gl', icon: '🍒', name: 'Glückssträhne', vals: [0.005, 0.01, 0.015], txt: function (v) { return 'Slot-Gewinne +' + pct(v); } },
   { id: 'slotFree', br: 'gl', icon: '🎁', name: 'Bonusjäger', vals: [1, 2], txt: function (v) { return '+' + v + ' Freispiel' + (v > 1 ? 'e' : '') + ' pro Bonus'; } },
-  { id: 'crashSafe', br: 'gl', icon: '🪂', name: 'Fallschirm', game: 'crash', vals: [1], txt: function () { return 'Crash: Ein Sofort-Crash bei 1,00× kostet dich nichts'; } },
+  { id: 'crashSafe', br: 'gl', icon: '🪂', name: 'Fallschirm', game: 'crash', vals: [0.5], txt: function () { return 'Crash: Bei einem Sofort-Crash (1,00×) bekommst du die Hälfte deines Einsatzes zurück'; } },
   { id: 'xp', br: 'gl', icon: '📚', name: 'Schnelllerner', vals: [0.15, 0.3], txt: function (v) { return 'Erfahrung +' + pct(v); } },
   { id: 'bjPay', br: 'ta', icon: '🂡', name: 'Naturtalent', game: 'bj', vals: [0.1], txt: function () { return 'Blackjack zahlt 1,6-fach statt 1,5-fach'; } },
   { id: 'partage', br: 'ta', icon: '🎡', name: 'La Partage', game: 'roulette', vals: [1], txt: function () { return 'Roulette: Bei Zero bekommst du die Hälfte deiner einfachen Chancen zurück'; } },
-  { id: 'comps', br: 'ta', icon: '🥂', name: 'Stammkunde', vals: [0.15, 0.3, 0.5], txt: function (v) { return 'Comps +' + pct(v); } },
+  { id: 'comps', br: 'ta', icon: '🥂', name: 'Stammkunde', vals: [0.1, 0.2, 0.3], txt: function (v) { return 'Comps +' + pct(v); } },
   { id: 'daily', br: 'bu', icon: '☀️', name: 'Frühaufsteher', vals: [0.25, 0.5], txt: function (v) { return 'Tagesbonus +' + pct(v); } },
   { id: 'rescue', br: 'bu', icon: '🛟', name: 'Rettungsring', vals: [180000, 300000], txt: function (v) { return 'Notgroschen schon nach ' + Math.round((V.CAREER.bailoutCooldown - v) / 60000) + ' Minuten'; } },
   { id: 'quest', br: 'bu', icon: '📜', name: 'Quest-Profi', vals: [0.2, 0.4], txt: function (v) { return 'Quest-Belohnungen +' + pct(v); } },
@@ -54,7 +55,7 @@ function perk(id) { var t = T_BY[id], l = tl(id); return t && l ? t.vals[l - 1] 
 function pointsTotal() { return V.S.level - 1 + V.S.bonusTp; }
 function pointsSpent() { var n = 0; TALENTS.forEach(function (t) { n += tl(t.id); }); return n; }
 function pointsFree() { return Math.max(0, pointsTotal() - pointsSpent()); }
-function respecCost() { return tierMin() * 200; }
+function respecCost() { return E.TIERS[V.isCareer() ? V.S.unlocked : V.S.room].min * 200; }
 /* Vorgänger im Ast: muss mindestens Stufe 1 haben */
 function parentOf(t) { var list = activeTalents(t.br), i = list.indexOf(t); return i > 0 ? list[i - 1] : null; }
 function unlockedNode(t) { var p = parentOf(t); return !p || tl(p.id) > 0; }
@@ -164,8 +165,8 @@ var WEEKLY = [
 ];
 function evBig(q, e) { var ref = e.staked || (e.opt && e.opt.refBet) || 0; return ref > 0 && e.ret >= ref * 10 ? 1 : 0; }
 var KIND = {
-  daily: { tpl: DAILY, key: dayKey, chips: 120, xp: 100, chest: 300, tp: 0, label: 'Daily' },
-  weekly: { tpl: WEEKLY, key: weekKey, chips: 700, xp: 450, chest: 1500, tp: 1, label: 'Weekly' }
+  daily: { tpl: DAILY, key: dayKey, chips: 120, xp: 60, chest: 300, tp: 0, label: 'Daily' },
+  weekly: { tpl: WEEKLY, key: weekKey, chips: 700, xp: 250, chest: 1500, tp: 1, label: 'Weekly' }
 };
 /* Meilensteine: dauerhafte Ziele in Stufen */
 var MILES = [
@@ -218,7 +219,7 @@ function claimChest(kind) {
   V.hud(); V.side.refresh(); V.save();
 }
 function mileStep(m) { return (V.S.qstats.miles[m.id] || 0); }
-function mileReward(m, k) { return { chips: Math.round(tierMin() * 100 * (k + 1) * qmult()), xp: Math.round(150 * (k + 1) * qmult()) }; }
+function mileReward(m, k) { return { chips: Math.round(tierMin() * 100 * (k + 1) * qmult()), xp: Math.round(80 * (k + 1) * qmult()) }; }
 function claimMile(id) {
   var S = V.S, m = null;
   MILES.forEach(function (x) { if (x.id === id) m = x; });
@@ -264,10 +265,21 @@ function onRound(e) {
 function migrate() {
   var S = V.S;
   if (!S.metaInit) {
-    S.metaInit = 1;
+    S.metaInit = 1; S.metaVer = 2;
     if (S.rounds > 0) {
-      S.xp += Math.round(S.rounds * 12);
+      S.xp += Math.round(S.rounds * 7);
       while (S.xp >= xpFor(S.level)) { S.xp -= xpFor(S.level); S.level++; }
+    }
+  } else if ((S.metaVer || 0) < 2) {
+    /* Version 2: gesammelte XP auf die neue, langsamere Kurve umrechnen */
+    var total = S.xp;
+    for (var L = 1; L < S.level; L++) total += xpForOld(L);
+    S.level = 1; S.xp = Math.round(total * 0.55);
+    while (S.xp >= xpFor(S.level)) { S.xp -= xpFor(S.level); S.level++; }
+    S.metaVer = 2;
+    if (pointsSpent() > pointsTotal()) {
+      S.talents = {};
+      setTimeout(function () { V.toast('Neue Talent-Balance: Deine Talentpunkte wurden zurückgegeben. Verteil sie neu im Talentbaum.', 'warn'); }, 1500);
     }
   }
   if (!S.qstats.init) { S.qstats.init = 1; S.qstats.rounds = Math.max(S.qstats.rounds, S.rounds); }
