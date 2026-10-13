@@ -341,7 +341,7 @@ function hud() {
   }
   $('#comp').textContent = fmt(Math.floor(S.comps));
   $('#claimComp').disabled = S.comps < 1;
-  $('#reload').textContent = '+ Nachschub ' + short(E.TIERS[S.unlocked].reload);
+  $('#reload').innerHTML = '+ <span class="hide-sm">Nachschub </span>' + short(E.TIERS[S.unlocked].reload);
   $('#reload').classList.toggle('pulse', S.balance < room().min);
   renderTier();
 }

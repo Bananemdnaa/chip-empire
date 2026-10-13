@@ -21,7 +21,7 @@ function renderNav() {
 function syncSound() {
   var b = $('#sndBtn');
   b.setAttribute('aria-pressed', String(V.S.sound));
-  b.textContent = V.S.sound ? 'Ton an' : 'Ton aus';
+  b.textContent = V.S.sound ? '🔊' : '🔇';
 }
 function hardReset() {
   try { localStorage.removeItem('velvet-room-v1'); } catch (e) { /* */ }
