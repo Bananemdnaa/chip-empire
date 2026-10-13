@@ -106,15 +106,23 @@ function save() {
   var rev = Store.put(slotId, d);
   if (rev) slotRev = rev;
 }
-/* Läuft derselbe Spielstand in einem zweiten Tab weiter, darf dieser Tab ihn nicht mehr überschreiben */
-window.addEventListener('storage', function (e) {
-  if (!slotId || saveBlocked || e.key !== Store.KEY) return;
-  var slot = Store.get(slotId);
-  if (slot && slot.rev === slotRev) return;
+/* Läuft derselbe Spielstand in einem zweiten Tab oder auf einem anderen Gerät weiter,
+   darf dieser Tab ihn nicht mehr überschreiben */
+function blockSaving(msg) {
+  if (saveBlocked) return;
   saveBlocked = true;
-  banner('Spielstand woanders geändert', slot ? 'Dieser Spielstand wurde in einem anderen Tab weitergespielt. Lade neu, um nichts zu überschreiben.' : 'Dieser Spielstand wurde gelöscht.', {
+  banner('Spielstand woanders geändert', msg, {
     kind: 'level', ms: 86400000, actions: [{ label: 'Neu laden', gold: true, fn: function () { location.reload(); } }]
   });
+}
+window.addEventListener('storage', function (e) {
+  if (!slotId || saveBlocked || e.key !== Store.key()) return;
+  var slot = Store.get(slotId);
+  if (slot && slot.rev === slotRev) return;
+  blockSaving(slot ? 'Dieser Spielstand wurde in einem anderen Tab weitergespielt. Lade neu, um nichts zu überschreiben.' : 'Dieser Spielstand wurde gelöscht.');
+});
+Cloud.onConflict(function () {
+  blockSaving('Dieser Spielstand wurde auf einem anderen Gerät weitergespielt. Lade neu, um den aktuellen Stand zu holen.');
 });
 function room() { return E.TIERS[S.room]; }
 function debit(n, commit) { S.balance -= n; S.escrow += n; if (commit) lock(n); }

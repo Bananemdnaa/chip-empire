@@ -343,6 +343,20 @@ svg.lines { position: absolute; inset: 12px; width: calc(100% - 24px); height: c
 .mode[aria-checked="true"] { border-color: var(--gold); background: rgba(212,171,82,.1); box-shadow: 0 0 0 1px var(--gold); }
 .mode[aria-checked="true"] b { color: var(--gold-hi); }
 .game-tabs .tab.locked { opacity: .45; }
+.acct { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 16px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.2); font-size: 14px; color: var(--muted); }
+.acct b { color: var(--gold-hi); }
+.menu-status { margin: 0 0 14px; padding: 8px 12px; border-radius: 10px; background: rgba(212,171,82,.08); border: 1px solid var(--line); font-size: 14px; }
+.menu-status.err { border-color: var(--crimson); background: rgba(196,32,63,.12); }
+.menu-h { font-family: var(--f-display); font-weight: 400; font-size: 20px; color: var(--gold-hi); margin: 0 0 10px; }
+.guest, .board { margin-top: 22px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--velvet); }
+.guest-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+.guest-row:last-child { border-bottom: 0; }
+.board .stbl { width: 100%; min-width: 0; }
+.board .stbl th:nth-child(2), .board .stbl td:nth-child(2) { text-align: left; }
+.board tr.me td { color: var(--gold-hi); }
+.board .bsave, .board .btier { color: var(--muted); font-size: 13px; }
+.tags { display: flex; gap: 6px; flex-shrink: 0; }
+.newgame .fine { margin: 0; }
 
 @media (max-width: 980px) {
   .layout { grid-template-columns: minmax(0, 1fr); }

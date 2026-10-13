@@ -11,6 +11,12 @@ Ein Browser-Casinospiel mit Spielgeld: Slots, Roulette, Blackjack und Crash. Ste
 
 Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
+## Online-Konten (Supabase)
+
+Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenliste für den Karriere-Modus.
+Das Datenbank-Schema liegt in `supabase/migrations/` und wird einmal im SQL-Editor von Supabase ausgeführt.
+In Supabase muss unter Authentication der E-Mail-Login an und „Confirm email“ aus sein.
+
 ## Lokal starten
 
 `index.html` im Browser öffnen reicht meistens.
@@ -30,6 +36,7 @@ py -3 -m http.server 8765
 | `js/engine.js` | Reine Spiellogik (Zufall, Stufen, Slots, Roulette, Blackjack, Crash, Profil) |
 | `js/art.js` | Hostessen-Porträts als SVG |
 | `js/store.js` | Spielstände (Slots) im Browser-Speicher |
+| `js/cloud.js` | Online-Konten, Cloud-Spielstände und Bestenliste über Supabase |
 | `js/core.js` | Zustand, Speichern, Karriere-Regeln, Ton, HUD, Hostess, Einsatz-Steuerung |
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js` | Die vier Spiele |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |

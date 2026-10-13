@@ -38,15 +38,21 @@ function hardReset() {
   V.resetState();
   location.reload();
 }
-function toMenu() {
+async function toMenu() {
   if (V.isBusy()) { V.toast('Beende erst die laufende Runde oder nimm deine Chips vom Tisch.', 'bad'); return; }
   V.save();
+  if (Store.isAccount()) {
+    $('#menuBtn').disabled = true;
+    if (!(await Cloud.flush())) V.toast('Konnte nicht mit der Cloud abgleichen, der Stand bleibt auf diesem Gerät gespeichert.', 'warn');
+  }
   Store.setActive(null);
   location.reload();
 }
 V.showGame = showGame; V.renderNav = renderNav; V.syncSound = syncSound; V.hardReset = hardReset;
 
-function startGame(id) {
+async function startGame(id) {
+  /* Mit Konto: vorher den neuesten Stand aus der Cloud holen (offline wird lokal weitergespielt) */
+  if (Store.isAccount()) { try { await Cloud.syncAll(); } catch (e) { V.toast('Offline: Du spielst mit dem Stand auf diesem Gerät.', 'warn'); } }
   if (!V.load(id)) { Store.setActive(null); Menu.show(startGame); return; }
   Store.setActive(id);
   Menu.hide();
@@ -84,10 +90,15 @@ function startGame(id) {
     }
   }, 1000);
   setInterval(function () { if (!V.isBusy() && Math.random() < 0.35) V.say('chat'); }, 45000);
-  window.addEventListener('pagehide', V.save);
+  /* Erst lokal speichern, dann den Stand noch in die Cloud schicken */
+  function leave() { V.save(); Cloud.flushOnLeave(); }
+  window.addEventListener('pagehide', leave);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') leave(); });
 }
 
-function init() {
+async function init() {
+  var u = await Cloud.init();
+  Store.useAccount(u ? u.id : null);
   var id = Store.active();
   if (id && Store.get(id)) startGame(id);
   else Menu.show(startGame);
