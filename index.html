@@ -11,70 +11,98 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/shell.css">
 </head>
 <body>
-<main id="menu" class="menu" hidden></main>
+<main id="menu" class="menu">
+  <div class="splash" role="status">
+    <img class="splash-chip" src="favicon.svg" alt="">
+    <div class="splash-logo">Chip Empire</div>
+    <div class="splash-txt">Die Tische werden vorbereitet …</div>
+  </div>
+</main>
+
 <div id="app" data-tier="0" hidden>
-  <header class="top">
-    <div class="brand">
-      <div class="logo">Chip Empire</div>
-      <div class="tier-line"><b id="tierName">Lobby</b><span id="tierLimits"></span></div>
+  <header class="hud">
+    <button id="menuBtn" class="hud-logo" type="button" aria-label="Zurück zum Hauptmenü" title="Hauptmenü">
+      <img src="favicon.svg" alt=""><span class="logo">Chip Empire</span>
+    </button>
+    <div class="hud-player">
+      <span id="tierBadge" class="tier-badge" aria-hidden="true"></span>
+      <div class="hud-pinfo">
+        <div class="hud-pname"><b id="playerName"></b><span id="tierName">Lobby</span></div>
+        <div class="prog"><div class="prog-track"><i id="progBar"></i></div><span id="progTxt"></span></div>
+      </div>
     </div>
-    <div class="wallet">
-      <div class="bal-box"><span class="lbl">Chips</span><b id="bal" class="num">10.000</b></div>
+    <div class="hud-wallet">
+      <div class="bal-box" title="Deine Chips"><img src="favicon.svg" alt=""><b id="bal" class="num">0</b></div>
       <div class="comp-box"><span class="lbl">Comps</span><b id="comp" class="num">0</b><button id="claimComp" class="btn ghost xs" type="button">Einlösen</button></div>
-      <button id="reload" class="btn gold sm" type="button">+ Nachschub</button>
-      <button id="menuBtn" class="btn ghost sm" type="button" aria-label="Hauptmenü" title="Hauptmenü">☰</button>
-      <button id="sndBtn" class="btn ghost sm" type="button" aria-pressed="true" aria-label="Ton" title="Ton an/aus">🔊</button>
+      <button id="reload" class="btn gold sm" type="button"></button>
+      <button id="sndBtn" class="icon-btn" type="button" aria-pressed="true" aria-label="Ton an/aus" title="Ton an/aus">🔊</button>
     </div>
-    <div class="prog"><div class="prog-track"><i id="progBar"></i></div><span id="progTxt"></span></div>
   </header>
 
-  <main class="layout">
-    <section class="stage">
-      <nav id="gameTabs" class="tabs game-tabs" role="tablist" aria-label="Spiele"></nav>
-      <div id="g-slots" class="game"></div>
-      <div id="g-roulette" class="game" hidden></div>
-      <div id="g-bj" class="game" hidden></div>
-      <div id="g-crash" class="game" hidden></div>
-    </section>
+  <nav class="rail" aria-label="Spiele und Menü">
+    <div id="gameTabs" class="rail-games" role="tablist" aria-label="Spiele"></div>
+    <div id="sideNav" class="rail-extra"></div>
+  </nav>
 
-    <aside class="host" aria-label="Hostess">
-      <div class="host-card">
-        <div id="hostPortrait" class="host-portrait"></div>
-        <div class="host-meta">
-          <div class="host-name" id="hostName">Mira</div>
-          <div class="host-role" id="hostRole"></div>
-        </div>
-      </div>
-      <p id="hostSay" class="say"></p>
-      <div class="host-row">
-        <button id="chatBtn" class="btn ghost sm" type="button">Plaudern</button>
-        <button id="tipBtn" class="btn ghost sm" type="button">Trinkgeld</button>
-      </div>
-      <div class="meter">
-        <div class="meter-h"><span class="lbl">Sympathie</span><b id="affTitle">Fremde</b><span id="affPerk" class="perk"></span></div>
-        <div class="meter-track aff"><i id="affBar"></i></div>
-      </div>
-      <div class="meter">
-        <div class="meter-h"><span class="lbl">Dopamin-Pegel</span><b id="dopaLbl">Ruhig</b></div>
-        <div class="meter-track dopa"><i id="dopaBar"></i></div>
-      </div>
-      <label class="room-pick" for="roomSel"><span class="lbl">Raum</span><select id="roomSel"></select></label>
-    </aside>
+  <main class="stage">
+    <div class="stage-head">
+      <h1 id="gameTitle" class="game-title">Slots</h1>
+      <span id="tierLimits" class="limits"></span>
+    </div>
+    <div id="g-slots" class="game"></div>
+    <div id="g-roulette" class="game" hidden></div>
+    <div id="g-bj" class="game" hidden></div>
+    <div id="g-crash" class="game" hidden></div>
   </main>
 
-  <section id="side" class="side" aria-label="Stufen, Profil und Statistik"></section>
+  <aside class="host" aria-label="Hostess">
+    <div class="host-card">
+      <div id="hostPortrait" class="host-portrait"></div>
+      <div class="host-meta">
+        <div class="host-name" id="hostName">Mira</div>
+        <div class="host-role" id="hostRole"></div>
+      </div>
+    </div>
+    <p id="hostSay" class="say"></p>
+    <div class="host-row">
+      <button id="chatBtn" class="btn ghost sm" type="button">Plaudern</button>
+      <button id="tipBtn" class="btn ghost sm" type="button">Trinkgeld</button>
+    </div>
+    <div class="meter">
+      <div class="meter-h"><span class="lbl">Sympathie</span><b id="affTitle">Fremde</b><span id="affPerk" class="perk"></span></div>
+      <div class="meter-track aff"><i id="affBar"></i></div>
+    </div>
+    <div class="meter">
+      <div class="meter-h"><span class="lbl">Dopamin-Pegel</span><b id="dopaLbl">Ruhig</b></div>
+      <div class="meter-track dopa"><i id="dopaBar"></i></div>
+    </div>
+    <label class="room-pick" for="roomSel"><span class="lbl">Raum</span><select id="roomSel"></select></label>
+    <p class="foot">Spielgeld ohne Wert, kein echtes Glücksspiel · Alle Figuren sind frei erfunden</p>
+  </aside>
 
-  <div id="banner" class="banner" hidden role="status"></div>
-  <div id="toasts" class="toasts" aria-live="polite"></div>
-  <footer class="foot">Chip Empire · Spielgeld ohne Wert, kein echtes Glücksspiel · Alle Figuren sind frei erfunden</footer>
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <header class="drawer-h">
+        <h2 id="drawerTitle">Lounge</h2>
+        <button id="drawerClose" class="icon-btn" type="button" aria-label="Schließen">✕</button>
+      </header>
+      <section id="side" class="side"></section>
+    </div>
+  </div>
 </div>
+
+<div id="banner" class="banner" hidden role="status"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
 <script src="js/engine.js"></script>
 <script src="js/art.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <script src="js/store.js"></script>
 <script src="js/cloud.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/core.js"></script>
 <script src="js/slots.js"></script>
 <script src="js/roulette.js"></script>

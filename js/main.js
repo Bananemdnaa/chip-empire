@@ -3,6 +3,7 @@
 'use strict';
 var $ = V.$, $$ = V.$$;
 var GAMES = [{ id: 'slots', label: 'Slots' }, { id: 'roulette', label: 'Roulette' }, { id: 'bj', label: 'Blackjack' }, { id: 'crash', label: 'Crash' }];
+var SIDE = [{ id: 'stufen', label: 'Stufen' }, { id: 'profil', label: 'Profil' }, { id: 'stats', label: 'Statistik' }, { id: 'haus', label: 'Kulissen' }];
 
 function lockedMsg(id) {
   return V.GAME_NAME[id] + ' wird in der ' + V.E.TIERS[V.GAME_TIER[id]].name + ' freigeschaltet.';
@@ -13,21 +14,56 @@ function showGame(id) {
   if (id !== S.game && V.isBusy()) {
     V.toast('Beende erst die laufende Runde oder nimm deine Chips vom Tisch.', 'bad'); renderNav(); return;
   }
+  var changed = S.game !== id;
   S.game = id;
-  GAMES.forEach(function (g2) { $('#g-' + g2.id).hidden = g2.id !== id; });
+  GAMES.forEach(function (g2) { var n = $('#g-' + g2.id); n.hidden = g2.id !== id; if (changed && g2.id === id) { n.style.animation = 'none'; void n.offsetWidth; n.style.animation = ''; } });
+  $('#gameTitle').textContent = V.GAME_NAME[id];
   renderNav();
   V.games.forEach(function (g3) { if (g3.id === id && g3.onShow) g3.onShow(); });
   V.save();
 }
+/* Spiele als Icon-Leiste (am Handy unten), dazu Stufen/Profil/Statistik als Fenster */
+function railBtn(item, selected, onclick) {
+  return V.el('button', { class: 'rail-btn', type: 'button', role: 'tab', 'aria-selected': String(selected), onclick: onclick },
+    V.el('span', { html: Icons[item.id] }), V.el('span', { text: item.label }));
+}
 function renderNav() {
-  var btns = V.tabs($('#gameTabs'), GAMES, V.S.game, function (id) { V.Snd.click(); showGame(id); });
-  btns.forEach(function (b, i) {
-    var id = GAMES[i].id;
-    if (V.gameOpen(id)) return;
-    b.classList.add('locked');
-    b.textContent = '🔒 ' + GAMES[i].label;
-    b.title = lockedMsg(id);
+  var box = $('#gameTabs');
+  box.innerHTML = '';
+  GAMES.forEach(function (g) {
+    var b = railBtn(g, g.id === V.S.game, function () { V.Snd.click(); showGame(g.id); });
+    if (!V.gameOpen(g.id)) {
+      b.classList.add('locked'); b.title = lockedMsg(g.id); b.setAttribute('aria-disabled', 'true');
+      b.appendChild(V.el('span', { class: 'lk', html: Icons.lock }));
+    }
+    box.appendChild(b);
   });
+  var more = railBtn({ id: 'more', label: 'Mehr' }, false, function () { V.Snd.click(); openSide(V.S.sideTab); });
+  more.classList.add('rail-more'); more.removeAttribute('role'); more.removeAttribute('aria-selected');
+  box.appendChild(more);
+}
+function renderSideNav() {
+  var box = $('#sideNav');
+  box.innerHTML = '';
+  SIDE.forEach(function (t) {
+    var b = railBtn(t, false, function () { V.Snd.click(); openSide(t.id); });
+    b.removeAttribute('role'); b.removeAttribute('aria-selected');
+    box.appendChild(b);
+  });
+}
+var lastFocus = null;
+function openSide(tab) {
+  V.S.sideTab = tab;
+  V.side.refresh();
+  lastFocus = document.activeElement;
+  $('#drawer').hidden = false;
+  $('#drawerClose').focus();
+}
+function closeSide() {
+  if ($('#drawer').hidden) return;
+  $('#drawer').hidden = true;
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+  V.save();
 }
 function syncSound() {
   var b = $('#sndBtn');
@@ -48,20 +84,27 @@ async function toMenu() {
   Store.setActive(null);
   location.reload();
 }
-V.showGame = showGame; V.renderNav = renderNav; V.syncSound = syncSound; V.hardReset = hardReset;
+V.showGame = showGame; V.renderNav = renderNav; V.openSide = openSide; V.closeSide = closeSide; V.syncSound = syncSound; V.hardReset = hardReset;
 
 async function startGame(id) {
   /* Mit Konto: vorher den neuesten Stand aus der Cloud holen (offline wird lokal weitergespielt) */
   if (Store.isAccount()) { try { await Cloud.syncAll(); } catch (e) { V.toast('Offline: Du spielst mit dem Stand auf diesem Gerät.', 'warn'); } }
   if (!V.load(id)) { Store.setActive(null); Menu.show(startGame); return; }
   Store.setActive(id);
-  Menu.hide();
+  await Menu.leave();
+  document.body.classList.add('in-game');
   $('#app').hidden = false;
+  $('#app').classList.add('entering');
   document.title = V.slotName + ' · Chip Empire';
+  $('#playerName').textContent = V.slotName;
   if (!V.gameOpen(V.S.game)) V.S.game = 'slots';
   V.clampBets();
   V.games.forEach(function (g) { g.init(); });
   V.side.build();
+  renderSideNav();
+  $('#drawerClose').addEventListener('click', closeSide);
+  $('#drawer').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSide(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSide(); });
   $('#reload').addEventListener('click', V.walletAction);
   $('#claimComp').addEventListener('click', V.claimComps);
   $('#tipBtn').addEventListener('click', V.tip);

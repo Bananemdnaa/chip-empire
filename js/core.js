@@ -47,6 +47,7 @@ function clock(ms) {
 var CAREER = { start: 1000, bailoutCooldown: 10 * 60 * 1000, bailoutMult: 50, dailyMult: 50 };
 var GAME_TIER = { slots: 0, roulette: 1, crash: 2, bj: 3 };
 var GAME_NAME = { slots: 'Slots', roulette: 'Roulette', bj: 'Blackjack', crash: 'Crash' };
+var RANK = ['L', 'B', 'S', 'G', 'P', '★'];
 function emptyG() { return { r: 0, w: 0, ret: 0 }; }
 function fresh(mode) {
   var career = mode !== 'sandbox', start = career ? CAREER.start : 10000;
@@ -414,6 +415,7 @@ function hud() {
   if (shownBal === null) { shownBal = total; b.textContent = fmt(total); }
   else {
     var from = shownBal, to = total, t0 = performance.now();
+    if (to > from) { var bx = b.parentNode; bx.classList.remove('bump'); void bx.offsetWidth; bx.classList.add('bump'); }
     cancelAnimationFrame(balAnim);
     var step = function (t) {
       var k = clamp((t - t0) / 450, 0, 1), e = 1 - Math.pow(1 - k, 3);
@@ -432,7 +434,9 @@ function renderTier() {
   var T = room(), U = E.TIERS[S.unlocked];
   $('#app').setAttribute('data-tier', String(S.room));
   $('#tierName').textContent = T.name;
-  $('#tierLimits').textContent = 'Limits ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %';
+  $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %';
+  var badge = $('#tierBadge');
+  if (badge) { badge.setAttribute('data-tier', String(S.unlocked)); badge.textContent = RANK[S.unlocked]; badge.title = 'Deine Stufe: ' + U.name; }
   var sel = $('#roomSel');
   if (sel && sel.options.length === 0) {
     E.TIERS.forEach(function (t) { sel.appendChild(el('option', { value: t.id, text: t.name })); });
@@ -449,10 +453,10 @@ function renderTier() {
   if (nxt) {
     var base = U.wager, p = clamp((S.wagered - base) / (nxt.wager - base), 0, 1);
     $('#progBar').style.width = (p * 100).toFixed(1) + '%';
-    $('#progTxt').textContent = 'Umsatz ' + fmt(S.wagered) + ' von ' + fmt(nxt.wager) + ' bis ' + nxt.name;
+    $('#progTxt').textContent = short(Math.floor(S.wagered)) + ' / ' + short(nxt.wager) + ' Umsatz → ' + nxt.name;
   } else {
     $('#progBar').style.width = '100%';
-    $('#progTxt').textContent = 'Höchste Stufe erreicht · Umsatz ' + fmt(S.wagered);
+    $('#progTxt').textContent = isCareer() ? 'Höchste Stufe erreicht' : 'Sandbox · alle Räume offen';
   }
 }
 function enterRoom(id, force) {
@@ -571,7 +575,7 @@ return {
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
   resetState: function () { S = fresh(S.mode); locked = 0; save(); },
   get slotId() { return slotId; }, get slotName() { return slotName; },
-  isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
+  RANK: RANK, isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
   bailout: bailout, bailoutAmt: bailoutAmt, claimDaily: claimDaily, dailyAvailable: dailyAvailable,
   renderWalletBtn: renderWalletBtn, walletAction: walletAction
 };

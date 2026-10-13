@@ -32,9 +32,11 @@ py -3 -m http.server 8765
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Grundgerüst der Seite |
-| `css/style.css` | Gesamtes Styling |
+| `css/style.css` | Styling der Spiele (Slots, Roulette, Blackjack, Crash, Seitenfenster) |
+| `css/shell.css` | Rahmen: Titelbildschirm, Spiel-HUD, Seitenleiste, Fenster |
 | `js/engine.js` | Reine Spiellogik (Zufall, Stufen, Slots, Roulette, Blackjack, Crash, Profil) |
 | `js/art.js` | Hostessen-Porträts als SVG |
+| `js/icons.js` | Icons als Inline-SVG |
 | `js/store.js` | Spielstände (Slots) im Browser-Speicher |
 | `js/cloud.js` | Online-Konten, Cloud-Spielstände und Bestenliste über Supabase |
 | `js/core.js` | Zustand, Speichern, Karriere-Regeln, Ton, HUD, Hostess, Einsatz-Steuerung |
