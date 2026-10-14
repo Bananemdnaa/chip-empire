@@ -1,10 +1,20 @@
-/* Chip Empire – Hauptmenü (Titelbildschirm): Konto, Spielstände, Bestenliste */
+/* Chip Empire – Hauptmenü: Navigation mit Bereichen (Spielen, Arena, Freunde, Ranglisten, Profil) */
 var Menu = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
-var root, inner, onStart, view = 'slots', confirmDel = null, newMode = 'career';
-var status = '', busy = false, board = null, boardErr = '', boardMode = 'career';
+var root, inner, body, navEl, onStart, view = 'slots', confirmDel = null, newMode = 'career';
+var status = '', busy = false, board = null, boardErr = '', boardMode = 'career', pollTimer = 0;
 var CHIP_COLORS = ['#8E0E2B', '#1E5E8E', '#1A1418', '#5B2A8E', '#C79A3A', '#0F6A4A'];
+var SECTION_KEY = 'chip-empire-menu-section';
+/* Bereiche der Navigation; online: nur mit Server, cnt: Zähler für offene Dinge */
+var SECTIONS = [
+  { id: 'play', label: 'Spielen', icon: 'slots' },
+  { id: 'arena', label: 'Arena', icon: 'arena', online: true, cnt: function () { return Social.invites(); } },
+  { id: 'friends', label: 'Freunde', icon: 'friends', online: true, cnt: function () { return Friends.incoming().length; } },
+  { id: 'ranks', label: 'Ranglisten', icon: 'ranks', online: true },
+  { id: 'profile', label: 'Profil', icon: 'user', online: true }
+];
+var section = (function () { try { return localStorage.getItem(SECTION_KEY) || 'play'; } catch (e) { return 'play'; } })();
 
 function when(t) {
   var d = new Date(t), today = new Date();
@@ -14,8 +24,8 @@ function when(t) {
 }
 function $$(s, r) { return Array.prototype.slice.call(r.querySelectorAll(s)); }
 function account() { return Store.isAccount() ? Cloud.current() : null; }
-function icon(name) { return el('span', { class: 'ic', html: Icons[name] }); }
 function chipImg(cls) { return el('img', { class: cls || '', src: 'favicon.svg', alt: '' }); }
+function sections() { return SECTIONS.filter(function (s) { return !s.online || Cloud.available(); }); }
 
 /* Führt eine Server-Aktion aus, sperrt solange das Menü und zeigt Fehler an */
 async function run(label, fn) {
@@ -45,46 +55,95 @@ function background() {
   return bg;
 }
 
-/* ---------- Konto ---------- */
-function accountPill() {
+/* ---------- Navigation ---------- */
+function go(id) {
+  if (section === id && view === 'slots') return;
+  section = id; view = 'slots'; status = '';
+  try { localStorage.setItem(SECTION_KEY, id); } catch (e) { /* */ }
+  V.Snd.click();
+  render();
+  if (id === 'ranks' && !board) loadBoard();
+  window.scrollTo(0, 0);
+}
+function topBar() {
   var a = account();
-  if (!Cloud.available()) return el('div', { class: 'acct-pill' }, el('span', { class: 'avatar guest-av', html: Icons.user }), el('span', { class: 'lbl', text: 'Offline · Gast' }));
-  if (a) {
-    return el('div', { class: 'acct-pill' },
-      el('span', { class: 'avatar', text: a.username.charAt(0) }), el('b', { text: a.username }),
-      el('button', { class: 'btn ghost sm', type: 'button', text: 'Abmelden', disabled: busy, onclick: function () {
-        run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); view = 'slots'; loadBoard(); });
-      } }));
-  }
-  return el('div', { class: 'acct-pill' },
-    el('span', { class: 'avatar guest-av', html: Icons.user }), el('span', { class: 'lbl', text: 'Gast' }),
-    view === 'login' ? null : el('button', { class: 'btn gold sm', type: 'button', text: 'Einloggen', onclick: function () { view = 'login'; status = ''; V.Snd.click(); render(); } }));
+  navEl = el('nav', { class: 'mnav', 'aria-label': 'Hauptmenü' });
+  sections().forEach(function (s) {
+    var label = s.id === 'profile' && !a ? 'Konto' : s.label;
+    navEl.appendChild(el('button', { class: 'mnav-btn', type: 'button', 'data-sec': s.id, 'aria-current': section === s.id ? 'page' : null, onclick: function () { go(s.id); } },
+      el('span', { class: 'mnav-ic', html: Icons[s.icon] }), el('span', { class: 'mnav-lb', text: label })));
+  });
+  syncNav();
+  var acct;
+  if (!Cloud.available()) acct = el('div', { class: 'acct-pill' }, el('span', { class: 'avatar guest-av', html: Icons.user }), el('span', { class: 'lbl', text: 'Offline · Gast' }));
+  else if (a) acct = el('button', { class: 'acct-pill', type: 'button', title: 'Dein Profil', onclick: function () { go('profile'); } },
+    el('span', { class: 'avatar', text: a.username.charAt(0) }), el('b', { text: a.username }));
+  else acct = el('div', { class: 'acct-pill' }, el('span', { class: 'avatar guest-av', html: Icons.user }), el('span', { class: 'lbl', text: 'Gast' }),
+    el('button', { class: 'btn gold sm', type: 'button', text: 'Einloggen', onclick: function () { go('profile'); } }));
+  return el('header', { class: 'mtop' },
+    el('button', { class: 'mtop-logo', type: 'button', 'aria-label': 'Chip Empire, zu den Spielständen', onclick: function () { go('play'); } }, chipImg(), el('span', { text: 'Chip Empire' })),
+    navEl, acct);
+}
+/* Zähler an den Bereichen auffrischen, ohne das Menü neu aufzubauen */
+function syncNav() {
+  if (!navEl) return;
+  SECTIONS.forEach(function (s) {
+    var b = navEl.querySelector('[data-sec="' + s.id + '"]');
+    if (!b) return;
+    var old = b.querySelector('.qcount'); if (old) old.remove();
+    var n = s.cnt && account() ? s.cnt() : 0;
+    if (n) b.appendChild(el('span', { class: 'qcount', text: String(n) }));
+  });
+}
+function head(title, sub) {
+  return el('div', { class: 'msec-h' }, el('h2', { class: 'menu-h', text: title }), sub ? el('p', { class: 'fine', text: sub }) : null);
+}
+/* Bereiche, die ein Konto brauchen */
+function needAccount(what) {
+  return el('section', { class: 'panel need-acct' },
+    el('h2', { text: 'Mit Konto geht mehr' }),
+    el('p', { class: 'fine', text: what + ' Ein Konto ist kostenlos und braucht keine E-Mail. Deine Gast-Spielstände kannst du danach mitnehmen.' }),
+    el('div', { class: 'slot-act' }, el('button', { class: 'btn gold', type: 'button', text: 'Einloggen oder Konto erstellen', onclick: function () { go('profile'); } })));
 }
 
+/* ---------- Konto ---------- */
 function loginForm() {
   var name = el('input', { class: 'name-in', type: 'text', maxlength: '16', placeholder: 'Benutzername', 'aria-label': 'Benutzername', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false' });
   var pw = el('input', { class: 'name-in', type: 'password', placeholder: 'Passwort (mind. 6 Zeichen)', 'aria-label': 'Passwort', autocomplete: 'current-password' });
-  function go(kind) {
+  function submit(kind) {
     run(kind === 'up' ? 'Lege Konto an …' : 'Logge ein …', async function () {
       var u = kind === 'up' ? await Cloud.signUp(name.value, pw.value) : await Cloud.signIn(name.value, pw.value);
       Store.useAccount(u.id);
       await Cloud.syncAll();
-      view = 'slots';
-      loadBoard();
+      section = 'play';
+      board = null; loadBoard();
       Social.poll();
     });
   }
-  pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') go('in'); });
+  pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit('in'); });
   setTimeout(function () { name.focus(); }, 0);
   return el('section', { class: 'panel' },
     el('h2', { text: 'Dein Konto' }),
-    el('p', { class: 'fine', text: 'Mit Konto liegen deine Spielstände online, laufen auf jedem Gerät und du kommst in die Bestenliste. Keine E-Mail nötig. Merk dir dein Passwort gut, zurücksetzen geht nicht.' }),
+    el('p', { class: 'fine', text: 'Mit Konto liegen deine Spielstände online, laufen auf jedem Gerät und du kommst in die Bestenlisten, kannst Freunde hinzufügen und Duelle spielen. Keine E-Mail nötig. Merk dir dein Passwort gut, zurücksetzen geht nicht.' }),
     name, pw,
     el('div', { class: 'slot-act' },
-      el('button', { class: 'btn gold', type: 'button', text: 'Einloggen', disabled: busy, onclick: function () { go('in'); } }),
-      el('button', { class: 'btn ghost', type: 'button', text: 'Neues Konto erstellen', disabled: busy, onclick: function () { go('up'); } }),
-      el('button', { class: 'btn ghost sm', type: 'button', text: 'Zurück', onclick: function () { view = 'slots'; status = ''; render(); } })),
+      el('button', { class: 'btn gold', type: 'button', text: 'Einloggen', disabled: busy, onclick: function () { submit('in'); } }),
+      el('button', { class: 'btn ghost', type: 'button', text: 'Neues Konto erstellen', disabled: busy, onclick: function () { submit('up'); } })),
     el('p', { class: 'fine', text: 'Benutzername: 3 bis 16 Zeichen, nur a–z, 0–9, _ und -.' }));
+}
+function profileSection() {
+  var a = account();
+  if (!a) { body.appendChild(loginForm()); return; }
+  body.appendChild(head('Dein Profil', 'So sehen dich andere Spieler, wenn sie auf deinen Namen klicken.'));
+  var box = el('section', { class: 'panel wide own-prof' });
+  body.appendChild(box);
+  Social.profileInto(box, a.username, function () { return box.isConnected; });
+  body.appendChild(el('section', { class: 'panel wide' },
+    el('h2', { text: 'Konto' }),
+    el('p', { class: 'fine', text: 'Angemeldet als ' + a.username + '. Deine Spielstände liegen online und funktionieren auf jedem Gerät.' }),
+    el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Abmelden', disabled: busy, onclick: function () {
+      run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); });
+    } }))));
 }
 
 /* ---------- Spielstände als VIP-Karten ---------- */
@@ -142,7 +201,7 @@ function newForm() {
       onclick: function () { newMode = k; V.Snd.click(); $$('.mode', modes).forEach(function (b) { b.setAttribute('aria-checked', String(b === this)); }, this); } },
       el('span', { html: Icons[ICON[k]] }), el('b', { text: M.name }), el('span', { text: M.desc })));
   });
-  function go() {
+  function create() {
     var name = input.value.trim().replace(/\s+/g, ' ').slice(0, 20) || 'Spielstand ' + (Store.list().length + 1);
     if (account()) {
       run('Lege Spielstand an …', async function () { var s = await Cloud.createSave(name, newMode); view = 'slots'; onStart(s.id); });
@@ -153,14 +212,14 @@ function newForm() {
     view = 'slots';
     onStart(s.id);
   }
-  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') create(); });
   setTimeout(function () { input.focus(); }, 0);
   return el('section', { class: 'panel' },
     el('h2', { text: 'Neues Spiel' }),
     el('label', { class: 'lbl', text: 'Name deines Imperiums' }), input,
     el('div', { class: 'lbl', text: 'Modus' }), modes,
     el('div', { class: 'slot-act' },
-      el('button', { class: 'btn gold big', type: 'button', text: 'Los geht’s', disabled: busy, onclick: go }),
+      el('button', { class: 'btn gold big', type: 'button', text: 'Los geht’s', disabled: busy, onclick: create }),
       el('button', { class: 'btn ghost', type: 'button', text: 'Abbrechen', onclick: function () { view = 'slots'; render(); } })));
 }
 
@@ -181,19 +240,49 @@ function guestImport(full) {
   return box;
 }
 
-/* ---------- Bestenliste mit Treppchen ---------- */
+function playSection() {
+  if (view === 'new') { body.appendChild(newForm()); return; }
+  var slots = Store.list(), a = account();
+  var last = slots.slice().sort(function (x, y) { return (y.updated || 0) - (x.updated || 0); })[0];
+  body.appendChild(el('header', { class: 'menu-hero' },
+    el('img', { class: 'hero-chip', src: 'favicon.svg', alt: '' }),
+    el('h1', { class: 'menu-logo', 'data-text': 'Chip Empire', text: 'Chip Empire' }),
+    el('p', { class: 'menu-sub', text: a ? 'Willkommen zurück, ' + a.username : 'Vom Lobby-Gast zur Legende im Black Room' }),
+    last && last.state && !busy ? el('button', { class: 'btn gold big hero-go', type: 'button', onclick: function () { V.Snd.click(); onStart(last.id); } },
+      el('span', { html: Icons.play }), 'Weiterspielen: ' + last.name) : null));
+  if (Store.isBroken()) {
+    body.appendChild(el('p', { class: 'menu-warn', text: 'Deine Spielstände konnten nicht gelesen werden. Eine Sicherung liegt im Browser-Speicher, es wird nichts überschrieben.' }));
+  }
+  var grid = el('div', { class: 'slots' });
+  slots.forEach(function (s) { grid.appendChild(vipCard(s)); });
+  if (slots.length < Store.MAX_SLOTS && !Store.isBroken()) {
+    grid.appendChild(el('button', { class: 'slot-new', type: 'button', disabled: busy, onclick: function () { view = 'new'; newMode = 'career'; V.Snd.click(); render(); } },
+      el('span', { class: 'plus', text: '+' }), el('b', { text: 'Neues Spiel' }), el('span', { text: 'Platz ' + (slots.length + 1) + ' von ' + Store.MAX_SLOTS })));
+  }
+  body.appendChild(el('section', { 'aria-label': 'Spielstände' }, el('h2', { class: 'menu-h', text: a ? 'Deine Spielstände' : 'Spielstände auf diesem Gerät' }), grid));
+  if (a) { var gi = guestImport(slots.length >= Store.MAX_SLOTS); if (gi) body.appendChild(gi); }
+  body.appendChild(el('p', { class: 'fine menu-note', text: a
+    ? 'Deine Spielstände liegen online in deinem Konto und funktionieren auf jedem Gerät.'
+    : 'Gast-Spielstände liegen nur in diesem Browser. Mit Konto spielst du auf jedem Gerät weiter.' }));
+}
+
+/* ---------- Ranglisten mit Treppchen ---------- */
+var BOARD_TEXT = {
+  career: 'Karriere-Spielstände nach Chips.',
+  empire: 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).',
+  duel: 'Elo-Wertung aus Crash-Duellen. Der Kontostand spielt keine Rolle.'
+};
 function boardBox() {
-  if (!Cloud.available()) return null;
-  var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' }, el('h3', { class: 'menu-h', text: 'Bestenliste' }));
+  var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' });
   var seg = el('div', { class: 'qseg board-seg', role: 'tablist' });
   [['career', 'Karriere'], ['empire', 'Imperium'], ['duel', 'Duelle']].forEach(function (x) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(boardMode === x[0]), text: x[1],
       onclick: function () { if (boardMode === x[0]) return; boardMode = x[0]; board = null; boardErr = ''; V.Snd.click(); render(); loadBoard(); } }));
   });
   box.appendChild(seg);
-  if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return arenaBtn(box); }
+  if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return box; }
   if (!board) { box.appendChild(el('p', { class: 'fine', text: 'Lade …' })); return box; }
-  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return arenaBtn(box); }
+  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
   var me = account(), myName = me ? me.username : null;
   var pod = el('div', { class: 'podium' });
   [1, 0, 2].forEach(function (i) {
@@ -218,67 +307,61 @@ function boardBox() {
     });
     box.appendChild(ol);
   }
-  box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Elo-Wertung aus Crash-Duellen. Der Kontostand spielt keine Rolle.' : boardMode === 'empire' ? 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).' : 'Karriere-Spielstände nach Chips.' }));
-  return arenaBtn(box);
-}
-/* Mit Konto: Arena mit Duellen und Freunden direkt aus dem Menü */
-function arenaBtn(box) {
-  if (account()) box.appendChild(el('button', { class: 'btn gold arena-btn', type: 'button', onclick: function () { V.Snd.click(); Social.open(); } },
-    el('span', { class: 'ic', html: Icons.arena }), 'Arena: Duelle und Freunde', arenaCount()));
+  box.appendChild(el('p', { class: 'fine', text: BOARD_TEXT[boardMode] }));
   return box;
 }
-function arenaCount() { var n = Social.count(); return n ? el('span', { class: 'qcount', text: String(n) }) : null; }
-/* Neue Anfragen oder Einladungen: nur den Zähler am Arena-Knopf auffrischen, nicht das ganze Menü */
-function syncArena() {
-  var b = inner && inner.querySelector('.arena-btn');
-  if (!b) return;
-  var old = b.querySelector('.qcount'); if (old) old.remove();
-  var c = arenaCount(); if (c) b.appendChild(c);
-}
-Social.onChange(syncArena);
-var pollTimer = 0;
 function loadBoard() {
   if (!Cloud.available()) return;
   var mode = boardMode;
   var req = mode === 'duel'
     ? Cloud.rpc('duel_board', { lim: 20 }).then(function (rows) { return (rows || []).map(function (r) { return Object.assign({ balance: r.rating }, r); }); })
     : Cloud.leaderboard(20, mode);
-  req.then(function (rows) { if (mode !== boardMode) return; board = rows; boardErr = ''; render(); })
-    .catch(function (e) { if (mode !== boardMode) return; boardErr = mode !== 'career' ? 'Diese Bestenliste braucht noch das Datenbank-Update.' : 'Bestenliste nicht verfügbar: ' + (e.message || e); render(); });
+  req.then(function (rows) { if (mode !== boardMode) return; board = rows; boardErr = ''; if (section === 'ranks') renderBody(); })
+    .catch(function (e) { if (mode !== boardMode) return; boardErr = mode !== 'career' ? 'Diese Bestenliste braucht noch das Datenbank-Update.' : 'Bestenliste nicht verfügbar: ' + (e.message || e); if (section === 'ranks') renderBody(); });
 }
 
 /* ---------- Aufbau ---------- */
+/* Während jemand in der Spielersuche tippt, nicht neu zeichnen */
+function typing() { var a = document.activeElement; return !!(a && a.tagName === 'INPUT' && a.closest && a.closest('.fr-search')); }
+function renderBody() {
+  if (!body) return;
+  body.innerHTML = '';
+  body.setAttribute('data-sec', section);
+  var a = account();
+  if (section === 'arena') {
+    body.appendChild(head('Arena', 'Crash-Duelle gegen andere Spieler: gleiche Absturzpunkte, gleiche Startchips, nur dein Timing zählt.'));
+    if (!a) { body.appendChild(needAccount('In der Arena forderst du andere Spieler zu Crash-Duellen heraus und sammelst Wertungspunkte.')); return; }
+    var box = el('div', { class: 'msec-box' });
+    body.appendChild(box);
+    Social.render(box, function () { if (section === 'arena' && !typing()) renderBody(); }, 'duels');
+  } else if (section === 'friends') {
+    body.appendChild(head('Freunde', 'Such Spieler, schick Anfragen und fordere Freunde direkt heraus.'));
+    if (!a) { body.appendChild(needAccount('Mit Freunden siehst du, wer gerade spielt, und kannst sie direkt zum Duell herausfordern.')); return; }
+    var fbox = el('div', { class: 'msec-box' });
+    body.appendChild(fbox);
+    Friends.render(fbox);
+  } else if (section === 'ranks') {
+    body.appendChild(head('Ranglisten', 'Klick auf einen Namen, um das Profil zu sehen.'));
+    body.appendChild(boardBox());
+  } else if (section === 'profile') {
+    profileSection();
+  } else playSection();
+}
 function render() {
   if (!inner) return;
+  if (!sections().some(function (s) { return s.id === section; })) section = 'play';
   inner.innerHTML = '';
-  inner.appendChild(el('div', { class: 'menu-bar' }, accountPill()));
-  inner.appendChild(el('header', { class: 'menu-hero' },
-    el('img', { class: 'hero-chip', src: 'favicon.svg', alt: '' }),
-    el('h1', { class: 'menu-logo', 'data-text': 'Chip Empire', text: 'Chip Empire' }),
-    el('p', { class: 'menu-sub', text: 'Vom Lobby-Gast zur Legende im Black Room' })));
+  inner.appendChild(topBar());
   if (status) inner.appendChild(el('p', { class: 'menu-status' + (status.charAt(0) === '⚠' ? ' err' : ''), role: 'status', text: status }));
-  if (Store.isBroken()) {
-    inner.appendChild(el('p', { class: 'menu-warn', text: 'Deine Spielstände konnten nicht gelesen werden. Eine Sicherung liegt im Browser-Speicher, es wird nichts überschrieben.' }));
-  }
-  if (view === 'login') { inner.appendChild(loginForm()); return; }
-  if (view === 'new') { inner.appendChild(newForm()); return; }
-
-  var slots = Store.list();
-  var grid = el('div', { class: 'slots' });
-  slots.forEach(function (s) { grid.appendChild(vipCard(s)); });
-  if (slots.length < Store.MAX_SLOTS && !Store.isBroken()) {
-    grid.appendChild(el('button', { class: 'slot-new', type: 'button', disabled: busy, onclick: function () { view = 'new'; newMode = 'career'; V.Snd.click(); render(); } },
-      el('span', { class: 'plus', text: '+' }), el('b', { text: 'Neues Spiel' }), el('span', { text: 'Platz ' + (slots.length + 1) + ' von ' + Store.MAX_SLOTS })));
-  }
-  var left = el('section', { 'aria-label': 'Spielstände' }, el('h2', { class: 'menu-h', text: account() ? 'Deine Spielstände' : 'Spielstände auf diesem Gerät' }), grid);
-  if (account()) { var gi = guestImport(slots.length >= Store.MAX_SLOTS); if (gi) left.appendChild(gi); }
-  var bb = boardBox();
-  inner.appendChild(el('div', { class: 'menu-grid' }, left, bb || el('div')));
-  inner.appendChild(el('p', { class: 'fine menu-note', text: account()
-    ? 'Deine Spielstände liegen online in deinem Konto und funktionieren auf jedem Gerät.'
-    : 'Gast-Spielstände liegen nur in diesem Browser. Mit Konto spielst du auf jedem Gerät weiter.' }));
+  body = el('main', { class: 'msec' });
+  inner.appendChild(body);
+  renderBody();
   inner.appendChild(el('p', { class: 'foot', text: 'Chip Empire · Spielgeld ohne Wert, kein echtes Glücksspiel · Alle Figuren sind frei erfunden' }));
 }
+
+/* Neue Anfragen, Einladungen oder Ergebnisse: Zähler und den offenen Bereich auffrischen */
+Social.onChange(syncNav);
+Friends.onChange(function () { syncNav(); if (section === 'friends' && root && !root.hidden && !typing()) renderBody(); });
 
 function show(cb) {
   onStart = cb;
@@ -302,6 +385,7 @@ function show(cb) {
 /* Blendet das Menü aus; wartet die Animation ab, wenn es sichtbar war */
 function leave() {
   root = root || document.getElementById('menu');
+  clearInterval(pollTimer);
   if (root.hidden) return Promise.resolve();
   root.classList.add('leaving');
   return V.sleep(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300).then(function () { root.hidden = true; root.innerHTML = ''; });

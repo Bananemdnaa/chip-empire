@@ -117,7 +117,7 @@ body.in-game { overflow: hidden; }
 .toasts { z-index: 80; }
 
 /* ---------- Titelbildschirm ---------- */
-.menu { position: relative; min-height: 100vh; min-height: 100dvh; overflow: hidden; isolation: isolate;
+.menu { position: relative; min-height: 100vh; min-height: 100dvh; overflow: hidden; overflow: clip; isolation: isolate;
   background:
     radial-gradient(60% 50% at 50% 0%, rgba(196,32,63,.35), transparent 70%),
     radial-gradient(40% 40% at 15% 85%, rgba(212,171,82,.10), transparent 70%),
@@ -142,7 +142,6 @@ body.in-game { overflow: hidden; }
 }
 
 .menu-inner { max-width: 1120px; margin: 0 auto; padding: 18px 20px 28px; }
-.menu-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; min-height: 44px; }
 .acct-pill { display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 4px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.35); backdrop-filter: blur(4px); font-size: 14px; }
 .acct-pill .avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 50%, var(--gold-lo)); color: #2A1608; font-weight: 800; text-transform: uppercase; }
 .acct-pill .guest-av { background: rgba(255,255,255,.08); color: var(--muted); }
@@ -165,7 +164,6 @@ body.in-game { overflow: hidden; }
 .menu-status { max-width: 640px; margin: 0 auto 16px; padding: 9px 14px; border-radius: 12px; background: rgba(212,171,82,.1); border: 1px solid var(--line); font-size: 14px; text-align: center; }
 .menu-status.err { border-color: var(--crimson); background: rgba(196,32,63,.14); }
 .menu-warn { max-width: 640px; margin: 0 auto 16px; padding: 12px 14px; border: 1px solid var(--warn); border-radius: 12px; background: #3A2A10; }
-.menu-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 22px; align-items: start; }
 .menu-h { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 400; font-size: 22px; color: var(--gold-hi); margin: 0 0 12px; }
 .menu-h::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
 .menu-note { text-align: center; margin: 22px auto 0; }
@@ -280,7 +278,6 @@ body.in-game { overflow: hidden; }
 @media (max-width: 980px) {
   #app { grid-template-columns: 84px minmax(0, 1fr); grid-template-areas: "hud hud" "rail stage"; }
   .host { display: none; }
-  .menu-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---------- Handy ---------- */
@@ -338,3 +335,45 @@ body.in-game { overflow: hidden; }
   .menu-bg::before, .fchip, .hero-chip, .menu-logo::after, .splash-chip { animation: none !important; }
   .fchip { display: none; }
 }
+
+/* ---------- Hauptmenü: Navigation mit Bereichen ---------- */
+.mtop { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px; margin: -18px -20px 6px; padding: 10px 20px;
+  background: linear-gradient(180deg, rgba(19,8,13,.92), rgba(19,8,13,.78)); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.mtop-logo { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 0; cursor: pointer; color: var(--gold-hi); font-family: var(--f-display); font-size: 22px; white-space: nowrap; }
+.mtop-logo img { width: 30px; height: 30px; }
+.mnav { display: flex; gap: 4px; margin: 0 auto; }
+.mnav-btn { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1px solid transparent; border-radius: 999px; background: none;
+  color: var(--muted); font: 600 14px var(--f-body); cursor: pointer; transition: color .15s, background .15s, border-color .15s; }
+.mnav-btn:hover { color: var(--ivory); background: rgba(255,255,255,.04); }
+.mnav-btn[aria-current="page"] { color: var(--gold-hi); border-color: var(--gold-lo); background: rgba(212,171,82,.12); }
+.mnav-ic .ico { width: 18px; height: 18px; display: block; }
+.mnav-btn .qcount { position: absolute; top: -2px; right: -2px; }
+button.acct-pill { color: inherit; font: inherit; cursor: pointer; }
+button.acct-pill:hover { border-color: var(--gold-lo); }
+.msec { min-height: 50vh; }
+.msec-h { max-width: 860px; margin: 18px auto 14px; }
+.msec-h .menu-h { margin-bottom: 4px; }
+.msec-h .fine { margin: 0; }
+.msec-box, .msec .board { max-width: 860px; margin: 0 auto; }
+.panel.wide { max-width: 860px; margin-bottom: 16px; }
+.need-acct { text-align: left; }
+.hero-go { margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; }
+.hero-go .ico { width: 18px; height: 18px; }
+.own-prof .prof-head { margin-top: 0; }
+
+/* Handy: Bereiche als Leiste unten wie in einer App */
+@media (max-width: 720px) {
+  /* Ohne backdrop-filter, sonst wäre die feste Leiste unten an die Kopfleiste gebunden */
+  .mtop { margin: -12px -14px 4px; padding: 8px 14px; justify-content: space-between; backdrop-filter: none; background: rgba(19,8,13,.96); }
+  .mtop-logo span { font-size: 19px; }
+  .mnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; margin: 0; gap: 0; justify-content: space-around;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(19,8,13,.96); backdrop-filter: blur(10px); border-top: 1px solid var(--line); }
+  .mnav-btn { flex: 1; flex-direction: column; gap: 2px; padding: 6px 2px; border-radius: 12px; font-size: 11px; }
+  .mnav-btn[aria-current="page"] { border-color: transparent; }
+  .mnav-ic .ico { width: 22px; height: 22px; }
+  .mnav-btn .qcount { top: 0; right: calc(50% - 22px); }
+  .menu-inner { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .acct-pill b { max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero-go { width: 100%; justify-content: center; }
+}
+.msec .podium { max-width: 560px; margin-left: auto; margin-right: auto; }

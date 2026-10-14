@@ -16,7 +16,7 @@ Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel
 - **Arena** (mit Konto, Taste `D`): Crash-Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung. Beide fliegen dieselben 10 Runden mit denselben Absturzpunkten und starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Siege bringen Elo-Punkte für die Duell-Rangliste. Spielerprofile öffnen sich per Klick auf einen Namen in den Bestenlisten.
 - **Freunde** (in der Arena): Spieler per Namensanfang suchen, Anfragen senden, annehmen, ablehnen oder zurückziehen. Neue Anfragen und angenommene Anfragen werden gemeldet, auch im Hauptmenü. Freunde, die gerade spielen, sind grün markiert.
 
-Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
+Das Hauptmenü hat fünf Bereiche: Spielen (Spielstände), Arena, Freunde, Ranglisten und Profil. Am Handy sitzt die Navigation unten. Bis zu 3 Spielstände pro Browser. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
 ## Steuerung
 
@@ -63,7 +63,7 @@ py -3 -m http.server 8765
 | `css/games2.css` | Glücksrad, Würfel, Entenrennen, Plinko, Dragon Tower, Video-Poker |
 | `css/social.css` | Arena, Duell-Fenster, Spielerprofile |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
-| `js/menu.js` | Hauptmenü |
+| `js/menu.js` | Hauptmenü mit Bereichen: Spielen, Arena, Freunde, Ranglisten, Profil |
 | `js/social.js` | Arena: Duelle, Freunde, Duell-Rangliste, Spielerprofile |
 | `js/friends.js` | Freundesystem: Liste, Anfragen, Spielersuche, Benachrichtigungen |
 | `js/duel.js` | Crash-Duell (Spielfenster, Protokoll, Fortsetzen nach Neuladen) |

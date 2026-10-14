@@ -3,7 +3,7 @@ var Social = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
 var view = 'duels', D = { me: null, list: null, lobby: null, board: null }, err = '', loading = false, stamp = 0;
-var openDetail = null, busy = false, rerender = null, overlay = null;
+var openDetail = null, busy = false, rerender = null;
 
 function account() { return Store.isAccount() ? Cloud.current() : null; }
 function ago(t) {
@@ -94,8 +94,10 @@ function accept(id, opp) {
 }
 
 /* ---------- Arena ---------- */
-function render(host, refresh) {
+/* only = 'duels': nur die Duelle ohne Reiter (das Hauptmenü hat Freunde und Ranglisten als eigene Bereiche) */
+function render(host, refresh, only) {
   rerender = refresh;
+  if (only) view = only;
   var a = account();
   if (!a) {
     host.appendChild(el('p', { class: 'side-intro', text: 'In der Arena trittst du gegen andere Spieler an: Crash-Duelle mit gleichen Chancen für beide, Freunde und eine eigene Rangliste.' }));
@@ -109,7 +111,7 @@ function render(host, refresh) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(view === x[0]), onclick: function () { view = x[0]; V.Snd.click(); redraw(); } },
       x[1], cnt[x[0]] ? el('span', { class: 'qcount', text: String(cnt[x[0]]) }) : null));
   });
-  host.appendChild(seg);
+  if (!only) host.appendChild(seg);
   if (err) { host.appendChild(el('p', { class: 'fine', text: err })); return; }
   if (!D.list) { host.appendChild(el('p', { class: 'fine', text: 'Lade die Arena …' })); return; }
   if (view === 'friends') Friends.render(host);
@@ -258,13 +260,16 @@ async function profile(name) {
   closeProfile();
   var p = panel('Spielerprofil', closeProfile);
   profDlg = p.dlg;
-  p.body.appendChild(el('p', { class: 'fine', text: 'Lade Profil …' }));
   p.dlg.querySelector('.icon-btn').focus();
+  profileInto(p.body, name, function () { return profDlg === p.dlg; });
+}
+/* Profil in einen beliebigen Bereich laden; alive() sagt, ob der Bereich noch angezeigt wird */
+async function profileInto(body, name, alive) {
+  body.appendChild(el('p', { class: 'fine', text: 'Lade Profil …' }));
   var P;
   try { P = await Cloud.rpc('player_profile', { name: name }); }
-  catch (e) { p.body.innerHTML = ''; p.body.appendChild(el('p', { class: 'fine', text: e.message || String(e) })); return; }
-  if (profDlg !== p.dlg) return;
-  fillProfile(p.body, P);
+  catch (e) { if (alive()) { body.innerHTML = ''; body.appendChild(el('p', { class: 'fine', text: e.message || String(e) })); } return; }
+  if (alive()) fillProfile(body, P);
 }
 function fillProfile(body, P) {
   body.innerHTML = '';
@@ -281,7 +286,7 @@ function fillProfile(body, P) {
   if (a && !P.me) {
     var row = el('div', { class: 'rrow' }, el('button', { class: 'btn gold', type: 'button', text: '⚔ Herausfordern', onclick: function () { challenge(P.username); } }));
     /* Nach der Aktion das Profil neu laden, damit der Knopf zum neuen Stand passt */
-    var fAct = function (fn) { return function () { this.disabled = true; fn(P.username).then(function () { if (profDlg) profile(P.username); }); }; };
+    var fAct = function (fn) { return function () { this.disabled = true; fn(P.username).then(function () { if (profDlg) profile(P.username); else { body.innerHTML = ''; profileInto(body, P.username, function () { return body.isConnected; }); } }); }; };
     if (!P.friend) row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: '+ Freund hinzufügen', onclick: fAct(Friends.send) }));
     else if (P.friend === 'incoming') {
       row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Freundschaft annehmen', onclick: fAct(Friends.accept) }));
@@ -311,20 +316,11 @@ function fillProfile(body, P) {
   }
 }
 
-/* Arena als eigenes Fenster (für das Hauptmenü) */
-function open() {
-  if (overlay) return;
-  var p = panel('Arena', function () { overlay.remove(); overlay = null; rerender = null; });
-  overlay = p.dlg;
-  var draw = function () { if (!overlay) return; p.body.innerHTML = ''; render(p.body, draw); };
-  draw();
-  load(true);
-}
-
 /* Im Hintergrund nachsehen, ob jemand herausgefordert hat */
 function poll() { if (account() && !document.hidden) load(true); }
 
-return { render: render, profile: profile, open: open, badge: badge, count: count, poll: poll, challenge: challenge,
+return { render: render, profile: profile, profileInto: profileInto, badge: badge, count: count, invites: function () { return invites().length + unseenResults() + (Duel.pending() ? 1 : 0); },
+  poll: poll, challenge: challenge,
   onChange: function (fn) { listeners.push(fn); } };
 })();
 V.social = Social;
