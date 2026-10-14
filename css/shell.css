@@ -377,3 +377,10 @@ button.acct-pill:hover { border-color: var(--gold-lo); }
   .hero-go { width: 100%; justify-content: center; }
 }
 .msec .podium { max-width: 560px; margin-left: auto; margin-right: auto; }
+
+/* Nachricht an alle */
+.announce { display: flex; align-items: center; gap: 10px; max-width: 860px; margin: 10px auto 4px; padding: 10px 12px 10px 14px; border-radius: 14px;
+  border: 1px solid var(--gold); background: linear-gradient(90deg, rgba(212,171,82,.2), rgba(0,0,0,.35)); font-size: 14.5px; }
+.announce .an-ico { font-size: 20px; }
+.announce .an-txt { flex: 1; }
+.announce .an-x { flex: none; width: 30px; height: 30px; }

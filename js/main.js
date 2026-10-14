@@ -184,6 +184,11 @@ async function startGame(id) {
   V.meta.migrate();
   V.meta.ensureQuests();
   V.hud();
+  /* Nachricht an alle: einmal pro Nachricht beim Spielstart */
+  Cloud.announcement().then(function (a) {
+    if (!a || Cloud.annSeen(a.id)) return;
+    setTimeout(function () { V.banner('📣 Neuigkeiten', a.text, { kind: 'level', ms: 15000, actions: [{ label: 'Alles klar', gold: true, fn: function () { Cloud.annMarkSeen(a.id); } }] }); }, 2600);
+  });
   if (V.dailyAvailable()) {
     setTimeout(function () {
       V.banner('Tagesbonus wartet', 'Hol dir deine Chips für heute ab.', { kind: 'level', ms: 12000, actions: [

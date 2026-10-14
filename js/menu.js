@@ -15,6 +15,33 @@ var SECTIONS = [
   { id: 'profile', label: 'Profil', icon: 'user', online: true },
   { id: 'admin', label: 'Admin', icon: 'admin', online: true, admin: true }
 ];
+/* ---------- Admin: Code wird erst nachgeladen, wenn der Server das Konto als Admin bestätigt ---------- */
+Icons.admin = Icons.admin || '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M12 2.8l7.5 3v5.6c0 4.6-3.2 8.4-7.5 9.8-4.3-1.4-7.5-5.2-7.5-9.8V5.8z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg>';
+var adminOn = false, adminFor = null, adminLoad = null, ann = null;
+function version() { var s = document.querySelector('script[src*="menu.js?v="]'), m = s && /v=(\d+)/.exec(s.getAttribute('src')); return m ? m[1] : '0'; }
+function loadAdmin() {
+  if (adminLoad) return adminLoad;
+  adminLoad = new Promise(function (resolve, reject) {
+    var v = version();
+    document.head.appendChild(el('link', { rel: 'stylesheet', href: 'css/admin.css?v=' + v }));
+    var sc = el('script', { src: 'js/admin.js?v=' + v });
+    sc.onload = function () { resolve(); };
+    sc.onerror = function () { adminLoad = null; reject(new Error('Admin-Panel konnte nicht geladen werden.')); };
+    document.body.appendChild(sc);
+  });
+  return adminLoad;
+}
+async function checkAdmin() {
+  var a = account();
+  if (!a) { adminFor = null; if (adminOn) { adminOn = false; render(); } return; }
+  if (adminFor === a.id) return;
+  adminFor = a.id;
+  var ok = false;
+  try { ok = !!(await Cloud.rpc('am_admin')); if (ok) await loadAdmin(); } catch (e) { ok = false; }
+  if (ok !== adminOn) { adminOn = ok; if (root && !root.hidden) render(); }
+}
+
 var section = (function () { try { return localStorage.getItem(SECTION_KEY) || 'play'; } catch (e) { return 'play'; } })();
 
 function when(t) {
@@ -26,7 +53,7 @@ function when(t) {
 function $$(s, r) { return Array.prototype.slice.call(r.querySelectorAll(s)); }
 function account() { return Store.isAccount() ? Cloud.current() : null; }
 function chipImg(cls) { return el('img', { class: cls || '', src: 'favicon.svg', alt: '' }); }
-function sections() { return SECTIONS.filter(function (s) { return (!s.online || Cloud.available()) && (!s.admin || Admin.is()); }); }
+function sections() { return SECTIONS.filter(function (s) { return (!s.online || Cloud.available()) && (!s.admin || adminOn); }); }
 
 /* Führt eine Server-Aktion aus, sperrt solange das Menü und zeigt Fehler an */
 async function run(label, fn) {
@@ -119,7 +146,7 @@ function loginForm() {
       section = 'play';
       board = null; loadBoard();
       Social.poll();
-      Admin.check();
+      checkAdmin();
     });
   }
   pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit('in'); });
@@ -144,7 +171,7 @@ function profileSection() {
     el('h2', { text: 'Konto' }),
     el('p', { class: 'fine', text: 'Angemeldet als ' + a.username + '. Deine Spielstände liegen online und funktionieren auf jedem Gerät.' }),
     el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Abmelden', disabled: busy, onclick: function () {
-      run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); Admin.check(); });
+      run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); checkAdmin(); });
     } }))));
   body.appendChild(deleteBox(a));
 }
@@ -164,7 +191,7 @@ function deleteBox(a) {
     run('Lösche dein Konto …', async function () {
       await Cloud.deleteAccount(pw.value);
       Store.useAccount(null);
-      deleteOpen = false; section = 'play'; board = null; loadBoard(); Admin.check();
+      deleteOpen = false; section = 'play'; board = null; loadBoard(); checkAdmin();
       V.toast('Dein Konto wurde gelöscht.', 'good');
     });
   } });
@@ -392,6 +419,10 @@ function render() {
   inner.innerHTML = '';
   inner.appendChild(topBar());
   if (status) inner.appendChild(el('p', { class: 'menu-status' + (status.charAt(0) === '⚠' ? ' err' : ''), role: 'status', text: status }));
+  if (ann && !Cloud.annSeen(ann.id)) {
+    inner.appendChild(el('div', { class: 'announce', role: 'status' }, el('span', { class: 'an-ico', text: '📣' }), el('span', { class: 'an-txt', text: ann.text }),
+      el('button', { class: 'icon-btn an-x', type: 'button', 'aria-label': 'Nachricht ausblenden', text: '✕', onclick: function () { Cloud.annMarkSeen(ann.id); render(); } })));
+  }
   body = el('main', { class: 'msec' });
   inner.appendChild(body);
   renderBody();
@@ -400,7 +431,6 @@ function render() {
 
 /* Neue Anfragen, Einladungen oder Ergebnisse: Zähler und den offenen Bereich auffrischen */
 Social.onChange(syncNav);
-Admin.onChange(function () { if (root && !root.hidden) render(); });
 Friends.onChange(function () { syncNav(); if (section === 'friends' && root && !root.hidden && !typing()) renderBody(); });
 
 function show(cb) {
@@ -419,7 +449,8 @@ function show(cb) {
   if (Store.isAccount()) run('Gleiche mit der Cloud ab …', function () { return Cloud.syncAll(); });
   loadBoard();
   Social.poll();
-  Admin.check();
+  checkAdmin();
+  Cloud.announcement().then(function (a) { ann = a; if (a && !root.hidden) render(); });
   clearInterval(pollTimer);
   pollTimer = setInterval(function () { if (!root.hidden) Social.poll(); }, 45000);
 }

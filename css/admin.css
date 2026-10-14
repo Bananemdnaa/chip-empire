@@ -29,3 +29,27 @@
 
 .tag.bad { color: #FF9AAE; border-color: rgba(255,106,136,.5); }
 .ad-rename .name-in { width: 100%; max-width: 320px; }
+
+/* Übersicht */
+.ad-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.ad-tile { display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.3); }
+.ad-tile span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ad-tile b { font-size: 24px; color: var(--gold-hi); }
+.ad-tile small { font-size: 12px; color: var(--muted); }
+.ad-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.ad-box { padding: 14px 16px; margin-bottom: 12px; border-radius: 16px; border: 1px solid var(--line); background: rgba(0,0,0,.28); }
+.ad-two .ad-box { margin-bottom: 0; }
+.ad-box h4 { margin: 0 0 8px; }
+.ad-box > .fine { margin: 0 0 10px; }
+.ad-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
+.ad-line:last-child { border-bottom: 0; }
+/* Spieler */
+.ad-card.banned-p { border-color: rgba(255,106,136,.5); background: rgba(90,10,30,.25); }
+.ad-ban { display: grid; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,106,136,.4); background: rgba(196,32,63,.1); }
+.ad-ban .fine { margin: 0; }
+.ad-tp { display: inline-flex; align-items: center; gap: 4px; }
+.ad-tp .btn { padding: 4px 10px; }
+/* Nachricht */
+.ad-ta { width: 100%; resize: vertical; font: inherit; margin-bottom: 8px; }
+.ad-ann .rrow { justify-content: space-between; }
+.ad-box .announce { margin: 0 0 10px; }

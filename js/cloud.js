@@ -41,6 +41,7 @@ function errText(err) {
   if (/email not confirmed/i.test(m)) return 'In Supabase ist „Confirm email“ noch an. Bitte ausschalten.';
   if (/maximal 3/i.test(m)) return 'Du hast schon 3 Spielstände in deinem Konto.';
   if (/database error saving new user/i.test(m)) return 'Dieser Benutzername ist nicht erlaubt.';
+  if (/user is banned|banned/i.test(m)) return 'Dieses Konto ist gesperrt.';
   if (/saves_mode_check|violates check constraint/i.test(m)) return 'Für den Imperium-Modus fehlt noch das Datenbank-Update (SQL in Supabase ausführen).';
   if (/failed to fetch|network/i.test(m)) return 'Keine Verbindung zum Server.';
   if (/could not find the (function|table)|schema cache|does not exist/i.test(m)) return 'Die Datenbank ist noch nicht eingerichtet.';
@@ -193,6 +194,15 @@ async function leaderboard(n, mode) {
   return check(r) || [];
 }
 
+/* ---------- Nachricht an alle (vom Admin-Panel) ---------- */
+var ANN_SEEN = 'chip-empire-ann-seen';
+async function announcement() {
+  if (!sb) return null;
+  try { var r = await sb.rpc('announcement_current'); return (!r.error && r.data && r.data[0]) || null; } catch (e) { return null; }
+}
+function annSeen(id) { try { return String(localStorage.getItem(ANN_SEEN)) === String(id); } catch (e) { return false; } }
+function annMarkSeen(id) { try { localStorage.setItem(ANN_SEEN, String(id)); } catch (e) { /* */ } }
+
 /* ---------- Freunde, Profile, Duelle (Funktionen in der Datenbank) ---------- */
 async function rpc(name, args) {
   if (!sb) throw new Error('Keine Verbindung zum Server.');
@@ -200,7 +210,7 @@ async function rpc(name, args) {
 }
 
 return {
-  rpc: rpc,
+  rpc: rpc, announcement: announcement, annSeen: annSeen, annMarkSeen: annMarkSeen,
   available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut, deleteAccount: deleteAccount,
   syncAll: syncAll, createSave: createSave, deleteSave: deleteSave, flush: flush, flushOnLeave: flushOnLeave, leaderboard: leaderboard,
   onConflict: function (cb) { conflictCb = cb; }, hasFailed: function () { return failed; }, NAME_RE: NAME_RE
