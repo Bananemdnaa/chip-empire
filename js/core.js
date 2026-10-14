@@ -35,6 +35,8 @@ function frame(cb) { if (document.hidden) setTimeout(function () { cb(performanc
 /* Auszahlung Einsatz × Faktor, abgerundet, ohne Kommazahl-Fehler (100 × 2,3 = 230, nicht 229) */
 function payout(bet, mult) { return Math.floor(bet * mult + 1e-6); }
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+/* Gewichtete Auswahl aus [[Wert, Gewicht], …] mit dem Spiel-Zufall */
+function pickW(list) { var t = 0; list.forEach(function (x) { t += x[1]; }); var r = E.rand() * t; for (var i = 0; i < list.length; i++) { r -= list[i][1]; if (r < 0) return list[i][0]; } return list[list.length - 1][0]; }
 function short(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' Mio';
   if (n >= 1e3) return (n / 1e3).toFixed(n % 1e3 ? 1 : 0).replace('.', ',') + 'k';
@@ -52,13 +54,13 @@ var CAREER = { start: 1000, bailoutCooldown: 10 * 60 * 1000, bailoutMult: 50, da
 /* Alle Spiele an einer Stelle: Reihenfolge der Navigation, Freischalt-Stufe in der Karriere,
    Hausvorteil (für Statistik) und Spielertyp (für das Zockerprofil) */
 var GAME_LIST = [
-  { id: 'slots', name: 'Slots', tier: 0, edge: 0.04, cat: 'dream' },
+  { id: 'slots', name: 'Slots', tier: 0, edge: 0.021, cat: 'dream' },
   { id: 'wheel', name: 'Glücksrad', tier: 0, edge: 0.05, cat: 'ritual' },
   { id: 'dice', name: 'Würfel', tier: 0, edge: 0.04, cat: 'ritual' },
   { id: 'roulette', name: 'Roulette', tier: 1, edge: 1 / 37, cat: 'ritual' },
   { id: 'ducks', name: 'Entenrennen', short: 'Enten', tier: 1, edge: 0.034, cat: 'ritual' },
   { id: 'plinko', name: 'Plinko', tier: 1, edge: 0.01, cat: 'thrill' },
-  { id: 'crash', name: 'Crash', tier: 2, edge: 0.01, cat: 'thrill' },
+  { id: 'crash', name: 'Crash', tier: 2, edge: 0.011, cat: 'thrill' },
   { id: 'tower', name: 'Dragon Tower', short: 'Tower', tier: 2, edge: 0.03, cat: 'thrill' },
   { id: 'bj', name: 'Blackjack', tier: 3, edge: 0.005, cat: 'strat' },
   { id: 'hilo', name: 'Hi-Lo-Leiter', short: 'Hi-Lo', tier: 3, edge: 0.04, cat: 'thrill' },
@@ -245,6 +247,8 @@ var Snd = (function () {
     step: function (k) { var f = 392 * Math.pow(2, Math.min(k, 30) / 12); tone(f, 0.14, 'triangle', 0.05); tone(f * 1.5, 0.12, 'sine', 0.025, 0.05); },
     unlock: function () { [392, 523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.25, 'triangle', 0.06, i * 0.1); }); },
     /* All-in: tiefer Herzschlag und ein Anschwellen */
+    /* Blitz: knisterndes Aufsteigen */
+    zap: function () { [880, 1320, 1760, 2640].forEach(function (f, i) { tone(f, 0.08, 'sawtooth', 0.025, i * 0.04); }); tone(110, 0.35, 'square', 0.04, 0.16); },
     heart: function () { tone(70, 0.18, 'sine', 0.12); tone(62, 0.22, 'sine', 0.1, 0.22); tone(220, 0.6, 'sawtooth', 0.02, 0.1); },
     allin: function () { [196, 247, 294, 392].forEach(function (f, i) { tone(f, 0.12, 'square', 0.03, i * 0.05); }); },
     ensure: ensure
@@ -648,7 +652,9 @@ function betControl(key, onChange) {
 /* ---------- All-in ---------- */
 /* Erkannt beim Abbuchen: Bleibt danach weniger als ein Mindesteinsatz übrig, ist es ein echtes All-in */
 var allinRound = false, allinTimer = 0;
-function allinFx(cls, title, sub, ms) {
+function allinFx(cls, title, sub, ms) { fx(cls, title, sub, ms); }
+/* Vollbild-Schriftzug (All-in, ON FIRE, Blitz) */
+function fx(cls, title, sub, ms) {
   var fx = $('#allinFx'); if (!fx) return;
   clearTimeout(allinTimer);
   fx.className = 'allin-fx'; fx.innerHTML = '';
@@ -686,11 +692,11 @@ function tabs(container, items, current, onPick) {
 }
 
 return {
-  E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, frame: frame, payout: payout, pick: pick, short: short, clock: clock,
+  E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, frame: frame, payout: payout, pick: pick, pickW: pickW, short: short, clock: clock,
   get S() { return S; }, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
   toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
-  needChips: needChips, parseAmount: parseAmount, snapBet: snapBet, kbd: kbd, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
+  needChips: needChips, fx: fx, parseAmount: parseAmount, snapBet: snapBet, kbd: kbd, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
   resetState: function () { S = fresh(S.mode); locked = 0; save(); },
   get slotId() { return slotId; }, get slotName() { return slotName; },

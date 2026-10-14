@@ -27,8 +27,7 @@ function addXp(n) {
   }
 }
 /* Pro Runde: mehr XP in höheren Räumen, Gewinne zählen 50 % mehr */
-/* Heißer Tisch: zügig weiterspielen bringt bis zu doppelte Erfahrung */
-function roundXp(net) { return 6 * (1 + 0.4 * V.S.room) * (net > 0 ? 1.3 : 1) * (V.session ? V.session.xpMult() : 1); }
+function roundXp(net) { return 6 * (1 + 0.4 * V.S.room) * (net > 0 ? 1.3 : 1); }
 
 /* ================= Talentbaum ================= */
 /* Jeder Ast ist eine Kette: Ein Talent braucht mindestens eine Stufe im Talent darüber. */

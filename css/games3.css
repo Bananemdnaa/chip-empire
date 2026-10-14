@@ -99,3 +99,36 @@
 @keyframes goldFlash { 20% { box-shadow: 0 0 0 3px var(--gold-hi), 0 0 60px rgba(242,214,142,.8), inset 0 0 60px rgba(242,214,142,.35); } }
 .tower.hoard { animation: hoard 1.2s ease-in-out 2; }
 @keyframes hoard { 50% { box-shadow: 0 0 0 4px var(--gold-hi), 0 0 90px rgba(255,170,60,.9), inset 0 0 80px rgba(255,190,90,.45); filter: brightness(1.15); } }
+
+/* ---------- Heißer Tisch: zehn Flammen ---------- */
+.sx-flames { position: relative; z-index: 1; display: inline-flex; gap: 2px; margin-left: 2px; }
+.sx-flames i { width: 7px; height: 14px; border-radius: 50% 50% 40% 40% / 65% 65% 35% 35%; background: rgba(255,255,255,.1); transition: background .3s, box-shadow .3s, transform .3s; }
+.sx-flames i.on { background: linear-gradient(0deg, #FF3D1F, #FF9A2A 55%, #FFE36A); box-shadow: 0 0 6px rgba(255,130,40,.9); transform: scaleY(1.15); animation: flick .5s ease-in-out infinite alternate; }
+.sx-flames i.on:nth-child(2n) { animation-delay: .15s; } .sx-flames i.on:nth-child(3n) { animation-delay: .3s; }
+@keyframes flick { to { transform: scaleY(1.3) translateY(-1px); filter: brightness(1.2); } }
+.sx-chip.combo.on { box-shadow: 0 0 calc(var(--heat, 0) * 22px) rgba(255,120,40,calc(var(--heat, 0) * .7)); }
+
+/* ---------- Vollbild-Schriftzüge: ON FIRE und Blitz ---------- */
+.allin-fx.fire, .allin-fx.bolt { display: grid; animation: fxFade 2.4s ease-out forwards; }
+.allin-fx.fire { background: radial-gradient(ellipse at center, rgba(255,110,30,.25), rgba(60,10,0,.7) 75%); }
+.allin-fx.fire b { color: #FFC24A; text-shadow: 0 0 34px rgba(255,110,30,1), 0 6px 0 #6A1A00; animation: slam .55s cubic-bezier(.2,1.6,.4,1); }
+.allin-fx.bolt { background: radial-gradient(ellipse at center, rgba(150,210,255,.22), rgba(5,10,30,.72) 75%); }
+.allin-fx.bolt b { color: #E8F6FF; font-size: clamp(40px, 8vw, 96px); text-shadow: 0 0 30px rgba(120,200,255,1), 0 0 60px rgba(120,200,255,.6), 0 5px 0 #0A2A4A; animation: slam .5s cubic-bezier(.2,1.6,.4,1); }
+
+/* ---------- Blitz-Felder (Roulette, Würfel) ---------- */
+.rcell.bolt, .dcell.bolt { box-shadow: inset 0 0 0 2px #CFEAFF, 0 0 18px rgba(140,210,255,.9) !important; z-index: 2; animation: boltIn .45s ease-out; }
+@keyframes boltIn { 0% { filter: brightness(3); } 100% { filter: none; } }
+.bolt-x { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); z-index: 3; padding: 0 6px; border-radius: 999px; white-space: nowrap; pointer-events: none;
+  font: 700 10.5px/16px var(--f-mono); color: #062038; background: linear-gradient(180deg, #F2FBFF, #9AD8FF); box-shadow: 0 0 10px rgba(140,210,255,.9); }
+.rboard { overflow: visible; }
+
+/* ---------- Slots: Goldener Dreh ---------- */
+.machine.golden .cabinet { box-shadow: inset 0 0 0 2px #5C4318, 0 0 0 3px var(--gold-hi), 0 0 50px rgba(242,214,142,.75), 0 30px 60px rgba(0,0,0,.6); }
+.machine.golden .marquee { background: radial-gradient(120% 140% at 50% 0%, #F2D68E, #B5862E 55%, #5C4318); }
+.machine.golden .mq-name { color: #fff; }
+
+/* ---------- Crash: Doppel-Rakete ---------- */
+.crash-stage.double { box-shadow: inset 0 0 0 2px #9AD8FF, inset 0 0 60px rgba(120,200,255,.35); }
+
+/* ---------- Plinko: Goldkugel ---------- */
+.pk-ball.gold { fill: #FFF3C9; stroke: #F2D68E; stroke-width: 2.5; filter: drop-shadow(0 0 10px #FFD36A) drop-shadow(0 0 4px #fff); }

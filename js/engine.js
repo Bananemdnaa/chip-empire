@@ -398,9 +398,10 @@ function bjAdvice(cards, upCard, can) {
 
 /* ---------- Crash (1 % Hausvorteil) ---------- */
 var CRASH_CAP = 100000;
-function crashPoint() {
+/* rtp in Prozent: 99 = 1 % Hausvorteil (Duelle); die Karriere nutzt 97 und zahlt dafür Doppel-Raketen */
+function crashPoint(rtp) {
   var r = rand();
-  var c = Math.floor(99 / (1 - r)) / 100;
+  var c = Math.floor((rtp || 99) / (1 - r)) / 100;
   if (c < 1) c = 1;
   if (c > CRASH_CAP) c = CRASH_CAP;
   return c;

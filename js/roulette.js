@@ -12,6 +12,22 @@ var COLORS = { red: 'Rot', black: 'Schwarz', green: 'Grün' };
 
 function sum(o) { var t = 0; for (var k in o) t += o[k]; return t; }
 
+/* Blitz-Zahlen: Vor jedem Dreh schlagen 1 bis 5 Blitze in Zahlen ein (50:1 bis 500:1).
+   Dafür zahlt eine normale Einzelzahl 29:1 statt 35:1. Auszahlungsquote der Einzelzahl ≈ 97,1 %. */
+var STRAIGHT = 29;
+var BOLT_K = [[1, 25], [2, 35], [3, 25], [4, 10], [5, 5]];
+var BOLT_M = [[50, 40], [100, 25], [150, 15], [200, 10], [300, 6], [400, 3], [500, 1]];
+var bolts = {};
+function strike() {
+  var nums = E.shuffle(Array.apply(null, { length: 37 }).map(function (x, i) { return i; })).slice(0, V.pickW(BOLT_K));
+  bolts = {};
+  nums.forEach(function (n) { bolts[n] = V.pickW(BOLT_M); });
+  return nums;
+}
+function clearBolts() {
+  for (var k in cellMap) { cellMap[k].classList.remove('bolt'); var x = cellMap[k].querySelector('.bolt-x'); if (x) x.parentNode.removeChild(x); }
+}
+
 function wheelSvg() {
   var svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 240 240'); svg.setAttribute('aria-hidden', 'true');
@@ -96,14 +112,14 @@ function build() {
   dblBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: dbl }, 'Verdoppeln', V.kbd('D'));
   spinBtn = el('button', { class: 'btn gold big', type: 'button', onclick: spin }, 'Kugel rollen lassen', V.kbd('Leertaste'));
   totalEl = el('div', { class: 'rtotal', text: 'Auf dem Tisch: 0' });
-  msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite', text: 'Setz Chips auf Zahlen oder Felder. Rechtsklick entfernt ein Feld. Einzelzahl zahlt 35:1.' });
+  msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite', text: 'Setz Chips auf Zahlen oder Felder. Rechtsklick entfernt ein Feld. Einzelzahl zahlt 29:1, auf einer Blitz-Zahl bis 500:1.' });
   var ctl = el('div', { class: 'rctl' },
     el('div', { class: 'rrow' }, el('span', { class: 'lbl', text: 'Chip' }), chipsRow, neighBtn),
     el('div', { class: 'rrow' }, undoBtn, clearBtn, rebetBtn, dblBtn, totalEl),
     spinBtn);
   var right = el('div', { class: 'rright' }, scroll, ctl, msgEl);
   root.appendChild(el('div', { class: 'rlayout' }, left, right));
-  root.appendChild(el('p', { class: 'fine', text: 'Europäisches Roulette mit einer Null: Jede Wette hat 97,3 % Auszahlungsquote (2,7 % Hausvorteil). Die Kugel hat kein Gedächtnis, heiß und kalt sind reiner Zufall.' }));
+  root.appendChild(el('p', { class: 'fine', text: 'Europäisches Roulette mit einer Null und Blitz-Zahlen: Vor jedem Dreh treffen 1 bis 5 Blitze zufällige Zahlen (50:1 bis 500:1), dafür zahlt eine normale Einzelzahl 29:1. Auszahlungsquote 97,3 % (Einzelzahlen 97,1 %). Die Kugel hat kein Gedächtnis, heiß und kalt sind reiner Zufall.' }));
   V.busyFns.push(function () { return spinning || resolving || Object.keys(bets).length > 0; });
   renderChips(); renderHist(); renderBets();
 }
@@ -262,8 +278,26 @@ async function spin() {
   msgEl.className = 'slot-msg'; msgEl.textContent = 'Rien ne va plus …';
   resultBadge.textContent = '…'; resultBadge.className = 'result-badge';
   ballOrbit.classList.remove('drop');
+  /* Blitze zuerst, dann rollt die Kugel */
+  clearBolts();
+  var nums = strike();
+  msgEl.textContent = '⚡ Blitz-Zahlen: ' + nums.map(function (x) { return x + ' (' + bolts[x] + ':1)'; }).join(', ');
+  V.Snd.zap();
+  for (var bi = 0; bi < nums.length; bi++) {
+    var c = cellMap['n' + nums[bi]];
+    c.classList.add('bolt'); c.appendChild(el('span', { class: 'bolt-x', text: bolts[nums[bi]] + '×' }));
+    await sleep(180);
+  }
+  await sleep(450);
   await animateSpin((idx + 0.5) * d);
   var res = E.rResolve(bets, n);
+  /* Einzelzahl: 29:1, auf einer Blitz-Zahl der Blitz-Multiplikator */
+  var boltHit = 0;
+  if (bets['n' + n]) {
+    var a0 = bets['n' + n], pay = bolts[n] || STRAIGHT;
+    res.ret += a0 * (pay + 1) - a0 * 36; res.won['n' + n] = a0 * pay;
+    if (bolts[n]) boltHit = bolts[n];
+  }
   /* Talent La Partage: bei Zero die Hälfte der einfachen Chancen zurück */
   var partage = 0;
   if (n === 0 && V.meta.perk('partage')) ['red', 'black', 'odd', 'even', 'low', 'high'].forEach(function (k) { if (bets[k]) partage += Math.floor(bets[k] / 2); });
@@ -282,7 +316,8 @@ async function spin() {
   msgEl.className = 'slot-msg ' + (net > 0 ? 'win' : '');
   msgEl.textContent = 'Gewinnzahl ' + n + ' (' + COLORS[E.rColor(n)] + '). ' + (res.ret > 0
     ? 'Zurück: ' + fmt(res.ret) + ' Chips (' + (net >= 0 ? '+' : '') + fmt(net) + ')' + (partage ? ' · La Partage +' + fmt(partage) : '') : 'Kein Treffer, ' + fmt(res.staked) + ' Chips gehen ans Haus.');
-  if (net > 0) {
+  if (boltHit) { V.Snd.zap(); V.fx('bolt', '⚡ BLITZ-TREFFER ⚡', n + ' zahlt ' + boltHit + ':1 · +' + fmt(net) + ' Chips', 3200); V.burst(V.$('#g-roulette .wheel'), 60, ['#FFF', '#9AD8FF', '#F2D68E']); }
+  else if (net > 0) {
     var ratio = res.ret / res.staked;
     if (ratio >= 8) { V.Snd.big(); V.burst(V.$('#g-roulette .wheel'), 30); V.banner(ratio >= 20 ? 'VOLLTREFFER' : 'BIG WIN', '+' + fmt(net) + ' Chips', { kind: 'win', ms: 2400 }); }
     else V.Snd.win();
@@ -290,6 +325,7 @@ async function spin() {
   renderHist(); renderBets();
   await sleep(2200);
   for (var k2 in cellMap) cellMap[k2].classList.remove('won');
+  clearBolts();
   bets = {}; stack = []; resolving = false;
   renderBets();
 }

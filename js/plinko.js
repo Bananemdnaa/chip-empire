@@ -6,9 +6,9 @@ var NS = 'http://www.w3.org/2000/svg';
 var ROWS = 12, SP = 40, CX = 300, TOP = 46, DY = 34;
 /* Multiplikatoren je Risiko (symmetrisch, 13 Fächer); Auszahlungsquote jeweils etwa 99 % */
 var RISK = {
-  low: { name: 'Niedrig', m: [10, 3, 1.6, 1.4, 1.1, 1, 0.5] },
-  mid: { name: 'Mittel', m: [33, 11, 4, 2, 1.1, 0.6, 0.3] },
-  high: { name: 'Hoch', m: [170, 24, 8.1, 2, 0.7, 0.2, 0.2] }
+  low: { name: 'Niedrig', m: [10, 3, 1.6, 1.4, 1.1, 1, 0.45] },
+  mid: { name: 'Mittel', m: [33, 11, 4, 2, 1.1, 0.6, 0.25] },
+  high: { name: 'Hoch', m: [170, 24, 8.1, 2, 0.7, 0.2, 0.15] }
 };
 function mults(risk) { var h = RISK[risk].m; return h.concat(h.slice(0, -1).reverse()); }
 
@@ -78,7 +78,10 @@ function drop() {
     if (E.rand() < 0.5) rights++;
   }
   pts.push([CX + (rights - ROWS / 2) * SP, bucketY() - 4]);
-  var ball = node('circle', { r: 8, class: 'pk-ball', cx: CX, cy: 8 });
+  /* Goldkugel: etwa jede 80. Kugel zahlt doppelt (das mittlere Fach zahlt dafür etwas weniger) */
+  var gold = E.rand() < 1 / 80;
+  var ball = node('circle', { r: gold ? 10 : 8, class: 'pk-ball' + (gold ? ' gold' : ''), cx: CX, cy: 8 });
+  if (gold) { V.Snd.zap(); V.toast('✨ Goldkugel! Diese Kugel zahlt doppelt.', 'good'); }
   ballsG.appendChild(ball);
   var seg = 0, t0 = performance.now(), D = 95;
   (function step(now) {
@@ -88,15 +91,16 @@ function drop() {
     if (k >= 1) {
       seg++; t0 = now;
       if (seg < pts.length - 1) { if (seg > 1) V.Snd.tick(); }
-      else return land(ball, rights, b0, risk);
+      else return land(ball, rights, b0, risk, gold);
     }
     V.frame(step);
   })(t0);
 }
 
-function land(ball, k, b0, risk) {
+function land(ball, k, b0, risk, gold) {
   /* Talent Glatte Nägel: Fächer ab 2× zahlen etwas mehr */
-  var m = mults(risk)[k], ret = V.payout(b0, m >= 2 ? m * (1 + V.meta.perk('plinkoSmooth')) : m);
+  var m = mults(risk)[k], ret = V.payout(b0, (m >= 2 ? m * (1 + V.meta.perk('plinkoSmooth')) : m) * (gold ? 2 : 1));
+  if (gold) { V.burst(V.$('#g-plinko .pk-wrap'), 40, ['#FFF3C9', '#F2D68E', '#D4AB52']); V.fx('bolt', '✨ GOLDKUGEL', String(m).replace('.', ',') + '× doppelt · +' + V.fmt(ret - b0) + ' Chips', 2200); }
   setTimeout(function () { if (ball.parentNode) ball.parentNode.removeChild(ball); }, 250);
   var bk = buckets[k];
   var base = bk.getAttribute('class').replace(' hit', '');

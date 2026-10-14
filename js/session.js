@@ -7,8 +7,9 @@ var E = V.E, el = V.el, fmt = V.fmt, short = V.short;
 /* ---------- Zustand der Sitzung ---------- */
 var CHESTS = [10, 25, 50, 100];          /* danach alle 75 Runden */
 var SPIN_EVERY = 10 * 60 * 1000, SPIN_MAX = 6;
-var COMBO_GAP = 60 * 1000, COMBO_STEP = 0.05, COMBO_MAX = 2;
-var X = null, combo = { n: 0, last: 0 }, bar, comboEl, chestEl, spinEl, dlg = null;
+/* Heißer Tisch: 10 Flammen, jede zügige Runde zündet eine. Pause kostet alle 20 Sekunden eine Flamme. */
+var HEAT_MAX = 10, HEAT_GAP = 45 * 1000, HEAT_COOL = 20 * 1000;
+var X = null, heat = { n: 0, last: 0, fires: 0 }, bar, comboEl, chestEl, spinEl, dlg = null;
 
 function key() { return 'ce-sx-' + (V.slotId || ''); }
 function blank() { return { ms: 0, rounds: 0, chest: 0, spins: 0, ready: false }; }
@@ -22,17 +23,34 @@ function chestAt(i) { return i < CHESTS.length ? CHESTS[i] : CHESTS[CHESTS.lengt
 function pickW(list) { var t = 0; list.forEach(function (x) { t += x[1]; }); var r = Math.random() * t; for (var i = 0; i < list.length; i++) { r -= list[i][1]; if (r < 0) return list[i][0]; } return list[0][0]; }
 
 /* ---------- Heißer Tisch ---------- */
-/* Jede Runde innerhalb von 60 Sekunden nach der letzten heizt den Tisch auf: bis zu doppelte Erfahrung */
-function xpMult() { return combo.n > 1 && Date.now() - combo.last < COMBO_GAP ? Math.min(COMBO_MAX, 1 + (combo.n - 1) * COMBO_STEP) : 1; }
-function fmtMult(m) { return '×' + m.toFixed(2).replace('.', ',').replace(/0$/, ''); }
+/* Volle Leiste = ON FIRE: ein Chip-Bonus, der mit jedem Feuer der Sitzung etwas wächst */
+function onFire() {
+  var b = base(), chips = Math.round(b * (15 + Math.floor(Math.random() * 30)) * (1 + 0.2 * Math.min(heat.fires, 5)));
+  heat.fires++; heat.n = 0;
+  V.S.balance += chips;
+  V.Snd.big();
+  V.burst(V.$('#sessBar') || V.$('#app'), 60, ['#FF6A2A', '#FFC24A', '#FFF3C9', '#FF3D3D']);
+  V.fx('fire', '🔥 ON FIRE 🔥', '+' + fmt(chips) + ' Chips', 2200);
+  V.hud(); V.save(); render();
+}
+/* Abkühlen: nach 45 Sekunden ohne Runde geht alle 20 Sekunden eine Flamme aus */
+function cool() {
+  if (!heat.n) return;
+  var idle = Date.now() - heat.last - HEAT_GAP;
+  if (idle > 0) {
+    var lose = Math.floor(idle / HEAT_COOL) + 1;
+    heat.n = Math.max(0, heat.n - lose);
+    heat.last = Date.now() - HEAT_GAP + HEAT_COOL - (idle % HEAT_COOL);
+  }
+}
 
 /* ---------- Eine Runde (aus V.settle) ---------- */
 function round(staked) {
   if (staked <= 0) return;
-  var now = Date.now();
-  combo.n = now - combo.last < COMBO_GAP ? combo.n + 1 : 1;
-  combo.last = now;
-  if (combo.n > 1 && (combo.n - 1) % 5 === 0 && xpMult() < COMBO_MAX + 0.001) V.Snd.step(Math.min(12, combo.n / 2));
+  cool();
+  heat.n++; heat.last = Date.now();
+  V.Snd.step(heat.n);
+  if (heat.n >= HEAT_MAX) setTimeout(onFire, 500);
   X.rounds++;
   if (X.rounds >= chestAt(X.chest)) openChest();
   store(); render();
@@ -61,7 +79,7 @@ function tick(dt) {
     V.toast('🎡 Dein Gratis-Dreh ist bereit!', 'good');
   }
   /* Abgekühlter Tisch: Anzeige zurücksetzen */
-  if (combo.n > 1 && Date.now() - combo.last >= COMBO_GAP) combo.n = 0;
+  cool();
   if (Math.floor(X.ms / 1000) % 5 === 0) store();
   render();
 }
@@ -110,13 +128,12 @@ function close() { if (dlg && dlg.parentNode) dlg.parentNode.removeChild(dlg); d
 /* ---------- Leiste unter dem Spieltitel ---------- */
 function render() {
   if (!bar || !X) return;
-  var m = xpMult(), hot = m > 1;
-  comboEl.className = 'sx-chip combo' + (hot ? ' on' : '') + (m >= COMBO_MAX ? ' max' : '');
-  comboEl.querySelector('b').textContent = hot ? 'Heißer Tisch ' + fmtMult(m) + ' XP' : 'Tisch kalt';
-  comboEl.title = 'Spiel innerhalb von 60 Sekunden weiter, dann steigt deine Erfahrung pro Runde bis auf das Doppelte.';
-  var fill = comboEl.querySelector('i');
-  var left = hot ? Math.max(0, 1 - (Date.now() - combo.last) / COMBO_GAP) : 0;
-  fill.style.width = (left * 100).toFixed(1) + '%';
+  var n = heat.n, pips = comboEl.querySelector('.sx-flames');
+  comboEl.className = 'sx-chip combo' + (n ? ' on' : '') + (n >= 7 ? ' max' : '');
+  comboEl.style.setProperty('--heat', (n / HEAT_MAX).toFixed(2));
+  comboEl.querySelector('b').textContent = n ? 'Heißer Tisch' : 'Tisch kalt';
+  comboEl.title = 'Jede Runde zündet eine Flamme. Bei 10 Flammen bist du ON FIRE und bekommst einen Chip-Bonus. Wer länger als 45 Sekunden pausiert, verliert Flammen.';
+  for (var i = 0; i < HEAT_MAX; i++) pips.children[i].className = i < n ? 'on' : '';
   var need = chestAt(X.chest), prev = X.chest ? chestAt(X.chest - 1) : 0;
   chestEl.querySelector('b').textContent = 'Truhe ' + X.rounds + ' / ' + need;
   chestEl.querySelector('i').style.width = Math.min(100, (X.rounds - prev) / (need - prev) * 100).toFixed(1) + '%';
@@ -130,7 +147,9 @@ function render() {
 function init() {
   X = null; load();
   bar = V.$('#sessBar');
-  comboEl = el('span', { class: 'sx-chip combo' }, el('span', { class: 'sx-ico', text: '🔥' }), el('b'), el('span', { class: 'sx-bar' }, el('i')));
+  var flames = el('span', { class: 'sx-flames', 'aria-hidden': 'true' });
+  for (var f = 0; f < HEAT_MAX; f++) flames.appendChild(el('i'));
+  comboEl = el('span', { class: 'sx-chip combo' }, el('span', { class: 'sx-ico', text: '🔥' }), el('b'), flames);
   chestEl = el('span', { class: 'sx-chip chest', title: 'Nach 10, 25, 50 und 100 Runden in dieser Sitzung wartet eine Truhe, danach alle 75 Runden.' },
     el('span', { class: 'sx-ico', text: '🎁' }), el('b'), el('span', { class: 'sx-bar' }, el('i')));
   spinEl = el('button', { class: 'sx-chip spin', type: 'button', onclick: openSpin }, el('span', { class: 'sx-ico', text: '🎡' }), el('b'));
@@ -139,5 +158,5 @@ function init() {
   render();
 }
 
-V.session = { init: init, round: round, tick: tick, xpMult: xpMult };
+V.session = { init: init, round: round, tick: tick };
 })();

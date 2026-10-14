@@ -310,13 +310,17 @@ async function oneSpin(isFree) {
   machine.classList.add('running');
   msg.className = 'slot-msg'; msg.textContent = isFree ? 'Freispiel …' : 'Viel Glück!';
   var res = E.slotPlay(bet0 / 10, isFree ? E.FREE_MULT : 1);
+  /* Goldener Dreh: etwa jeder 50. bezahlte Dreh verdoppelt alle Gewinne */
+  var golden = !isFree && E.rand() < 0.02;
+  if (golden) { machine.classList.add('golden'); V.Snd.zap(); msg.textContent = '⚡ Goldener Dreh: Alle Gewinne zählen doppelt!'; }
   /* Talente: Glückssträhne erhöht Gewinne, Bonusjäger gibt mehr Freispiele */
   var luck = V.meta.perk('slotLuck');
   if (luck && res.total > 0) res.total = Math.round(res.total * (1 + luck));
   if (res.free) res.free += V.meta.perk('slotFree');
+  if (golden && res.total > 0) res.total *= 2;
   try {
     await animate(res.grid);
-  } finally { spinning = false; machine.classList.remove('running'); }
+  } finally { spinning = false; machine.classList.remove('running'); setTimeout(function () { machine.classList.remove('golden'); }, 1800); }
   grid = res.grid;
   showWins(res);
   var total = res.total, ratio = total / bet0;

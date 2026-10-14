@@ -4,7 +4,7 @@
 var E = V.E, el = V.el, fmt = V.fmt, fmtX = V.fmtX;
 
 /* Auszahlen erst ab 1,20×: Sonst gewinnt man mit 1,01× fast jede Runde und Crash wird zur sicheren Umsatzmaschine */
-var MIN_CASH = 1.2;
+var MIN_CASH = 1.2, dbl = false;
 var root, canvas, ctx, multEl, subEl, histEl, betCtl, goBtn, autoIn, autoChk, msgEl;
 var running = false, cashed = false, cp = 1, t0 = 0, raf = 0, bet = 0, cashAt = 0, curM = 1, curT = 0, crashedAt = 0;
 var colors = {};
@@ -32,7 +32,7 @@ function build() {
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
   root.appendChild(stage); root.appendChild(histEl); root.appendChild(msgEl);
   root.appendChild(el('div', { class: 'controls' }, betCtl.el, el('div', { class: 'spinbox' }, goBtn, autoRow)));
-  root.appendChild(el('p', { class: 'fine', text: 'Der Multiplikator steigt, bis er an einem zufälligen Punkt abstürzt. Zahlst du vorher aus, bekommst du Einsatz × Multiplikator. Auszahlen geht erst ab 1,20×, vorher stürzt die Rakete in etwa jeder sechsten Runde ab. Hausvorteil 1 %: Die Chance, 2,00× zu erreichen, liegt bei 49,5 %, für 10× bei 9,9 %.' }));
+  root.appendChild(el('p', { class: 'fine', text: 'Der Multiplikator steigt, bis er an einem zufälligen Punkt abstürzt. Zahlst du vorher aus, bekommst du Einsatz × Multiplikator. Auszahlen geht erst ab 1,20×, vorher stürzt die Rakete in etwa jeder sechsten Runde ab. Etwa jede 50. Runde ist eine Doppel-Rakete und zahlt doppelt. Hausvorteil insgesamt etwa 1 %: Die Chance, 2,00× zu erreichen, liegt bei 48,5 %, für 10× bei 9,7 %.' }));
   V.busyFns.push(function () { return running; });
   window.addEventListener('resize', function () { size(); draw(); });
   readColors(); renderHist(); renderBtn();
@@ -57,7 +57,7 @@ function renderBtn() {
   var lb = goBtn.firstChild;
   if (!running) { lb.textContent = 'Einsteigen · ' + fmt(V.S.bets.crash); goBtn.disabled = false; goBtn.classList.remove('cash'); }
   else if (!cashed && curM < MIN_CASH) { lb.textContent = 'Auszahlen ab ' + fmtX(MIN_CASH); goBtn.disabled = true; goBtn.classList.remove('cash'); }
-  else if (!cashed) { lb.textContent = 'Auszahlen · ' + fmt(Math.floor(bet * Math.floor(curM * 100) / 100)); goBtn.disabled = false; goBtn.classList.add('cash'); }
+  else if (!cashed) { lb.textContent = 'Auszahlen · ' + fmt(Math.floor(bet * Math.floor(curM * 100) / 100 * (dbl ? 2 : 1))); goBtn.disabled = false; goBtn.classList.add('cash'); }
   else { lb.textContent = 'Überspringen'; goBtn.disabled = false; goBtn.classList.remove('cash'); }
   betCtl.disable(running);
   autoIn.disabled = running; autoChk.disabled = running;
@@ -143,10 +143,14 @@ function start() {
   if (S.balance < bet) { V.needChips(); return; }
   V.debit(bet, true); V.hud();
   readColors(); size();
-  cp = E.crashPoint();
+  cp = E.crashPoint(97);
+  /* Doppel-Rakete: etwa jede 50. Runde zahlt jede Auszahlung doppelt */
+  dbl = E.rand() < 0.02;
   running = true; cashed = false; cashAt = 0; curM = 1; curT = 0; crashedAt = 0;
   root.querySelector('.crash-stage').classList.add('flying');
-  multEl.className = 'crash-mult live'; subEl.textContent = 'Läuft …'; msgEl.textContent = ''; msgEl.className = 'slot-msg';
+  multEl.className = 'crash-mult live'; subEl.textContent = dbl ? '🚀🚀 Doppel-Rakete: Diese Runde zahlt doppelt!' : 'Läuft …';
+  root.querySelector('.crash-stage').classList.toggle('double', dbl);
+  if (dbl) { V.Snd.zap(); V.fx('bolt', '🚀🚀 DOPPEL-RAKETE', 'Jede Auszahlung zählt doppelt', 1500); } msgEl.textContent = ''; msgEl.className = 'slot-msg';
   t0 = performance.now();
   renderBtn();
   cancelAnimationFrame(raf);
@@ -171,7 +175,7 @@ function loop(now) {
 function cashout(at) {
   if (!running || cashed || at > cp || at < MIN_CASH) return;
   cashed = true; cashAt = at;
-  var ret = Math.floor(bet * at);
+  var ret = Math.floor(bet * at * (dbl ? 2 : 1));
   V.settle('crash', bet, ret, { mult: at });
   V.S.bestMult = Math.max(V.S.bestMult, at);
   V.Snd.cash();

@@ -78,7 +78,7 @@ function renderBadges() {
   if (more) more.classList.toggle('dot', any);
 }
 /* ---------- Tastatur ---------- */
-var GLOBAL_KEYS = [['1 – 9, 0', 'Spiel wechseln'], ['Q', 'Quests'], ['D', 'Arena (Duelle und Freunde)'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
+var GLOBAL_KEYS = [['1 – 9, 0', 'Spiel wechseln'], ['Q', 'Quests'], ['P', 'Arena (Duelle und Freunde)'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
 function keyList(title, list) {
   var dl = V.el('dl');
   list.forEach(function (k) { dl.appendChild(V.el('dt', {}, V.el('kbd', { text: k[0] }))); dl.appendChild(V.el('dd', { text: k[1] })); });
@@ -109,12 +109,13 @@ function onKeyDown(e) {
   if (e.key === '?') { e.preventDefault(); openKeys(); return; }
   if (/^[0-9]$/.test(e.key)) { var gi = e.key === '0' ? 9 : Number(e.key) - 1; if (GAMES[gi]) { e.preventDefault(); V.Snd.click(); showGame(GAMES[gi].id); } return; }
   if (e.key === 'm' || e.key === 'M') { $('#sndBtn').click(); return; }
-  var SK = { q: 'quests', d: 'arena', g: 'talente' };
-  if (V.S.mode === 'empire') SK.i = 'imperium';
-  if (SK[e.key.toLowerCase()]) { e.preventDefault(); V.Snd.click(); openSide(SK[e.key.toLowerCase()]); return; }
+  /* Das Spiel hat Vorrang: Nur Tasten, die es nicht selbst nutzt, öffnen Fenster */
   var g = null;
   V.games.forEach(function (x) { if (x.id === V.S.game) g = x; });
-  if (g && g.onKey && g.onKey(e)) { e.preventDefault(); V.Snd.ensure(); }
+  if (g && g.onKey && g.onKey(e)) { e.preventDefault(); V.Snd.ensure(); return; }
+  var SK = { q: 'quests', p: 'arena', g: 'talente' };
+  if (V.S.mode === 'empire') SK.i = 'imperium';
+  if (SK[e.key.toLowerCase()]) { e.preventDefault(); V.Snd.click(); openSide(SK[e.key.toLowerCase()]); }
 }
 
 var lastFocus = null;
