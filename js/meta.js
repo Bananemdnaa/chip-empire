@@ -229,7 +229,7 @@ var WEEKLY = [
   { id: 'double', req: 'bj', make: function () { return { text: 'Gewinne 12 verdoppelte Hände', n: 12, diff: 1, icon: '✌️' }; }, ev: function (q, e) { return e.opt.doubleWins || 0; } },
   { id: 'crash', req: 'crash', make: function () { return { text: 'Zahle 6-mal im Crash bei mindestens 3,00× aus', n: 6, diff: 1, icon: '🚀' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 3 ? 1 : 0; } },
   { id: 'crashHigh', req: 'crash', make: function () { return { text: 'Zahle im Crash bei mindestens 10,00× aus', n: 1, diff: 2, icon: '🌠' }; }, ev: function (q, e) { return e.game === 'crash' && e.opt.mult >= 10 ? 1 : 0; } },
-  { id: 'tower9', req: 'tower', make: function () { return { text: 'Bezwinge den Dragon Tower bis ganz oben', n: 1, diff: 2, icon: '🏯' }; }, ev: function (q, e) { return e.opt.towerFloors >= 9 ? 1 : 0; } },
+  { id: 'tower9', req: 'tower', make: function () { return { text: 'Bezwinge den Dragon Tower bis ganz oben', n: 1, diff: 2, icon: '🏯' }; }, ev: function (q, e) { return e.opt.towerTop ? 1 : 0; } },
   { id: 'wheelHits', req: 'wheel', make: function () { return { text: 'Triff 25-mal im Glücksrad', n: 25, diff: 1, icon: '🎡' }; }, ev: function (q, e) { return e.opt.wheelHit ? 1 : 0; } },
   { id: 'diceHits', req: 'dice', make: function () { return { text: 'Triff 5-mal Pasch oder eine genaue Summe', n: 5, diff: 2, icon: '🎲' }; }, ev: function (q, e) { return e.opt.doubleWin || e.opt.exactWin ? 1 : 0; } },
   { id: 'plinkoBig', req: 'plinko', make: function () { return { text: 'Triff im Plinko ein Fach mit 10× oder mehr', n: 1, diff: 2, icon: '🔻' }; }, ev: function (q, e) { return e.opt.plinkoMult >= 10 ? 1 : 0; } },
@@ -455,7 +455,7 @@ function onRound(e) {
   if (o.doubleWin || o.exactWin) Q.diceHits++;
   if (e.game === 'ducks' && o.duckOdds > 0) Q.duckWins++;
   if (e.game === 'plinko' && e.staked > 0) Q.plinkoBalls++;
-  if (o.towerFloors >= 9) Q.towerTops++;
+  if (o.towerTop) Q.towerTops++;
   if (o.vaultMult >= 10) Q.vaultBig++;
   if (o.hiloSteps) Q.hiloBest = Math.max(Q.hiloBest || 0, o.hiloSteps);
   e.opt = o;

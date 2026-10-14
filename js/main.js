@@ -21,6 +21,7 @@ function showGame(id) {
   S.game = id;
   GAMES.forEach(function (g2) { var n = $('#g-' + g2.id); n.hidden = g2.id !== id; if (changed && g2.id === id) { n.style.animation = 'none'; void n.offsetWidth; n.style.animation = ''; } });
   $('#gameTitle').textContent = V.GAME_NAME[id];
+  V.mastery.renderHead();
   V.track.strip();
   renderNav();
   V.games.forEach(function (g3) { if (g3.id === id && g3.onShow) g3.onShow(); });
@@ -180,6 +181,7 @@ async function startGame(id) {
   document.addEventListener('keydown', onKeyDown);
   $('#reload').addEventListener('click', V.walletAction);
   $('#claimComp').addEventListener('click', V.claimComps);
+  $('#mastery').addEventListener('click', function () { V.Snd.click(); openSide('meister'); });
   $('#tipBtn').addEventListener('click', V.tip);
   $('#chatBtn').addEventListener('click', function () { V.say('chat', true); });
   $('#menuBtn').addEventListener('click', toMenu);

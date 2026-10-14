@@ -8,8 +8,12 @@ var ROWS = 12, SP = 40, CX = 300, TOP = 46, DY = 34;
 var RISK = {
   low: { name: 'Niedrig', m: [10, 3, 1.6, 1.4, 1.1, 1, 0.45] },
   mid: { name: 'Mittel', m: [33, 11, 4, 2, 1.1, 0.6, 0.25] },
-  high: { name: 'Hoch', m: [170, 24, 8.1, 2, 0.7, 0.2, 0.15] }
+  high: { name: 'Hoch', m: [170, 24, 8.1, 2, 0.7, 0.2, 0.15] },
+  /* Ab Meisterschaft Gold: fast alles unter 1×, dafür 500× am Rand (Quote etwa 97,7 % mit Goldkugel) */
+  extreme: { name: 'Extrem', key: 'extreme', m: [500, 48, 5.5, 1.2, 0.3, 0.1, 0.1] }
 };
+function riskOpen(k) { return !!RISK[k] && (!RISK[k].key || V.mastery.has('plinko', RISK[k].key)); }
+function curRisk() { var k = V.S.plinkoRisk; return riskOpen(k) ? k : 'mid'; }
 function mults(risk) { var h = RISK[risk].m; return h.concat(h.slice(0, -1).reverse()); }
 
 var root, svg, ballsG, buckets = [], bet, dropBtn, riskBtns = {}, msgEl, histEl;
@@ -47,15 +51,26 @@ function build() {
   histEl = el('div', { class: 'fw-hist', 'aria-label': 'Letzte Fächer' });
   root.appendChild(el('div', { class: 'pk-layout' }, board,
     el('div', { class: 'pk-side' }, el('span', { class: 'lbl', text: 'Risiko' }), risk, bet.el, dropBtn, histEl, msgEl)));
-  root.appendChild(el('p', { class: 'fine', text: 'Du kannst mehrere Kugeln nacheinander fallen lassen. Höheres Risiko: größere Ränder, aber mehr Fächer unter 1×. Auszahlungsquote bei allen Stufen etwa 99 %.' }));
+  root.appendChild(el('p', { class: 'fine', text: 'Du kannst mehrere Kugeln nacheinander fallen lassen. Höheres Risiko: größere Ränder, aber mehr Fächer unter 1×. Auszahlungsquote bei allen Stufen etwa 99 %, beim Risiko Extrem (ab Meisterschaft Gold) etwa 98 %.' }));
   V.busyFns.push(function () { return inFlight > 0; });
   setRisk(V.S.plinkoRisk || 'mid', true);
 }
 
+function renderRiskBtns(key) {
+  Object.keys(riskBtns).forEach(function (k) {
+    var b = riskBtns[k], lockd = !riskOpen(k);
+    b.setAttribute('aria-selected', String(k === key)); b.setAttribute('aria-checked', String(k === key));
+    b.classList.toggle('lockd', lockd);
+    b.textContent = (lockd ? '🔒 ' : '') + RISK[k].name;
+    b.title = lockd ? V.mastery.lockText('plinko', RISK[k].key) : '';
+  });
+}
+
 function setRisk(key, quiet) {
   if (inFlight > 0) { V.toast('Warte, bis alle Kugeln gelandet sind.', 'bad'); return; }
+  if (!riskOpen(key)) { if (quiet) key = 'mid'; else { V.mastery.locked('plinko', RISK[key].key); return; } }
   V.S.plinkoRisk = key;
-  Object.keys(riskBtns).forEach(function (k) { riskBtns[k].setAttribute('aria-selected', String(k === key)); riskBtns[k].setAttribute('aria-checked', String(k === key)); });
+  renderRiskBtns(key);
   var m = mults(key);
   buckets.forEach(function (b, i) {
     b.querySelector('text').textContent = String(m[i]).replace('.', ',') + (m[i] >= 100 ? '' : '×');
@@ -66,7 +81,7 @@ function setRisk(key, quiet) {
 
 /* Ein Ball: Weg vorher würfeln, dann Punkt für Punkt mit kleinen Hüpfern animieren */
 function drop() {
-  var S = V.S, b0 = S.bets.plinko, risk = S.plinkoRisk || 'mid';
+  var S = V.S, b0 = S.bets.plinko, risk = curRisk();
   if (S.balance < b0) { V.needChips(); return; }
   if (inFlight >= 8) return;
   V.Snd.ensure();
@@ -81,7 +96,7 @@ function drop() {
   /* Goldkugel: etwa jede 80. Kugel zahlt doppelt (das mittlere Fach zahlt dafür etwas weniger) */
   var gold = E.rand() < 1 / 80;
   var ball = node('circle', { r: gold ? 10 : 8, class: 'pk-ball' + (gold ? ' gold' : ''), cx: CX, cy: 8 });
-  if (gold) { V.Snd.zap(); V.toast('✨ Goldkugel! Diese Kugel zahlt doppelt.', 'good'); }
+  if (gold) V.event('gold', '✨ GOLDKUGEL ✨', 'Diese Kugel zahlt doppelt');
   ballsG.appendChild(ball);
   var seg = 0, t0 = performance.now(), D = 95;
   (function step(now) {
@@ -100,7 +115,7 @@ function drop() {
 function land(ball, k, b0, risk, gold) {
   /* Talent Glatte Nägel: Fächer ab 2× zahlen etwas mehr */
   var m = mults(risk)[k], ret = V.payout(b0, (m >= 2 ? m * (1 + V.meta.perk('plinkoSmooth')) : m) * (gold ? 2 : 1));
-  if (gold) { V.burst(V.$('#g-plinko .pk-wrap'), 40, ['#FFF3C9', '#F2D68E', '#D4AB52']); V.fx('bolt', '✨ GOLDKUGEL', String(m).replace('.', ',') + '× doppelt · +' + V.fmt(ret - b0) + ' Chips', 2200); }
+  if (gold) { V.burst(V.$('#g-plinko .pk-wrap'), 40, ['#FFF3C9', '#F2D68E', '#D4AB52']); V.banner('✨ Goldkugel', String(m).replace('.', ',') + '× doppelt · +' + V.fmt(ret - b0) + ' Chips', { kind: 'win', ms: 2400 }); }
   setTimeout(function () { if (ball.parentNode) ball.parentNode.removeChild(ball); }, 250);
   var bk = buckets[k];
   var base = bk.getAttribute('class').replace(' hit', '');
@@ -123,13 +138,13 @@ function onKey(e) {
   if (k === ' ' || k === 'enter') { drop(); return true; }
   if ((k === 'arrowup' || k === '+') && !inFlight) { bet.step(1); return true; }
   if ((k === 'arrowdown' || k === '-') && !inFlight) { bet.step(-1); return true; }
-  if (k === 'r') { var keys = Object.keys(RISK), i = keys.indexOf(V.S.plinkoRisk || 'mid'); setRisk(keys[(i + 1) % keys.length]); return true; }
+  if (k === 'r') { var keys = Object.keys(RISK).filter(riskOpen), i = keys.indexOf(curRisk()); setRisk(keys[(i + 1) % keys.length]); return true; }
   return false;
 }
 
 V.games.push({
   id: 'plinko', init: build, onKey: onKey,
   keys: [['Leertaste', 'Kugel fallen lassen (auch mehrmals)'], ['↑ / ↓', 'Einsatz ändern'], ['R', 'Risiko wechseln']],
-  onRoom: function () { bet.render(); }, refresh: function () { if (!inFlight) bet.render(); }
+  onRoom: function () { bet.render(); }, onMastery: function () { renderRiskBtns(curRisk()); }, refresh: function () { if (!inFlight) bet.render(); }
 });
 })();

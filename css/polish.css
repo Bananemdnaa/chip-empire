@@ -180,9 +180,9 @@ input.betin { width: 7.5ch; padding: 2px 6px; border-radius: 8px; border: 1px so
 @keyframes shimmer { to { transform: scale(1.06); } }
 @keyframes sink { from { transform: translateY(-30px) scale(1.2); opacity: 0; } }
 @keyframes fxFade { 0% { opacity: 0; } 10%, 75% { opacity: 1; } 100% { opacity: 0; } }
-#app.quake { animation: quake .5s cubic-bezier(.36,.07,.19,.97); }
+#app.quake .stage { animation: quake .5s cubic-bezier(.36,.07,.19,.97); }
 @keyframes quake { 10%, 90% { transform: translate(-2px, 1px); } 20%, 80% { transform: translate(4px, -2px); } 30%, 50%, 70% { transform: translate(-6px, 2px); } 40%, 60% { transform: translate(6px, -1px); } }
-@media (prefers-reduced-motion: reduce) { #app.quake { animation: none; } .allin-fx b { animation: none !important; } .allin-fx.show, .allin-fx.win, .allin-fx.lose { animation-duration: 2s !important; } }
+@media (prefers-reduced-motion: reduce) { #app.quake .stage { animation: none; } .allin-fx b { animation: none !important; } .allin-fx.show, .allin-fx.win, .allin-fx.lose { animation-duration: 2s !important; } }
 
 /* ---------- Gebündelte Meldungen ---------- */
 .notice { position: fixed; right: 16px; top: 80px; z-index: 78; width: min(340px, calc(100vw - 16px)); display: grid; gap: 10px; padding: 12px 12px 10px 14px; border-radius: 16px;
@@ -201,7 +201,7 @@ input.betin { width: 7.5ch; padding: 2px 6px; border-radius: 8px; border: 1px so
 .q-top .qseg { margin-bottom: 0; }
 @media (max-width: 720px) { .notice { top: auto; left: 8px; right: 8px; width: auto; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } }
 
-/* ---------- Sitzungsleiste: Heißer Tisch, Truhe, Gratis-Dreh ---------- */
+/* ---------- Sitzungsleiste: Truhe, Gratis-Dreh ---------- */
 .sess-bar { max-width: 1040px; margin: -4px auto 12px; display: flex; flex-wrap: wrap; gap: 8px; }
 .sx-chip { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 8px; border-radius: 999px; overflow: hidden;
   border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--muted); font: inherit; font-size: 12.5px; }
@@ -209,10 +209,6 @@ input.betin { width: 7.5ch; padding: 2px 6px; border-radius: 8px; border: 1px so
 .sx-ico { position: relative; z-index: 1; font-size: 15px; line-height: 1; filter: grayscale(.8); opacity: .7; transition: filter .3s, opacity .3s; }
 .sx-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.06); }
 .sx-bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .9s linear; }
-.sx-chip.combo.on { color: #FFD3A8; border-color: rgba(255,140,60,.55); background: linear-gradient(90deg, rgba(255,110,40,.22), rgba(0,0,0,.3)); }
-.sx-chip.combo.on .sx-ico { filter: none; opacity: 1; animation: flame 1.1s ease-in-out infinite alternate; }
-.sx-chip.combo.on .sx-bar i { background: linear-gradient(90deg, #FF6A2A, #FFC24A); box-shadow: 0 0 8px #FF8A3A; }
-.sx-chip.combo.max { color: #fff; border-color: #FFB36A; box-shadow: 0 0 16px rgba(255,140,60,.5); }
 @keyframes flame { to { transform: scale(1.18) rotate(-6deg); } }
 .sx-chip.chest .sx-ico { filter: none; opacity: 1; }
 .sx-chip.chest.near { color: var(--gold-hi); border-color: var(--gold); animation: nearPulse 1s ease-in-out infinite; }

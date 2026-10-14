@@ -7,7 +7,7 @@ var tabsEl, body, confirmReset = false;
 var GNAME = V.GAME_NAME;
 function edge(g) { return V.GAME_BY[g] ? V.GAME_BY[g].edge : 0; }
 function catOf(g) { return V.GAME_BY[g] ? V.GAME_BY[g].cat : ''; }
-var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Einstellungen' }];
+var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'meister', label: 'Meisterschaft' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Einstellungen' }];
 
 function build() {
   var host = V.$('#side');
@@ -27,6 +27,7 @@ function refresh() {
   if (V.meta.tabs[S.sideTab]) V.meta.tabs[S.sideTab](body);
   else if (S.sideTab === 'arena') V.social.render(body, refresh);
   else if (S.sideTab === 'stufen') stufen();
+  else if (S.sideTab === 'meister') V.mastery.tab(body);
   else if (S.sideTab === 'profil') profil();
   else if (S.sideTab === 'stats') stats();
   else haus();

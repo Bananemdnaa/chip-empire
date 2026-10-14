@@ -10,11 +10,20 @@ function rankName(r) { return NAMES[r] || String(r); }
 function draw() { return { r: 2 + E.randInt(13), s: E.SUITS[E.randInt(4)] }; }
 function pHi(r) { return (15 - r) / 13; }   /* höher oder gleich */
 function pLo(r) { return (r - 1) / 13; }    /* tiefer oder gleich */
+function isRed(c) { return c.s === '♥' || c.s === '♦'; }
+/* Meisterschafts-Tipps: Farbe (ab Silber) und genau derselbe Rang (ab Gold) */
+var EXTRA = {
+  red: { label: 'Rot', key: 'color', kb: 'R', p: function () { return 0.5; }, ok: function (c, n) { return isRed(n); } },
+  same: { label: '= Gleich', key: 'same', kb: 'G', p: function () { return 1 / 13; }, ok: function (c, n) { return n.r === c.r; } },
+  black: { label: 'Schwarz', key: 'color', kb: 'B', p: function () { return 0.5; }, ok: function (c, n) { return !isRed(n); } }
+};
+function chance(dir, c) { return dir === 'hi' ? pHi(c.r) : dir === 'lo' ? pLo(c.r) : EXTRA[dir].p(c); }
+function hits(dir, c, n) { return dir === 'hi' ? n.r >= c.r : dir === 'lo' ? n.r <= c.r : EXTRA[dir].ok(c, n); }
 /* Talent Kartenzähler verbessert jede Sprosse leicht */
 function factor(p) { return p >= 1 ? 0 : (RTP + V.meta.perk('hiloRead')) / p; }
 function shown(m) { return Math.floor(m * 100) / 100; }
 
-var root, cardBox, ladderEl, multEl, hiBtn, loBtn, skipBtn, goBtn, bet, msgEl;
+var root, cardBox, ladderEl, multEl, hiBtn, loBtn, skipBtn, goBtn, bet, msgEl, xBtns = {};
 var run = null; /* { bet, card, mult, steps, trail: [{card, ok, mult}], over } */
 
 function cardEl(c, cls) {
@@ -32,14 +41,19 @@ function build() {
   hiBtn = el('button', { class: 'hl-guess hi', type: 'button', onclick: function () { guess('hi'); } });
   loBtn = el('button', { class: 'hl-guess lo', type: 'button', onclick: function () { guess('lo'); } });
   skipBtn = el('button', { class: 'btn ghost sm', type: 'button', onclick: skip }, 'Karte überspringen', V.kbd('S'));
+  var xrow = el('div', { class: 'hl-extra' });
+  Object.keys(EXTRA).forEach(function (k) {
+    xBtns[k] = el('button', { class: 'hl-x ' + k, type: 'button', onclick: function () { if (V.mastery.locked('hilo', EXTRA[k].key)) return; guess(k); } });
+    xrow.appendChild(xBtns[k]);
+  });
   var table = el('div', { class: 'hl-table' },
-    el('div', { class: 'hl-stage' }, hiBtn, el('div', { class: 'hl-center' }, cardBox, multEl), loBtn), skipBtn);
+    el('div', { class: 'hl-stage' }, hiBtn, el('div', { class: 'hl-center' }, cardBox, multEl), loBtn), xrow, skipBtn);
   bet = V.betControl('hilo');
   goBtn = el('button', { class: 'btn gold big', type: 'button', onclick: onGo }, el('span'), V.kbd('Leertaste'));
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
   root.appendChild(el('div', { class: 'hl-layout' }, table,
     el('div', { class: 'hl-side' }, el('span', { class: 'lbl', text: 'Deine Leiter' }), ladderEl, bet.el, goBtn, msgEl)));
-  root.appendChild(el('p', { class: 'fine', text: 'Rate, ob die nächste Karte höher oder tiefer ist (gleich zählt als richtig). Unwahrscheinliche Tipps zahlen mehr. Jede richtige Antwort multipliziert deinen Gewinn, eine falsche kostet den Einsatz. Überspringen ist kostenlos. Auszahlungsquote 98 % pro Sprosse, das Ass ist hoch.' }));
+  root.appendChild(el('p', { class: 'fine', text: 'Rate, ob die nächste Karte höher oder tiefer ist (gleich zählt als richtig). Unwahrscheinliche Tipps zahlen mehr. Jede richtige Antwort multipliziert deinen Gewinn, eine falsche kostet den Einsatz. Überspringen ist kostenlos. Mit der Meisterschaft kannst du auch auf die Farbe (ab Silber) oder genau denselben Rang (ab Gold) tippen. Auszahlungsquote 98 % pro Sprosse, das Ass ist hoch.' }));
   V.busyFns.push(function () { return !!run; });
   render();
 }
@@ -53,8 +67,21 @@ function guessLabel(btn, dir, card) {
   btn.disabled = !run || run.over || !f;
 }
 
+/* Zusatztipps: gesperrt mit Schloss, sonst mit Faktor */
+function extraLabel(k, card) {
+  var X = EXTRA[k], b = xBtns[k], open = V.mastery.has('hilo', X.key);
+  b.innerHTML = '';
+  b.classList.toggle('lockd', !open);
+  b.appendChild(el('b', { text: (open ? '' : '🔒 ') + X.label }));
+  b.appendChild(el('small', { text: open ? fmtX(shown(factor(X.p(card)))) : V.mastery.RANKS[k === 'same' ? 2 : 1].name }));
+  if (open) b.appendChild(V.kbd(X.kb));
+  b.title = open ? '' : V.mastery.lockText('hilo', X.key);
+  b.disabled = open && (!run || run.over);
+}
+
 function render() {
   var card = run ? run.card : null;
+  Object.keys(EXTRA).forEach(function (k) { extraLabel(k, card || { r: 8, s: '♠' }); });
   cardBox.innerHTML = '';
   cardBox.appendChild(card ? cardEl(card, 'deal') : el('div', { class: 'pcard back' }));
   multEl.textContent = fmtX(run ? shown(run.mult) : 1);
@@ -101,9 +128,10 @@ function skip() {
 
 async function guess(dir) {
   if (!run || run.over) return;
-  var c = run.card, p = dir === 'hi' ? pHi(c.r) : pLo(c.r), f = factor(p);
+  if (EXTRA[dir] && !V.mastery.has('hilo', EXTRA[dir].key)) return;
+  var c = run.card, p = chance(dir, c), f = factor(p);
   if (!f) return;
-  var n = draw(), ok = dir === 'hi' ? n.r >= c.r : n.r <= c.r;
+  var n = draw(), ok = hits(dir, c, n);
   run.card = n;
   if (!ok) {
     run.over = true;
@@ -151,6 +179,9 @@ function onKey(e) {
     if (k === 'arrowup' || k === 'h') { guess('hi'); return true; }
     if (k === 'arrowdown' || k === 't') { guess('lo'); return true; }
     if (k === 's') { skip(); return true; }
+    if (k === 'r' && V.mastery.has('hilo', 'color')) { guess('red'); return true; }
+    if (k === 'b' && V.mastery.has('hilo', 'color')) { guess('black'); return true; }
+    if (k === 'g' && V.mastery.has('hilo', 'same')) { guess('same'); return true; }
     return false;
   }
   if (k === 'arrowup' || k === '+') { bet.step(1); return true; }
@@ -160,7 +191,7 @@ function onKey(e) {
 
 V.games.push({
   id: 'hilo', init: build, onKey: onKey,
-  keys: [['Leertaste', 'Erste Karte / Auszahlen'], ['↑ / ↓', 'Höher / tiefer (im Spiel), sonst Einsatz'], ['S', 'Karte überspringen']],
-  onRoom: function () { bet.render(); render(); }, refresh: function () { if (!run) { bet.render(); render(); } }
+  keys: [['Leertaste', 'Erste Karte / Auszahlen'], ['↑ / ↓', 'Höher / tiefer (im Spiel), sonst Einsatz'], ['S', 'Karte überspringen'], ['R / B / G', 'Rot, Schwarz, gleicher Rang (mit Meisterschaft)']],
+  onRoom: function () { bet.render(); render(); }, onMastery: render, refresh: function () { if (!run) { bet.render(); render(); } }
 });
 })();

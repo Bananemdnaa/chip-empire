@@ -84,7 +84,7 @@ function fresh(mode) {
     xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0,
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
     qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, vaultBig: 0, hiloBest: 0, miles: {}, init: 0 },
-    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3,
+    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3, towerFloors: 9, vaultSize: 5,
     stars: 0, season: { key: '', net: 0, best: 0, rounds: 0 }, seasonPrev: { key: '', net: 0, best: 0, rounds: 0 }, seasonClaimed: '', trophies: 0
   };
 }
@@ -118,7 +118,7 @@ function load(id) {
   f.room = clamp(f.room, 0, f.unlocked);
   if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
   if (!GAME_TIER.hasOwnProperty(f.game)) f.game = 'slots';
-  if (['imperium', 'talente', 'quests', 'stufen', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
+  if (['imperium', 'talente', 'quests', 'arena', 'stufen', 'meister', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
   S = f;
   if (!d) save();
   return true;
@@ -403,6 +403,7 @@ function settle(game, staked, ret, opt) {
   if (staked > 0) {
     S.wagered += staked; S.rounds++;
     var g = S.gst[game]; g.r++; g.w += staked; g.ret += ret;
+    if (V.mastery) V.mastery.check(game, g.r);
     /* Jeder Legenden-Stern: +5 % Comps (bis 5 Sterne) */
     S.comps += staked * GAME_BY[game].edge * room().comp * compMult() * (1 + perk('comps') + 0.05 * Math.min(5, S.stars));
     S.hist.push({ g: game, bet: staked, ret: ret, bal: before }); if (S.hist.length > 80) S.hist.shift();

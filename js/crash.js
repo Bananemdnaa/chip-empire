@@ -137,7 +137,7 @@ function onGo() {
   else finish();
 }
 
-function start() {
+async function start() {
   var S = V.S;
   bet = S.bets.crash;
   if (S.balance < bet) { V.needChips(); return; }
@@ -150,9 +150,11 @@ function start() {
   root.querySelector('.crash-stage').classList.add('flying');
   multEl.className = 'crash-mult live'; subEl.textContent = dbl ? '🚀🚀 Doppel-Rakete: Diese Runde zahlt doppelt!' : 'Läuft …';
   root.querySelector('.crash-stage').classList.toggle('double', dbl);
-  if (dbl) { V.Snd.zap(); V.fx('bolt', '🚀🚀 DOPPEL-RAKETE', 'Jede Auszahlung zählt doppelt', 1500); } msgEl.textContent = ''; msgEl.className = 'slot-msg';
-  t0 = performance.now();
+  msgEl.textContent = ''; msgEl.className = 'slot-msg';
   renderBtn();
+  /* Doppel-Rakete: erst der große Auftritt, dann hebt die Rakete ab */
+  if (dbl) await V.event('rocket', '🚀🚀 DOPPEL-RAKETE', 'Jede Auszahlung zählt doppelt');
+  t0 = performance.now();
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(loop);
 }

@@ -312,7 +312,7 @@ async function oneSpin(isFree) {
   var res = E.slotPlay(bet0 / 10, isFree ? E.FREE_MULT : 1);
   /* Goldener Dreh: etwa jeder 50. bezahlte Dreh verdoppelt alle Gewinne */
   var golden = !isFree && E.rand() < 0.02;
-  if (golden) { machine.classList.add('golden'); V.Snd.zap(); msg.textContent = '⚡ Goldener Dreh: Alle Gewinne zählen doppelt!'; }
+  if (golden) { machine.classList.add('golden'); msg.textContent = '✨ Goldener Dreh: Alle Gewinne zählen doppelt!'; await V.event('gold', '✨ GOLDENER DREH ✨', 'Alle Gewinne zählen doppelt'); }
   /* Talente: Glückssträhne erhöht Gewinne, Bonusjäger gibt mehr Freispiele */
   var luck = V.meta.perk('slotLuck');
   if (luck && res.total > 0) res.total = Math.round(res.total * (1 + luck));
