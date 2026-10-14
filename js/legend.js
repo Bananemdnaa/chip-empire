@@ -105,12 +105,13 @@ function untilReset() {
   return h >= 24 ? Math.floor(h / 24) + ' T. ' + (h % 24) + ' Std.' : h + ' Std.';
 }
 
-/* Belohnung für die Vorwoche: einmal pro Woche beim Spielstart nachfragen */
+/* Belohnung für die Vorwoche: einmal pro Woche beim Spielstart nachfragen.
+   Der Server zahlt pro Konto nur einmal aus, auch bei mehreren Karriere-Spielständen. */
 var REWARD = [[1, 5, 'Wochensieger'], [2, 3, 'Zweiter der Woche'], [3, 2, 'Dritter der Woche'], [10, 1, 'Top 10 der Woche']];
 function claimLastWeek() {
   var S = V.S, wk = mondayKey(1);
   if (S.mode !== 'career' || !Store.isAccount() || S.seasonClaimed === wk) return;
-  Cloud.rpc('season_rank', { wk: wk }).then(function (rank) {
+  Cloud.rpc('season_claim', { wk: wk }).then(function (rank) {
     S.seasonClaimed = wk;
     var r = null;
     REWARD.forEach(function (x) { if (!r && rank && rank <= x[0]) r = x; });

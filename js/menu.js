@@ -329,9 +329,9 @@ function playSection() {
 
 /* ---------- Ranglisten mit Treppchen ---------- */
 var BOARD_TEXT = {
-  career: 'Karriere-Spielstände nach Legenden-Sternen, dann nach Chips.',
-  season: 'Gewinn aus allen Runden seit Montag, nur Karriere. Jeden Montag beginnt eine neue Woche. Die Top 10 bekommen Talentpunkte, Platz 1 bis 3 am meisten.',
-  empire: 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).',
+  career: 'Pro Konto zählt der beste Karriere-Spielstand: zuerst Legenden-Sterne, dann Chips.',
+  season: 'Gewinn aus allen Karriere-Runden seit Montag, alle Spielstände eines Kontos zusammen. Jeden Montag beginnt eine neue Woche. Die Top 10 bekommen einmal pro Konto Talentpunkte, Platz 1 bis 3 am meisten.',
+  empire: 'Pro Konto zählt der beste Imperium-Spielstand, nach Imperiumswert (Chips plus Geschäfte).',
   duel: 'Elo-Wertung aus allen Duellen. Der Kontostand spielt keine Rolle.'
 };
 function starTag(r) { return r.stars > 0 ? '★' + (r.stars > 1 ? r.stars : '') + ' ' : ''; }
