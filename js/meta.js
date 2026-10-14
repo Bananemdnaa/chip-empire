@@ -54,7 +54,7 @@ var TALENTS = [
   { id: 'towerScale', br: 'ri', icon: '🐉', name: 'Drachenschuppen', game: 'tower', vals: [0.005, 0.01], txt: function (v) { return 'Dragon Tower: Multiplikatoren +' + pct(v); } },
   { id: 'daily', br: 'bu', icon: '☀️', name: 'Frühaufsteher', vals: [0.25, 0.5], txt: function (v) { return 'Tagesbonus +' + pct(v); } },
   { id: 'rescue', br: 'bu', icon: '🛟', name: 'Rettungsring', vals: [180000, 300000], txt: function (v) { return 'Notgroschen schon nach ' + Math.round((V.CAREER.bailoutCooldown - v) / 60000) + ' Minuten'; } },
-  { id: 'quest', br: 'bu', icon: '📜', name: 'Quest-Profi', vals: [0.2, 0.4], txt: function (v) { return 'Quest-Belohnungen +' + pct(v); } },
+  { id: 'quest', br: 'bu', icon: '📜', name: 'Quest-Profi', vals: [0.1, 0.2], txt: function (v) { return 'Quest-Belohnungen +' + pct(v); } },
   { id: 'xp', br: 'bu', icon: '📚', name: 'Schnelllerner', vals: [0.15, 0.3], txt: function (v) { return 'Erfahrung +' + pct(v); } },
   { id: 'empire', br: 'bu', icon: '🏛️', name: 'Investor', empire: true, vals: [0.1, 0.2, 0.35], txt: function (v) { return 'Imperium-Einnahmen +' + pct(v); } },
   { id: 'vault', br: 'bu', icon: '🔐', name: 'Großer Tresor', empire: true, vals: [4, 8], txt: function (v) { return 'Tresor fasst ' + (8 + v) + ' statt 8 Stunden'; } }
@@ -158,7 +158,7 @@ var DAILY = [
   { id: 'rounds', make: function (r) { var gs = openGames(), g = gs[Math.floor(r() * gs.length)], n = g === 'slots' ? 25 : 12; return { text: 'Spiele ' + n + ' Runden ' + GN[g], n: n, game: g, diff: 1, icon: '🎲' }; },
     ev: function (q, e) { return e.game === q.game && R(e) ? 1 : 0; } },
   { id: 'wins', make: function () { return { text: 'Gewinne 8 Runden', n: 8, diff: 1, icon: '🏆' }; }, ev: function (q, e) { return R(e) && e.net > 0 ? 1 : 0; } },
-  { id: 'wager', make: function () { var n = tierMin() * 400; return { text: 'Setze insgesamt ' + fmt(n) + ' Chips', n: n, diff: 1, icon: '🪙' }; }, ev: function (q, e) { return e.staked; } },
+  { id: 'wager', make: function () { var n = tierMin() * 1000; return { text: 'Setze insgesamt ' + fmt(n) + ' Chips', n: n, diff: 1, icon: '🪙' }; }, ev: function (q, e) { return e.staked; } },
   { id: 'big', make: function () { return { text: 'Gewinne in einer Runde das 10-Fache deines Einsatzes', n: 1, diff: 2, icon: '💥' }; }, ev: evBig },
   { id: 'streak', make: function () { return { text: 'Gewinne 3 Runden hintereinander', n: 1, diff: 1, icon: '🔥' }; }, ev: function (q, e) { return R(e) && V.S.winStreak >= 3 ? 1 : 0; } },
   { id: 'comeback', make: function () { return { text: 'Gewinne direkt nach 3 verlorenen Runden', n: 1, diff: 1, icon: '🦅' }; }, ev: function (q, e) { return R(e) && e.net > 0 && e.prevLoss >= 3 ? 1 : 0; } },
@@ -205,7 +205,7 @@ var DAILY = [
 var WEEKLY = [
   { id: 'rounds', make: function () { return { text: 'Spiele 150 Runden', n: 150, diff: 1, icon: '🎲' }; }, ev: function (q, e) { return R(e) ? 1 : 0; } },
   { id: 'wins', make: function () { return { text: 'Gewinne 60 Runden', n: 60, diff: 1, icon: '🏆' }; }, ev: function (q, e) { return R(e) && e.net > 0 ? 1 : 0; } },
-  { id: 'wager', make: function () { var n = tierMin() * 6000; return { text: 'Setze insgesamt ' + fmt(n) + ' Chips', n: n, diff: 1, icon: '🪙' }; }, ev: function (q, e) { return e.staked; } },
+  { id: 'wager', make: function () { var n = tierMin() * 15000; return { text: 'Setze insgesamt ' + fmt(n) + ' Chips', n: n, diff: 1, icon: '🪙' }; }, ev: function (q, e) { return e.staked; } },
   { id: 'big', make: function () { return { text: 'Gewinne 5-mal das 10-Fache deines Einsatzes', n: 5, diff: 2, icon: '💥' }; }, ev: evBig },
   { id: 'dailies', make: function () { return { text: 'Schließe 7 Daily Quests ab', n: 7, diff: 2, icon: '📜' }; }, ev: function (q, e) { return e.dailyDone ? 1 : 0; } },
   { id: 'level', make: function () { return { text: 'Steige ein Level auf', n: 1, diff: 1, icon: '⭐' }; }, ev: function (q, e) { return e.levelUp ? 1 : 0; } },
@@ -237,8 +237,8 @@ function makeQuest(t, r, K) {
 }
 function evBig(q, e) { var ref = e.staked || (e.opt && e.opt.refBet) || 0; return ref > 0 && e.ret >= ref * 10 ? 1 : 0; }
 var KIND = {
-  daily: { tpl: DAILY, key: dayKey, chips: 120, xp: 60, chest: 300, tp: 0, label: 'Daily' },
-  weekly: { tpl: WEEKLY, key: weekKey, chips: 700, xp: 250, chest: 1500, tp: 1, label: 'Weekly' }
+  daily: { tpl: DAILY, key: dayKey, chips: 20, xp: 60, chest: 50, tp: 0, label: 'Daily' },
+  weekly: { tpl: WEEKLY, key: weekKey, chips: 120, xp: 250, chest: 300, tp: 1, label: 'Weekly' }
 };
 /* Meilensteine: dauerhafte Ziele in Stufen */
 var MILES = [
@@ -263,13 +263,20 @@ function ensureQuests() {
   var S = V.S;
   ['daily', 'weekly'].forEach(function (kind) {
     var K = KIND[kind], key = K.key(), cur = S.quests[kind];
-    if (cur && cur.key === key && cur.list && cur.list.length) { if (cur.swaps === undefined) cur.swaps = 1; rescale(cur); return; }
+    if (cur && cur.key === key && cur.list && cur.list.length) { if (cur.swaps === undefined) cur.swaps = 1; nerf(cur, kind); rescale(cur); return; }
     var r = rng(hash(kind + key + '|' + (V.slotId || '')));
     var pool = K.tpl.filter(allowed);
     var list = [];
     while (list.length < 3 && pool.length) list.push(makeQuest(pool.splice(Math.floor(r() * pool.length), 1)[0], r, K));
-    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1, scale: tierMin() };
+    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1, scale: tierMin(), v: 2 };
   });
+}
+/* Version 2: niedrigere Quest-Belohnungen, offene Quests aus älteren Spielständen umrechnen */
+var OLD_CHIPS = { daily: 120, weekly: 700 };
+function nerf(st, kind) {
+  if (st.v >= 2) return;
+  st.list.forEach(function (q) { if (!q.claimed) q.chips = Math.round(q.chips * KIND[kind].chips / OLD_CHIPS[kind]); });
+  st.v = 2;
 }
 function claimQuest(kind, i) {
   var S = V.S, q = S.quests[kind].list[i];
@@ -324,7 +331,7 @@ function claimChest(kind) {
   V.hud(); V.side.refresh(); V.save();
 }
 function mileStep(m) { return (V.S.qstats.miles[m.id] || 0); }
-function mileReward(m, k) { return { chips: Math.round(tierMin() * 100 * (k + 1) * qmult()), xp: Math.round(80 * (k + 1) * qmult()) }; }
+function mileReward(m, k) { return { chips: Math.round(tierMin() * 25 * (k + 1) * qmult()), xp: Math.round(80 * (k + 1) * qmult()) }; }
 function claimMile(id) {
   var S = V.S, m = null;
   MILES.forEach(function (x) { if (x.id === id) m = x; });
