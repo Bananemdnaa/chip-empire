@@ -150,9 +150,9 @@ Cloud.onConflict(function () {
   blockSaving('Dieser Spielstand wurde auf einem anderen Gerät weitergespielt. Lade neu, um den aktuellen Stand zu holen.');
 });
 function room() { return E.TIERS[S.room]; }
-function debit(n, commit) { S.balance -= n; S.escrow += n; if (commit) lock(n); }
+function debit(n, commit) { S.balance -= n; S.escrow += n; if (commit) lock(n); allinCheck(n); }
 function lock(n) { locked += n; save(); }
-function refund(n) { S.balance += n; S.escrow -= n; }
+function refund(n) { S.balance += n; S.escrow -= n; if (S.balance >= room().min) allinRound = false; }
 
 /* ---------- Karriere: Freischaltungen, Notgroschen, Tagesbonus ---------- */
 /* Karriere-Regeln gelten auch im Imperium-Modus */
@@ -244,6 +244,9 @@ var Snd = (function () {
     /* Jede weitere Stufe einen Halbton höher: die Spannung steigt hörbar */
     step: function (k) { var f = 392 * Math.pow(2, Math.min(k, 30) / 12); tone(f, 0.14, 'triangle', 0.05); tone(f * 1.5, 0.12, 'sine', 0.025, 0.05); },
     unlock: function () { [392, 523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.25, 'triangle', 0.06, i * 0.1); }); },
+    /* All-in: tiefer Herzschlag und ein Anschwellen */
+    heart: function () { tone(70, 0.18, 'sine', 0.12); tone(62, 0.22, 'sine', 0.1, 0.22); tone(220, 0.6, 'sawtooth', 0.02, 0.1); },
+    allin: function () { [196, 247, 294, 392].forEach(function (f, i) { tone(f, 0.12, 'square', 0.03, i * 0.05); }); },
     ensure: ensure
   };
 })();
@@ -426,6 +429,8 @@ function settle(game, staked, ret, opt) {
   if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt, prevLoss: prevLoss, atMax: staked > 0 && staked >= room().max });
   if (V.track) V.track.round(game, staked, ret);
   if (V.legend) V.legend.round(staked, ret);
+  if (staked > 0) allinResult(net);
+  if (V.session) V.session.round(staked);
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
 }
@@ -547,17 +552,10 @@ function ladder() {
   var r = room();
   return E.BET_LADDER.filter(function (v) { return v >= r.min && v <= r.max; });
 }
+/* Einsätze sind frei wählbar, aber immer ein Vielfaches des Mindesteinsatzes und innerhalb der Raumlimits */
+function snapBet(v) { var r = room(); return clamp(Math.round(v / r.min) * r.min, r.min, r.max); }
 function clampBets() {
-  var l = ladder(), lo = l[0], hi = l[l.length - 1];
-  Object.keys(S.bets).forEach(function (k) {
-    var v = S.bets[k];
-    if (l.indexOf(v) < 0) {
-      v = clamp(v, lo, hi);
-      var best = l[0];
-      l.forEach(function (x) { if (Math.abs(x - v) < Math.abs(best - v)) best = x; });
-      S.bets[k] = best;
-    }
-  });
+  Object.keys(S.bets).forEach(function (k) { S.bets[k] = snapBet(isNum(S.bets[k]) ? S.bets[k] : room().min); });
   var chips = chipList();
   if (chips.indexOf(S.rchip) < 0) S.rchip = chips[0];
 }
@@ -566,38 +564,78 @@ function chipList() {
   var c = E.CHIP_VALUES.filter(function (v) { return v >= r.min && v <= r.max; });
   return c.length ? c : [r.min];
 }
+/* Eingetippte Beträge verstehen: 2500, 2.500, 10k, 1,5 Mio, 2m */
+function parseAmount(txt) {
+  var t = String(txt || '').toLowerCase().replace(/\s+/g, '').replace(/chips?/g, '');
+  var m = /^([0-9.,]+)(k|tsd|mio|m)?$/.exec(t);
+  if (!m) return NaN;
+  var num = m[1];
+  /* Punkt als Tausendertrenner, Komma als Dezimalzeichen */
+  if (/^\d{1,3}(\.\d{3})+$/.test(num)) num = num.replace(/\./g, '');
+  num = parseFloat(num.replace(',', '.'));
+  var f = m[2] === 'k' || m[2] === 'tsd' ? 1e3 : m[2] === 'mio' || m[2] === 'm' ? 1e6 : 1;
+  return num * f;
+}
 function betControl(key, onChange) {
-  var out = el('output', { class: 'betval', 'aria-live': 'polite' });
+  var out = el('button', { class: 'betval', type: 'button', title: 'Antippen und eigenen Betrag eingeben', 'aria-label': 'Einsatz eingeben' });
   var minus = el('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'Einsatz senken', text: '−' });
   var plus = el('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'Einsatz erhöhen', text: '+' });
   var presets = [
-    ['Min', function (l) { return l[0]; }],
-    ['½', function (l, v) { return nearest(l, v / 2); }],
-    ['2×', function (l, v) { return nearest(l, v * 2); }],
-    ['Max', function (l) { return l[l.length - 1]; }]
+    ['Min', function () { return room().min; }],
+    ['½', function (v) { return v / 2; }],
+    ['2×', function (v) { return v * 2; }],
+    ['Max', function () { return room().max; }]
   ];
-  function nearest(l, v) { var b = l[0]; l.forEach(function (x) { if (Math.abs(x - v) < Math.abs(b - v)) b = x; }); return b; }
   var wrap = el('div', { class: 'betctl' }, el('span', { class: 'lbl', text: 'Einsatz' }), el('div', { class: 'betrow' }, minus, out, plus));
   var pr = el('div', { class: 'presets' });
   var pbtns = presets.map(function (p) {
-    var b = el('button', { class: 'chipbtn', type: 'button', text: p[0], onclick: function () { set(p[1](ladder(), S.bets[key])); } });
+    var b = el('button', { class: 'chipbtn', type: 'button', text: p[0], onclick: function () { set(p[1](S.bets[key])); } });
     pr.appendChild(b); return b;
   });
+  /* All-in: alles, was du hast (höchstens das Tischlimit) */
+  var allin = el('button', { class: 'chipbtn allin', type: 'button', text: 'All-in', title: 'Setzt deine ganzen Chips (höchstens das Tischlimit)',
+    onclick: function () { if (S.balance < room().min) { needChips(); return; } set(Math.min(S.balance, room().max), true); Snd.allin(); } });
+  pr.appendChild(allin); pbtns.push(allin);
   wrap.appendChild(pr);
-  function set(v) { S.bets[key] = v; Snd.click(); render(); if (onChange) onChange(v); save(); }
+  function set(v, exact) {
+    var r = room();
+    S.bets[key] = exact ? clamp(Math.floor(v), r.min, r.max) : snapBet(v);
+    Snd.click(); render(); if (onChange) onChange(S.bets[key]); save();
+  }
+  /* Plus und Minus springen auf der gewohnten Leiter, auch von einem eigenen Betrag aus */
   function step(dir) {
-    var l = ladder(), i = l.indexOf(S.bets[key]);
-    if (i < 0) i = 0;
-    set(l[clamp(i + dir, 0, l.length - 1)]);
+    var l = ladder(), v = S.bets[key], next = v;
+    if (dir > 0) { for (var i = 0; i < l.length; i++) if (l[i] > v) { next = l[i]; break; } }
+    else { for (var j = l.length - 1; j >= 0; j--) if (l[j] < v) { next = l[j]; break; } }
+    set(next);
   }
   minus.addEventListener('click', function () { step(-1); });
   plus.addEventListener('click', function () { step(1); });
+  /* Betrag antippen: wird zum Eingabefeld */
+  out.addEventListener('click', function () {
+    if (wrap.dataset.off === '1') return;
+    var inp = el('input', { class: 'betval betin', type: 'text', inputmode: 'decimal', value: String(S.bets[key]), 'aria-label': 'Einsatz in Chips' });
+    var done = false;
+    function finish(ok) {
+      if (done) return; done = true;
+      if (ok) { var v = parseAmount(inp.value); if (isFinite(v) && v > 0) set(v); else toast('Das ist kein gültiger Betrag.', 'bad'); }
+      if (inp.parentNode) inp.parentNode.replaceChild(out, inp);
+      render();
+    }
+    inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); });
+    inp.addEventListener('blur', function () { finish(true); });
+    out.parentNode.replaceChild(inp, out);
+    inp.focus(); inp.select();
+  });
   function render() {
-    out.textContent = fmt(S.bets[key]);
-    var l = ladder(), i = l.indexOf(S.bets[key]);
-    minus.disabled = wrap.dataset.off === '1' || i <= 0;
-    plus.disabled = wrap.dataset.off === '1' || i >= l.length - 1;
-    pbtns.forEach(function (b) { b.disabled = wrap.dataset.off === '1'; });
+    var v = S.bets[key], r = room(), off = wrap.dataset.off === '1';
+    out.textContent = fmt(v);
+    out.disabled = off;
+    minus.disabled = off || v <= r.min;
+    plus.disabled = off || v >= r.max;
+    pbtns.forEach(function (b) { b.disabled = off; });
+    /* leuchtet, solange der Einsatz wirklich alles ist, was du hast */
+    allin.classList.toggle('on', !off && v >= S.balance && S.balance >= r.min);
   }
   render();
   return {
@@ -605,6 +643,33 @@ function betControl(key, onChange) {
     isOff: function () { return wrap.dataset.off === '1'; },
     disable: function (off) { wrap.dataset.off = off ? '1' : '0'; render(); }
   };
+}
+
+/* ---------- All-in ---------- */
+/* Erkannt beim Abbuchen: Bleibt danach weniger als ein Mindesteinsatz übrig, ist es ein echtes All-in */
+var allinRound = false, allinTimer = 0;
+function allinFx(cls, title, sub, ms) {
+  var fx = $('#allinFx'); if (!fx) return;
+  clearTimeout(allinTimer);
+  fx.className = 'allin-fx'; fx.innerHTML = '';
+  fx.appendChild(el('b', { text: title })); fx.appendChild(el('span', { text: sub }));
+  void fx.offsetWidth; fx.className = 'allin-fx ' + cls;
+  allinTimer = setTimeout(function () { fx.className = 'allin-fx'; }, ms);
+}
+function allinCheck(n) {
+  if (n < room().min || S.balance >= room().min) return;
+  allinRound = true;
+  allinFx('show', 'ALL IN', fmt(n) + ' Chips stehen auf dem Spiel', 1700);
+  var app = $('#app'); app.classList.remove('quake'); void app.offsetWidth; app.classList.add('quake');
+  Snd.heart();
+}
+function allinResult(net) {
+  if (!allinRound) return;
+  allinRound = false;
+  if (net > 0) {
+    Snd.big(); burst($('#app'), 90, ['#FFF3C9', '#F2D68E', '#D4AB52', '#6FD3A2', '#FFFFFF']);
+    allinFx('win', 'ALL IN GEWONNEN', '+' + fmt(net) + ' Chips', 3200);
+  } else if (net < 0) allinFx('lose', 'ALLES WEG', 'Das war der letzte Chip.', 2600);
 }
 
 /* ---------- Tabs ---------- */
@@ -625,7 +690,7 @@ return {
   get S() { return S; }, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
   toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
-  needChips: needChips, kbd: kbd, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
+  needChips: needChips, parseAmount: parseAmount, snapBet: snapBet, kbd: kbd, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
   resetState: function () { S = fresh(S.mode); locked = 0; save(); },
   get slotId() { return slotId; }, get slotName() { return slotName; },

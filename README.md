@@ -8,6 +8,7 @@ Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel
 
 - **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Glücksrad, Würfel · Bronze: Roulette, Entenrennen, Plinko · Silver: Crash, Dragon Tower · Gold: Blackjack, Hi-Lo-Leiter · Platinum: Tresorknacker). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie. Comps sind ein Anteil des Hausvorteils (10 bis 35 % je Raum), damit bleibt jedes Spiel auf Dauer ein Minus.
 - **Legende** (nur Karriere): Im Black Room ab 25 Mio. Chips (jeder weitere Stern 25 Mio. mehr) kannst du zur Legende aufsteigen. Chips, Räume, Umsatz und Comps gehen zurück auf Anfang, Level, Talente, Quests und Statistik bleiben. Pro Stern gibt es 2 Talentpunkte, dauerhaft +10 % XP und +5 % Comps sowie den Legenden-Ast im Talentbaum. Die Karriere-Bestenliste sortiert zuerst nach Sternen.
+- **Sitzung**: Wer zügig weiterspielt, heizt den Tisch auf (bis zu doppelte Erfahrung, erlischt nach 60 Sekunden Pause). Nach 10, 25, 50 und 100 Runden in einer Sitzung öffnet sich eine Truhe mit Zufallsbelohnung, alle 10 Minuten Spielzeit gibt es einen Gratis-Dreh (höchstens 6 pro Sitzung). Einsätze lassen sich frei eintippen (auch „10k“ oder „1,5 Mio“), All-in setzt alle Chips.
 - **Wochen-Saison**: Eigene Bestenliste mit dem Gewinn aus allen Karriere-Runden seit Montag. Die Top 10 der Vorwoche bekommen beim nächsten Spielstart Talentpunkte (Platz 1: 5, Platz 2: 3, Platz 3: 2, sonst 1).
 - **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert.
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
@@ -68,7 +69,7 @@ py -3 -m http.server 8765
 | `css/games3.css` | Tresorknacker, Hi-Lo-Leiter, Dragon-Tower-Goldfelder |
 | `css/polish.css` | Gewinn/Verlust-Anzeigen, Bilanz-Fenster, Legende, Handy-Feinschliff |
 | `css/social.css` | Arena, Duell-Fenster, Spielerprofile |
-| `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
+| `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Einstellungen |
 | `js/menu.js` | Hauptmenü mit Bereichen: Spielen, Arena, Freunde, Ranglisten, Profil |
 | `js/social.js` | Arena: Duelle, Freunde, Duell-Rangliste, Spielerprofile |
 | `js/friends.js` | Freundesystem: Liste, Anfragen, Spielersuche, Benachrichtigungen |

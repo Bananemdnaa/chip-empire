@@ -1,4 +1,4 @@
-/* Chip Empire – Seitenpanel: Stufen, Zockerprofil, Statistik, Haus */
+/* Chip Empire – Seitenpanel: Stufen, Zockerprofil, Statistik, Einstellungen */
 (function () {
 'use strict';
 var E = V.E, A = V.A, el = V.el, fmt = V.fmt, short = V.short;
@@ -7,7 +7,7 @@ var tabsEl, body, confirmReset = false;
 var GNAME = V.GAME_NAME;
 function edge(g) { return V.GAME_BY[g] ? V.GAME_BY[g].edge : 0; }
 function catOf(g) { return V.GAME_BY[g] ? V.GAME_BY[g].cat : ''; }
-var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Hinter den Kulissen' }];
+var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Einstellungen' }];
 
 function build() {
   var host = V.$('#side');
@@ -85,8 +85,7 @@ function profil() {
     el('div', { class: 'kv' }, el('span', { text: 'Spiel' }), el('b', { text: GNAME[rec.game] })),
     el('div', { class: 'kv' }, el('span', { text: 'Raum' }), el('b', { text: T.name })),
     el('div', { class: 'kv' }, el('span', { text: 'Einsatz' }), el('b', { class: 'num', text: fmt(rec.betLo) + ' bis ' + fmt(rec.betHi) })),
-    el('button', { class: 'btn gold sm', type: 'button', text: 'Empfehlung übernehmen', onclick: function () { apply(rec); } }),
-    el('p', { class: 'fine', text: 'So arbeiten echte Casinos: Sie messen dein Verhalten und schneiden Spiel und Einsatz auf den Moment zu, in dem du am längsten bleibst. Das hält dich am Tisch, macht dich aber nicht reicher.' }));
+    el('button', { class: 'btn gold sm', type: 'button', text: 'Empfehlung übernehmen', onclick: function () { apply(rec); } }));
   body.appendChild(box);
 }
 
@@ -162,27 +161,9 @@ function stats() {
   body.appendChild(el('p', { class: 'fine', text: 'Kurzfristig schwankt deine Quote stark. Je mehr du spielst, desto näher rückt sie an den theoretischen Wert.' }));
 }
 
+/* Einstellungen: Ton und Spielstand zurücksetzen */
 function haus() {
-  var S = V.S, exp = 0;
-  V.GAME_LIST.forEach(function (g) { exp += (S.gst[g.id] ? S.gst[g.id].w : 0) * g.edge; });
-  body.appendChild(el('p', { class: 'side-intro', text: 'Was ein echtes Casino nie anzeigen würde.' }));
-  body.appendChild(el('div', { class: 'kvs' },
-    el('div', { class: 'kv' }, el('span', { text: 'Erwarteter Verlust bisher' }), el('b', { class: 'num neg', text: '−' + fmt(exp) })),
-    el('div', { class: 'kv' }, el('span', { text: 'Tatsächlich' }), el('b', { class: 'num ' + (S.returned - S.wagered >= 0 ? 'pos' : 'neg'), text: (S.returned - S.wagered >= 0 ? '+' : '−') + fmt(Math.abs(S.returned - S.wagered)) })),
-    el('div', { class: 'kv' }, el('span', { text: 'Comps verdient' }), el('b', { class: 'num', text: fmt(S.comps + S.compsClaimed) }))));
-  var tricks = [
-    ['Keine Uhren, keine Fenster', 'Die Zeit verschwimmt. Deshalb meldet sich hier alle 30 Minuten ein Realitätscheck.'],
-    ['Chips statt Geld', 'Ein Stapel Plastik fühlt sich nicht wie Miete an. Große Zahlen verlieren ihre Schwere.'],
-    ['Verluste als Gewinn verkleidet', 'Bei Slots blinkt und klingelt es auch, wenn du weniger zurückbekommst als eingesetzt.'],
-    ['Fast-Treffer', 'Zwei Bonus-Symbole fühlen sich an wie „beinahe“. Für die Walzen ist es einfach ein Verlust.'],
-    ['Stufen und Comps', 'Aufstieg belohnt Umsatz, nicht Gewinn. Comps sind ein kleiner Teil deines erwarteten Verlusts.'],
-    ['Persönliche Ansprache', 'Eine Gastgeberin, die dich kennt, macht das Gehen schwerer. Die Beziehung wächst mit jedem Einsatz.']
-  ];
-  var ul = el('div', { class: 'tricks' });
-  tricks.forEach(function (t) { ul.appendChild(el('div', { class: 'trick' }, el('b', { text: t[0] }), el('span', { text: t[1] }))); });
-  body.appendChild(el('h4', { text: 'Die Tricks des Hauses' }));
-  body.appendChild(ul);
-  body.appendChild(el('h4', { text: 'Einstellungen' }));
+  var S = V.S;
   var snd = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(S.sound), text: S.sound ? 'Ton an' : 'Ton aus', onclick: function () { S.sound = !S.sound; V.save(); refresh(); V.syncSound(); } });
   var reset;
   if (!confirmReset) reset = el('button', { class: 'btn ghost sm', type: 'button', text: 'Diesen Spielstand zurücksetzen', onclick: function () { confirmReset = true; refresh(); } });

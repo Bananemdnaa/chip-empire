@@ -3,7 +3,7 @@
 'use strict';
 var $ = V.$, $$ = V.$$;
 var GAMES = V.GAME_LIST.map(function (g) { return { id: g.id, label: g.name, short: g.short }; });
-/* In der Leiste nur das Wichtigste; Statistik, Profil und Kulissen sind Reiter im selben Fenster */
+/* In der Leiste nur das Wichtigste; Statistik, Profil und Einstellungen sind Reiter im selben Fenster */
 var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
 var SIDE = SIDE_ALL;
 function sideItems() { return SIDE_ALL.filter(function (t) { return !t.empire || V.S.mode === 'empire'; }); }
@@ -99,7 +99,7 @@ function onKeyDown(e) {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   var tag = (e.target && e.target.tagName) || '';
   /* Ein offenes Spielerprofil behandelt seine Tasten selbst */
-  if (document.querySelector('.prof-dlg')) return;
+  if (document.querySelector('.prof-dlg') || document.querySelector('.fs-dlg')) return;
   if (e.key === 'Escape') { closeKeys(); closeSide(); return; }
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
   if (!$('#keysDlg').hidden || !$('#drawer').hidden) { if (e.key === '?') { e.preventDefault(); closeKeys(); } return; }
@@ -169,6 +169,7 @@ async function startGame(id) {
   V.side.build();
   V.track.init();
   V.legend.init();
+  V.session.init();
   renderSideNav();
   $('#drawerClose').addEventListener('click', closeSide);
   $('#drawer').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSide(); });
@@ -223,6 +224,7 @@ async function startGame(id) {
     if (now % 5000 < 1000) renderBadges();
     if (!document.hidden && dt < 5000) {
       V.S.playMs += dt;
+      V.session.tick(dt);
       V.S.dopa = Math.max(0, V.S.dopa - 0.15);
       V.renderDopa();
       if (Math.floor(V.S.playMs / 1000) % 15 === 0) { V.save(); V.maybeReality(); }

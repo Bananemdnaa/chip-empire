@@ -16,16 +16,16 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chip Empire">
-<link rel="stylesheet" href="css/style.css?v=39">
-<link rel="stylesheet" href="css/shell.css?v=39">
-<link rel="stylesheet" href="css/games.css?v=39">
-<link rel="stylesheet" href="css/tables.css?v=39">
-<link rel="stylesheet" href="css/host.css?v=39">
-<link rel="stylesheet" href="css/meta.css?v=39">
-<link rel="stylesheet" href="css/games2.css?v=39">
-<link rel="stylesheet" href="css/social.css?v=39">
-<link rel="stylesheet" href="css/games3.css?v=39">
-<link rel="stylesheet" href="css/polish.css?v=39">
+<link rel="stylesheet" href="css/style.css?v=41">
+<link rel="stylesheet" href="css/shell.css?v=41">
+<link rel="stylesheet" href="css/games.css?v=41">
+<link rel="stylesheet" href="css/tables.css?v=41">
+<link rel="stylesheet" href="css/host.css?v=41">
+<link rel="stylesheet" href="css/meta.css?v=41">
+<link rel="stylesheet" href="css/games2.css?v=41">
+<link rel="stylesheet" href="css/social.css?v=41">
+<link rel="stylesheet" href="css/games3.css?v=41">
+<link rel="stylesheet" href="css/polish.css?v=41">
 </head>
 <body>
 <main id="menu" class="menu">
@@ -70,6 +70,7 @@
       <span id="tierLimits" class="limits"></span>
       <div id="lastRounds" class="last-rounds" aria-label="Letzte Runden in diesem Spiel" hidden></div>
     </div>
+    <div id="sessBar" class="sess-bar" aria-label="Sitzung"></div>
     <div id="g-slots" class="game"></div>
     <div id="g-roulette" class="game" hidden></div>
     <div id="g-bj" class="game" hidden></div>
@@ -137,35 +138,37 @@
 </div>
 
 <div id="banner" class="banner" hidden role="status"></div>
+<div id="allinFx" class="allin-fx" aria-live="polite"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
-<script src="js/engine.js?v=39"></script>
-<script src="js/art.js?v=39"></script>
+<script src="js/engine.js?v=41"></script>
+<script src="js/art.js?v=41"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-<script src="js/store.js?v=39"></script>
-<script src="js/cloud.js?v=39"></script>
-<script src="js/icons.js?v=39"></script>
-<script src="js/core.js?v=39"></script>
-<script src="js/meta.js?v=39"></script>
-<script src="js/tracker.js?v=39"></script>
-<script src="js/legend.js?v=39"></script>
-<script src="js/slots.js?v=39"></script>
-<script src="js/roulette.js?v=39"></script>
-<script src="js/blackjack.js?v=39"></script>
-<script src="js/crash.js?v=39"></script>
-<script src="js/chipbets.js?v=39"></script>
-<script src="js/wheel.js?v=39"></script>
-<script src="js/dice.js?v=39"></script>
-<script src="js/ducks.js?v=39"></script>
-<script src="js/plinko.js?v=39"></script>
-<script src="js/tower.js?v=39"></script>
-<script src="js/hilo.js?v=39"></script>
-<script src="js/vault.js?v=39"></script>
-<script src="js/side.js?v=39"></script>
-<script src="js/friends.js?v=39"></script>
-<script src="js/duel.js?v=39"></script>
-<script src="js/social.js?v=39"></script>
-<script src="js/menu.js?v=39"></script>
-<script src="js/main.js?v=39"></script>
+<script src="js/store.js?v=41"></script>
+<script src="js/cloud.js?v=41"></script>
+<script src="js/icons.js?v=41"></script>
+<script src="js/core.js?v=41"></script>
+<script src="js/meta.js?v=41"></script>
+<script src="js/tracker.js?v=41"></script>
+<script src="js/legend.js?v=41"></script>
+<script src="js/session.js?v=41"></script>
+<script src="js/slots.js?v=41"></script>
+<script src="js/roulette.js?v=41"></script>
+<script src="js/blackjack.js?v=41"></script>
+<script src="js/crash.js?v=41"></script>
+<script src="js/chipbets.js?v=41"></script>
+<script src="js/wheel.js?v=41"></script>
+<script src="js/dice.js?v=41"></script>
+<script src="js/ducks.js?v=41"></script>
+<script src="js/plinko.js?v=41"></script>
+<script src="js/tower.js?v=41"></script>
+<script src="js/hilo.js?v=41"></script>
+<script src="js/vault.js?v=41"></script>
+<script src="js/side.js?v=41"></script>
+<script src="js/friends.js?v=41"></script>
+<script src="js/duel.js?v=41"></script>
+<script src="js/social.js?v=41"></script>
+<script src="js/menu.js?v=41"></script>
+<script src="js/main.js?v=41"></script>
 </body>
 </html>

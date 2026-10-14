@@ -198,7 +198,7 @@ function crash() {
     msgEl.textContent = safe ? 'Sofort-Crash, aber dein Fallschirm hat ' + fmt(safe) + ' Chips gerettet.' : cp <= 1.0 ? 'Sofort-Crash bei 1,00×. Das passiert in etwa 2 von 100 Runden.' : 'Zu spät. ' + fmt(bet) + ' Chips gehen ans Haus.';
   } else {
     subEl.textContent = 'Abgestürzt bei ' + fmtX(cp) + ' · du hattest bei ' + fmtX(cashAt) + ' ausgezahlt.';
-    if (cp > cashAt * 1.5) msgEl.textContent = 'Hättest du gewartet: ' + fmtX(cp) + '. Genau dieses Gefühl hält Spieler am Tisch.';
+    if (cp > cashAt * 1.5) msgEl.textContent = 'Hättest du gewartet: ' + fmtX(cp) + '. Nächstes Mal vielleicht.';
     V.save();
   }
   draw(); renderHist(); renderBtn();

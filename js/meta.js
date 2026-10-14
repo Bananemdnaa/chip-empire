@@ -23,12 +23,12 @@ function addXp(n) {
   if (ups) {
     progress({ levelUp: ups }, ['weekly']);
     V.Snd.unlock();
-    V.banner('Level ' + S.level + '!', '+' + ups + ' Talentpunkt' + (ups > 1 ? 'e' : '') + ' zum Verteilen', { kind: 'level', ms: 5000, actions: [
-      { label: 'Talentbaum öffnen', gold: true, fn: function () { V.openSide('talente'); } }, { label: 'Später', fn: function () {} }] });
+    notify({ kind: 'level', icon: '⭐', text: 'Level ' + S.level + ' erreicht · +' + ups + ' Talentpunkt' + (ups > 1 ? 'e' : '') });
   }
 }
 /* Pro Runde: mehr XP in höheren Räumen, Gewinne zählen 50 % mehr */
-function roundXp(net) { return 6 * (1 + 0.4 * V.S.room) * (net > 0 ? 1.3 : 1); }
+/* Heißer Tisch: zügig weiterspielen bringt bis zu doppelte Erfahrung */
+function roundXp(net) { return 6 * (1 + 0.4 * V.S.room) * (net > 0 ? 1.3 : 1) * (V.session ? V.session.xpMult() : 1); }
 
 /* ================= Talentbaum ================= */
 /* Jeder Ast ist eine Kette: Ein Talent braucht mindestens eine Stufe im Talent darüber. */
@@ -300,13 +300,14 @@ function nerf(st, kind) {
   st.list.forEach(function (q) { if (!q.claimed) q.chips = Math.round(q.chips * KIND[kind].chips / OLD_CHIPS[kind]); });
   st.v = 2;
 }
-function claimQuest(kind, i) {
+function claimQuest(kind, i, sum) {
   var S = V.S, q = S.quests[kind].list[i];
   if (!q || !q.done || q.claimed) return;
   q.claimed = true;
   var chips = Math.round(q.chips * qmult()), xp = Math.round(q.xp * qmult());
   S.balance += chips;
-  V.Snd.cash(); V.toast('Quest-Belohnung: +' + fmt(chips) + ' Chips, +' + xp + ' XP', 'good');
+  if (sum) { sum.n++; sum.chips += chips; sum.xp += xp; }
+  else { V.Snd.cash(); V.toast('Quest-Belohnung: +' + fmt(chips) + ' Chips, +' + xp + ' XP', 'good'); }
   addXp(xp);
   if (kind === 'daily') { S.qstats.dailies++; progress({ dailyDone: true }, ['weekly']); }
   V.hud(); V.side.refresh(); V.save();
@@ -343,27 +344,86 @@ function swapQuest(kind, i) {
   V.side.refresh(); V.save();
 }
 function allClaimed(kind) { var l = V.S.quests[kind].list; return l.length > 0 && l.every(function (q) { return q.claimed; }); }
-function claimChest(kind) {
+function claimChest(kind, sum) {
   var S = V.S, K = KIND[kind], st = S.quests[kind];
   if (st.chest || !allClaimed(kind)) return;
   var chips = Math.round(tierMin() * K.chest * qmult());
   st.chest = true; S.balance += chips; S.bonusTp += K.tp;
-  V.Snd.big(); V.burst(V.$('#drawer .drawer-panel'), 30);
-  V.banner(K.label + '-Truhe', '+' + fmt(chips) + ' Chips' + (K.tp ? ' und +' + K.tp + ' Talentpunkt' : ''), { kind: 'win', ms: 3000 });
+  if (sum) { sum.n++; sum.chips += chips; sum.tp += K.tp; sum.chests++; }
+  else {
+    V.Snd.big(); V.burst(V.$('#drawer .drawer-panel'), 30);
+    V.banner(K.label + '-Truhe', '+' + fmt(chips) + ' Chips' + (K.tp ? ' und +' + K.tp + ' Talentpunkt' : ''), { kind: 'win', ms: 3000 });
+  }
   V.hud(); V.side.refresh(); V.save();
 }
 function mileStep(m) { return (V.S.qstats.miles[m.id] || 0); }
 function mileReward(m, k) { return { chips: Math.round(tierMin() * 25 * (k + 1) * qmult()), xp: Math.round(80 * (k + 1) * qmult()) }; }
-function claimMile(id) {
+function claimMile(id, sum) {
   var S = V.S, m = null;
   MILES.forEach(function (x) { if (x.id === id) m = x; });
   var k = mileStep(m);
-  if (!m || k >= m.steps.length || m.val() < m.steps[k]) return;
+  if (!m || k >= m.steps.length || m.val() < m.steps[k]) return false;
   var rw = mileReward(m, k);
   S.qstats.miles[id] = k + 1; S.balance += rw.chips;
-  V.Snd.unlock(); V.toast(m.icon + ' ' + m.name + ' Stufe ' + (k + 1) + ': +' + fmt(rw.chips) + ' Chips, +' + rw.xp + ' XP', 'good');
+  if (sum) { sum.n++; sum.chips += rw.chips; sum.xp += rw.xp; }
+  else { V.Snd.unlock(); V.toast(m.icon + ' ' + m.name + ' Stufe ' + (k + 1) + ': +' + fmt(rw.chips) + ' Chips, +' + rw.xp + ' XP', 'good'); }
   addXp(rw.xp);
   V.hud(); V.side.refresh(); V.save();
+  return true;
+}
+function mileReady(m) { var k = mileStep(m); return (!m.game || V.gameOpen(m.game)) && k < m.steps.length && m.val() >= m.steps[k]; }
+
+/* Alles auf einmal abholen: Quests, Truhen und Meilensteine, mit einer einzigen Meldung */
+function claimAll() {
+  var S = V.S, sum = { n: 0, chips: 0, xp: 0, tp: 0, chests: 0 }, tp0 = pointsFree();
+  ['daily', 'weekly'].forEach(function (kind) {
+    S.quests[kind].list.forEach(function (q, i) { if (q.done && !q.claimed) claimQuest(kind, i, sum); });
+    claimChest(kind, sum);
+  });
+  MILES.forEach(function (m) { while (mileReady(m) && claimMile(m.id, sum)) { /* mehrere Stufen auf einmal */ } });
+  if (!sum.n) return;
+  var gotTp = pointsFree() - tp0;
+  V.Snd.big(); V.burst(V.$('#drawer .drawer-panel'), 40);
+  V.banner(sum.n + ' Belohnung' + (sum.n > 1 ? 'en' : '') + ' abgeholt', '+' + fmt(sum.chips) + ' Chips · +' + fmt(sum.xp) + ' XP' + (gotTp > 0 ? ' · ' + gotTp + ' Talentpunkt' + (gotTp > 1 ? 'e' : '') + ' frei' : ''),
+    gotTp > 0 ? { kind: 'win', ms: 5000, actions: [{ label: 'Talentbaum', gold: true, fn: function () { V.openSide('talente'); } }, { label: 'Später', fn: function () {} }] } : { kind: 'win', ms: 3200 });
+  V.hud(); V.side.refresh(); V.renderBadges(); V.save();
+}
+function claimableCount() { return questClaimable(); }
+
+/* ================= Gebündelte Meldungen ================= */
+/* Alles, was während einer Runde passiert (Quests, Level, Meilensteine), kommt als eine Karte statt vieler Toasts */
+var pend = [], noteEl = null, noteTimer = 0, flushTimer = 0, notedMiles = {};
+function notify(item) { pend.push(item); clearTimeout(flushTimer); flushTimer = setTimeout(flushNotes, 650); }
+function closeNote() { if (noteEl) { noteEl.classList.add('out'); var n = noteEl; noteEl = null; setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 300); } }
+function flushNotes() {
+  if (!pend.length) return;
+  var items = pend; pend = [];
+  if (!noteEl) {
+    noteEl = el('div', { class: 'notice', role: 'status' }, el('div', { class: 'nt-list' }), el('div', { class: 'nt-acts' }));
+    noteEl.addEventListener('mouseenter', function () { clearTimeout(noteTimer); });
+    noteEl.addEventListener('mouseleave', function () { clearTimeout(noteTimer); noteTimer = setTimeout(closeNote, 3000); });
+    document.body.appendChild(noteEl);
+  }
+  var list = noteEl.querySelector('.nt-list');
+  items.forEach(function (it) { list.appendChild(el('div', { class: 'nt-item ' + it.kind }, el('span', { class: 'nt-ico', text: it.icon }), el('span', { text: it.text }))); });
+  while (list.children.length > 5) list.removeChild(list.firstChild);
+  /* Knöpfe nach dem, was gerade abzuholen oder zu verteilen ist */
+  var acts = noteEl.querySelector('.nt-acts'), claim = questClaimable(), free = pointsFree();
+  acts.innerHTML = '';
+  if (claim) acts.appendChild(el('button', { class: 'btn gold sm', type: 'button', text: 'Alles abholen (' + claim + ')', onclick: function () { closeNote(); claimAll(); } }));
+  if (free) acts.appendChild(el('button', { class: 'btn ghost sm', type: 'button', text: 'Talentbaum (' + free + ')', onclick: function () { closeNote(); V.openSide('talente'); } }));
+  acts.appendChild(el('button', { class: 'icon-btn nt-x', type: 'button', 'aria-label': 'Schließen', text: '✕', onclick: closeNote }));
+  noteEl.classList.remove('pop'); void noteEl.offsetWidth; noteEl.classList.add('pop');
+  V.Snd.win();
+  clearTimeout(noteTimer); noteTimer = setTimeout(closeNote, 8000);
+  V.renderBadges();
+}
+/* Neu erreichte Meilenstein-Stufen einmal melden */
+function checkMiles() {
+  MILES.forEach(function (m) {
+    var k = mileStep(m), key = m.id + ':' + k;
+    if (mileReady(m) && !notedMiles[key]) { notedMiles[key] = true; notify({ kind: 'mile', icon: m.icon, text: 'Meilenstein ' + m.name + ' Stufe ' + (k + 1) + ' geschafft' }); }
+  });
 }
 
 /* Fortschritt für Daily und Weekly aus einem Ereignis */
@@ -378,7 +438,7 @@ function progress(e, kinds) {
       var add = t.ev(q, e);
       if (!add) return;
       q.p = Math.min(q.n, q.p + add);
-      if (q.p >= q.n) { q.done = true; V.toast('Quest erledigt: ' + q.text + '. Belohnung unter „Quests“.', 'good'); }
+      if (q.p >= q.n) { q.done = true; notify({ kind: 'quest', icon: q.icon || '📜', text: q.text }); }
     });
   });
 }
@@ -401,6 +461,7 @@ function onRound(e) {
   if (o.hiloSteps) Q.hiloBest = Math.max(Q.hiloBest || 0, o.hiloSteps);
   e.opt = o;
   progress(e);
+  checkMiles();
 }
 
 /* Ältere Spielstände: bisherige Runden einmalig als Erfahrung und Statistik anrechnen (ohne Banner) */
@@ -615,7 +676,9 @@ function renderQuests(body) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(questView === x[0]), onclick: function () { questView = x[0]; V.Snd.click(); V.side.refresh(); } },
       x[1], x[2] ? el('span', { class: 'qcount', text: String(x[2]) }) : null));
   });
-  body.appendChild(seg);
+  var total = questClaimable();
+  body.appendChild(el('div', { class: 'q-top' }, seg,
+    total ? el('button', { class: 'btn gold sm', type: 'button', text: 'Alles abholen (' + total + ')', onclick: claimAll }) : null));
   if (questView === 'miles') renderMiles(body); else renderQuestList(body, questView);
 }
 
@@ -631,7 +694,7 @@ function tick() {
 }
 
 return {
-  perk: perk, onRound: onRound, migrate: migrate, event: function (e) { progress(e); }, addXp: addXp, xpFor: xpFor, badges: badges, tick: tick, ensureQuests: ensureQuests,
+  perk: perk, onRound: onRound, notify: notify, claimAll: claimAll, migrate: migrate, event: function (e) { progress(e); }, addXp: addXp, xpFor: xpFor, badges: badges, tick: tick, ensureQuests: ensureQuests,
   pointsFree: pointsFree, worth: worth, perHour: perHour, isEmpire: isEmpire,
   tabs: { talente: renderTalente, imperium: renderImperium, quests: renderQuests }
 };

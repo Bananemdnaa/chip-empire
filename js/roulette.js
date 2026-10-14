@@ -79,11 +79,11 @@ function build() {
     cell('n' + n, String(n), E.rColor(n), String(col), String(row), String(3 + (n - 1) % 3), String(1 + Math.ceil(n / 3)));
   }
   cell('c3', '2:1', 'out', '14', '1', '5', '14'); cell('c2', '2:1', 'out', '14', '2', '4', '14'); cell('c1', '2:1', 'out', '14', '3', '3', '14');
-  cell('d1', '1. Dutzend', 'out side', '2 / 6', '4', '1', '2 / 6'); cell('d2', '2. Dutzend', 'out side', '6 / 10', '4', '1', '6 / 10'); cell('d3', '3. Dutzend', 'out side', '10 / 14', '4', '1', '10 / 14');
-  cell('low', '1 – 18', 'out side', '2 / 4', '5', '2', '2 / 4'); cell('even', 'Gerade', 'out side', '4 / 6', '5', '2', '4 / 6');
-  cell('red', { label: 'Rot', html: '<i class="dia red"></i>' }, 'out side', '6 / 8', '5', '2', '6 / 8');
-  cell('black', { label: 'Schwarz', html: '<i class="dia black"></i>' }, 'out side', '8 / 10', '5', '2', '8 / 10');
-  cell('odd', 'Ungerade', 'out side', '10 / 12', '5', '2', '10 / 12'); cell('high', '19 – 36', 'out side', '12 / 14', '5', '2', '12 / 14');
+  cell('d1', '1. Dutzend', 'out rside', '2 / 6', '4', '1', '2 / 6'); cell('d2', '2. Dutzend', 'out rside', '6 / 10', '4', '1', '6 / 10'); cell('d3', '3. Dutzend', 'out rside', '10 / 14', '4', '1', '10 / 14');
+  cell('low', '1 – 18', 'out rside', '2 / 4', '5', '2', '2 / 4'); cell('even', 'Gerade', 'out rside', '4 / 6', '5', '2', '4 / 6');
+  cell('red', { label: 'Rot', html: '<i class="dia red"></i>' }, 'out rside', '6 / 8', '5', '2', '6 / 8');
+  cell('black', { label: 'Schwarz', html: '<i class="dia black"></i>' }, 'out rside', '8 / 10', '5', '2', '8 / 10');
+  cell('odd', 'Ungerade', 'out rside', '10 / 12', '5', '2', '10 / 12'); cell('high', '19 – 36', 'out rside', '12 / 14', '5', '2', '12 / 14');
   var scroll = el('div', { class: 'rscroll' }, board);
 
   /* Steuerung */
@@ -222,6 +222,34 @@ function renderHist() {
   hotEl.appendChild(el('span', { class: 'fine', text: 'Beliebt, aber ohne Aussagekraft: Jede Zahl hat jedes Mal dieselbe Chance.' }));
 }
 
+/* Rad und Kugel per Bild-für-Bild-Animation: Die Kugel läuft gegen das Rad, fällt ins Fach
+   und dreht ab dann mit dem Rad aus, bis die Gewinnzahl unter dem Zeiger steht */
+function easeOut(x) { x = Math.min(1, Math.max(0, x)); return 1 - Math.pow(1 - x, 3); }
+function animateSpin(pocket) {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var T = reduce ? 1800 : 5600, TL = T * 0.7;
+  var w0 = wheelAngle, wEnd = Math.ceil(w0 / 360) * 360 + 1440 - pocket;
+  /* Kugel relativ zum Rad: startet, wo sie gerade liegt, und endet nach mindestens fünf Runden im Fach */
+  var r0 = ballAngle - w0, rEnd = pocket + 360 * Math.floor((r0 - pocket) / 360) - 1800;
+  var t0 = performance.now(), dropped = false, landed = false, lastTick = 0;
+  return new Promise(function (done) {
+    function step(now) {
+      var t = now - t0, w = w0 + (wEnd - w0) * easeOut(t / T), r;
+      if (t < TL) r = rEnd + (r0 - rEnd) * Math.pow(1 - Math.min(1, t / TL), 2);
+      else r = rEnd + 3 * Math.sin((t - TL) / 70) * Math.exp(-(t - TL) / 160);
+      wheelRot.style.transform = 'rotate(' + w.toFixed(2) + 'deg)';
+      ballOrbit.style.transform = 'rotate(' + (w + r).toFixed(2) + 'deg)';
+      if (!dropped && t >= TL - 550) { dropped = true; ballOrbit.classList.add('drop'); }
+      if (!landed && t >= TL) { landed = true; V.Snd.chip(); }
+      /* Klackern wird langsamer, je langsamer die Kugel läuft */
+      if (t < TL && now - lastTick > 70 + 380 * easeOut(t / TL)) { V.Snd.tick(); lastTick = now; }
+      if (t < T) V.frame(step);
+      else { wheelAngle = wEnd; ballAngle = wEnd + rEnd; done(); }
+    }
+    V.frame(step);
+  });
+}
+
 async function spin() {
   if (spinning || resolving) return;
   var t = sum(bets);
@@ -234,14 +262,7 @@ async function spin() {
   msgEl.className = 'slot-msg'; msgEl.textContent = 'Rien ne va plus …';
   resultBadge.textContent = '…'; resultBadge.className = 'result-badge';
   ballOrbit.classList.remove('drop');
-  wheelAngle = Math.ceil(wheelAngle / 360) * 360 + 1800 - (idx + 0.5) * d;
-  ballAngle = Math.floor(ballAngle / 360) * 360 - 2160;
-  wheelRot.style.transform = 'rotate(' + wheelAngle.toFixed(3) + 'deg)';
-  ballOrbit.style.transform = 'rotate(' + ballAngle.toFixed(3) + 'deg)';
-  var tk = setInterval(function () { V.Snd.tick(); }, 180);
-  setTimeout(function () { ballOrbit.classList.add('drop'); }, 3900);
-  await sleep(5300);
-  clearInterval(tk);
+  await animateSpin((idx + 0.5) * d);
   var res = E.rResolve(bets, n);
   /* Talent La Partage: bei Zero die Hälfte der einfachen Chancen zurück */
   var partage = 0;
