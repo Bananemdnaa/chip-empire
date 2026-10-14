@@ -215,7 +215,7 @@ function duels(host) {
         el('div', { class: 'dr-info' }, el('b', { text: txt }), el('span', { class: 'fine' }, gameChip(r.game), ' ' + (r.my_score != null ? 'Dein Ergebnis: ' + fmt(r.my_score) + ' · ' : '') + ago(r.created_at)))));
     });
   }
-  var done = D.list.filter(function (r) { return r.status === 'done' || r.status === 'declined' || r.status === 'expired'; });
+  var done = D.list.filter(function (r) { return r.status === 'done' || r.status === 'declined' || r.status === 'expired' || r.status === 'void'; });
   if (done.length) {
     var seen = seenIds();
     host.appendChild(el('h4', { text: 'Ergebnisse' }));
@@ -231,7 +231,7 @@ function duels(host) {
 function resultRow(r, fresh) {
   if (r.status !== 'done') {
     return el('div', { class: 'duel-row dim' }, el('div', { class: 'dr-ico', text: '–' }),
-      el('div', { class: 'dr-info' }, el('b', { text: (r.opponent || 'Offene Herausforderung') + ': ' + (r.status === 'declined' ? 'abgelehnt' : 'verfallen') }),
+      el('div', { class: 'dr-info' }, el('b', { text: (r.opponent || 'Offene Herausforderung') + ': ' + (r.status === 'declined' ? 'abgelehnt' : r.status === 'void' ? 'vom Team annulliert' : 'verfallen') }),
         el('span', { class: 'fine', text: ago(r.finished_at || r.created_at) })));
   }
   var mine = Number(r.my_score), theirs = Number(r.their_score), d = r.my_delta || 0;

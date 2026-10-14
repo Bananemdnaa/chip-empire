@@ -53,3 +53,22 @@
 .ad-ta { width: 100%; resize: vertical; font: inherit; margin-bottom: 8px; }
 .ad-ann .rrow { justify-content: space-between; }
 .ad-box .announce { margin: 0 0 10px; }
+
+/* Rollen, Notizen, Duelle, Geschenke */
+.ad-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.ad-top .qseg { margin-bottom: 0; }
+.ad-top .fine { margin: 0; display: inline-flex; align-items: center; gap: 6px; }
+.tag.owner { color: #2A1608; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); border-color: var(--gold-hi); font-weight: 700; }
+.ad-locked { margin: 0; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.03); }
+.ad-reason { color: #FF9AAE; }
+.ad-note { display: flex; gap: 6px; padding: 8px 10px; border-radius: 10px; background: rgba(212,171,82,.08); border: 1px dashed var(--gold-lo); font-size: 13.5px; }
+.ad-notebox { display: grid; gap: 6px; }
+.ad-notebox .ad-ta { margin: 0; }
+.ad-ban .name-in { width: 100%; max-width: 480px; }
+.ad-hint { margin: 0 0 10px; }
+.ad-void td { opacity: .5; text-decoration: line-through; }
+.ad-void td:last-child, .ad-void td:nth-last-child(2) { text-decoration: none; }
+.ad-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.ad-field { display: grid; gap: 4px; }
+.ad-field span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ad-field .name-in { width: 100%; }

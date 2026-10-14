@@ -184,6 +184,21 @@ async function startGame(id) {
   V.meta.migrate();
   V.meta.ensureQuests();
   V.hud();
+  /* Geschenke an alle aus dem Admin-Panel: einmal pro Konto, landen im gerade geöffneten Spielstand */
+  if (Store.isAccount() && V.S.mode !== 'sandbox') {
+    Cloud.rpc('gift_claim').then(function (gifts) {
+      if (!gifts || !gifts.length) return;
+      var chips = 0, tp = 0, msg = '';
+      gifts.forEach(function (g) { chips += Number(g.chips) || 0; tp += Number(g.tp) || 0; if (g.message) msg = g.message; });
+      V.S.balance += chips; V.S.bonusTp += tp;
+      V.hud(); V.side.refresh(); V.renderBadges(); V.save();
+      setTimeout(function () {
+        V.Snd.big();
+        V.banner('🎁 Geschenk', [chips ? '+' + V.fmt(chips) + ' Chips' : '', tp ? '+' + tp + ' Talentpunkt' + (tp === 1 ? '' : 'e') : ''].filter(Boolean).join(' und ') + (msg ? '. ' + msg : ''),
+          { kind: 'win', ms: 8000 });
+      }, 1400);
+    }).catch(function () { /* ohne Datenbank-Update oder offline: beim nächsten Start */ });
+  }
   /* Nachricht an alle: einmal pro Nachricht beim Spielstart */
   Cloud.announcement().then(function (a) {
     if (!a || Cloud.annSeen(a.id)) return;
