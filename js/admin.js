@@ -4,9 +4,9 @@ var Admin = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
 var MODES = { career: 'Karriere', empire: 'Imperium', sandbox: 'Sandbox' };
-var ACTIONS = { chips: 'Chips gesetzt', delete_save: 'Spielstand gelöscht', hide: 'Aus Ranglisten genommen', show: 'Wieder in Ranglisten', reset_rating: 'Wertung zurückgesetzt' };
+var ACTIONS = { chips: 'Chips gesetzt', rename_save: 'Spielstand umbenannt', delete_save: 'Spielstand gelöscht', hide: 'Aus Ranglisten genommen', show: 'Wieder in Ranglisten', reset_rating: 'Wertung zurückgesetzt' };
 var is = false, checkedFor = null, listeners = [];
-var view = 'players', q = '', players = null, log = null, err = '', busy = false, timer = 0, seq = 0, confirm = null, rerender = null;
+var view = 'players', q = '', players = null, log = null, err = '', busy = false, timer = 0, seq = 0, confirm = null, rerender = null, renaming = null;
 
 Icons.admin = Icons.admin || '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<path d="M12 2.8l7.5 3v5.6c0 4.6-3.2 8.4-7.5 9.8-4.3-1.4-7.5-5.2-7.5-9.8V5.8z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg>';
@@ -15,7 +15,7 @@ function account() { return Store.isAccount() ? Cloud.current() : null; }
 function emit() { listeners.forEach(function (fn) { try { fn(); } catch (e) { /* */ } }); }
 function when(t) { var d = new Date(t); return isNaN(d) ? '–' : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }
 function tierName(u) { return E.TIERS[Math.max(0, Math.min(5, u || 0))].name; }
-function redraw() { var a = document.activeElement; if (a && a.closest && a.closest('.ad-search')) return; if (rerender) rerender(); }
+function redraw() { var a = document.activeElement; if (a && a.tagName === 'INPUT' && a.closest && a.closest('.ad-search, .ad-rename')) return; if (rerender) rerender(); }
 
 /* Fragt einmal pro Konto nach, ob es Admin ist */
 async function check() {
@@ -96,6 +96,7 @@ function playerCard(p) {
     el('div', { class: 'dr-info' },
       el('b', {}, el('button', { class: 'linkbtn', type: 'button', text: name, onclick: function () { Social.profile(name); } }),
         p.admin ? el('span', { class: 'tag gold', text: 'Admin' }) : null,
+        Store.badName(name) ? el('span', { class: 'tag bad', text: 'Name unzulässig' }) : null,
         p.hidden ? el('span', { class: 'tag warn', text: 'Ausgeblendet' }) : null),
       el('span', { class: 'fine', text: 'Dabei seit ' + when(p.joined) + ' · zuletzt aktiv ' + (p.last ? when(p.last) : '–') + ' · Wertung ' + fmt(p.rating) + ' (' + p.wins + ' S / ' + p.losses + ' N)' })));
   var acts = el('div', { class: 'rrow ad-acts' },
@@ -118,12 +119,32 @@ function saveRow(p, s) {
     act(function () { return Cloud.rpc('admin_set_chips', { sid: s.id, amount: v }); }, s.name + ' von ' + p.username + ': jetzt ' + fmt(v) + ' Chips.');
   }
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter') setTo(input.value); });
+  /* Umbenennen: Feld statt Name, Enter speichert, Esc bricht ab */
+  if (renaming === s.id) {
+    var nameIn = el('input', { class: 'name-in sm', type: 'text', maxlength: '20', value: s.name, 'aria-label': 'Neuer Name für ' + s.name, autocomplete: 'off' });
+    var save = function () {
+      var nn = nameIn.value.trim().replace(/\s+/g, ' ');
+      if (!nn) { nameIn.focus(); return; }
+      if (Store.badName(nn)) { V.toast('Dieser Name ist nicht erlaubt.', 'bad'); nameIn.focus(); return; }
+      renaming = null; nameIn.blur();
+      act(function () { return Cloud.rpc('admin_rename_save', { sid: s.id, new_name: nn }); }, '„' + s.name + '“ heißt jetzt „' + nn + '“.');
+    };
+    nameIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') save(); if (e.key === 'Escape') { e.stopPropagation(); renaming = null; nameIn.blur(); redraw(); } });
+    setTimeout(function () { nameIn.focus(); nameIn.select(); }, 0);
+    return el('div', { class: 'ad-save' },
+      el('div', { class: 'ad-rename' }, nameIn),
+      el('div', { class: 'ad-set' },
+        el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Speichern', onclick: save }),
+        el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { renaming = null; redraw(); } })));
+  }
   var meta = [MODES[s.mode] || s.mode, s.mode === 'sandbox' ? '' : tierName(s.unlocked), s.level ? 'Level ' + s.level : '', 'Umsatz ' + V.short(s.wagered || 0), '⏱ ' + V.clock(s.play_ms || 0), 'gespeichert ' + when(s.updated_at)].filter(Boolean).join(' · ');
   return el('div', { class: 'ad-save' },
-    el('div', { class: 'dr-info' }, el('b', {}, s.name + ' ', el('span', { class: 'num ad-chips', text: fmt(s.chips || 0) + ' Chips' })), el('span', { class: 'fine', text: meta })),
+    el('div', { class: 'dr-info' }, el('b', {}, s.name + ' ', Store.badName(s.name) ? el('span', { class: 'tag bad', text: 'Name unzulässig' }) : null,
+      el('span', { class: 'num ad-chips', text: fmt(s.chips || 0) + ' Chips' })), el('span', { class: 'fine', text: meta })),
     el('div', { class: 'ad-set' },
       input,
       el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Setzen', onclick: function () { setTo(input.value); } }),
+      el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Umbenennen', onclick: function () { renaming = s.id; confirm = null; redraw(); } }),
       sure('del:' + s.id, 'Löschen', 'Wirklich löschen?', function () { act(function () { return Cloud.rpc('admin_delete_save', { sid: s.id }); }, 'Spielstand „' + s.name + '“ von ' + p.username + ' gelöscht.'); })));
 }
 

@@ -40,6 +40,7 @@ function errText(err) {
   if (/email logins are disabled|signups not allowed|provider is not enabled/i.test(m)) return 'Registrierung ist in Supabase noch nicht freigeschaltet (E-Mail-Login aus).';
   if (/email not confirmed/i.test(m)) return 'In Supabase ist „Confirm email“ noch an. Bitte ausschalten.';
   if (/maximal 3/i.test(m)) return 'Du hast schon 3 Spielstände in deinem Konto.';
+  if (/database error saving new user/i.test(m)) return 'Dieser Benutzername ist nicht erlaubt.';
   if (/saves_mode_check|violates check constraint/i.test(m)) return 'Für den Imperium-Modus fehlt noch das Datenbank-Update (SQL in Supabase ausführen).';
   if (/failed to fetch|network/i.test(m)) return 'Keine Verbindung zum Server.';
   if (/could not find the (function|table)|schema cache|does not exist/i.test(m)) return 'Die Datenbank ist noch nicht eingerichtet.';
@@ -50,6 +51,7 @@ function check(r) { if (r.error) throw new Error(errText(r.error)); return r.dat
 async function signUp(name, pw) {
   var u = cleanName(name);
   if (!NAME_RE.test(u)) throw new Error('Benutzername: 3 bis 16 Zeichen, nur a–z, 0–9, _ und -.');
+  if (Store.badName(u)) throw new Error('Dieser Benutzername ist nicht erlaubt.');
   if (String(pw).length < 6) throw new Error('Das Passwort ist zu kurz (mindestens 6 Zeichen).');
   var data = check(await sb.auth.signUp({ email: u + '@' + MAIL_DOMAIN, password: pw, options: { data: { username: u } } }));
   if (!data.session) throw new Error('Konto angelegt, aber in Supabase ist „Confirm email“ noch an. Bitte ausschalten, dann einloggen.');
@@ -106,6 +108,7 @@ async function syncAll() {
   Store.list().forEach(function (s) { if (s.cloud && !seen[s.id]) Store.remove(s.id); });
 }
 async function createSave(name, mode, state) {
+  if (Store.badName(name)) { if (!state) throw new Error('Dieser Name ist nicht erlaubt.'); name = 'Spielstand'; }
   var row = { name: name, mode: mode, state: state || null };
   if (state) Object.assign(row, columns(state));
   var r = check(await sb.from('saves').insert(row).select('id,name,mode,state,rev,created_at,updated_at').single());

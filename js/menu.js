@@ -236,6 +236,7 @@ function newForm() {
   });
   function create() {
     var name = input.value.trim().replace(/\s+/g, ' ').slice(0, 20) || 'Spielstand ' + (Store.list().length + 1);
+    if (Store.badName(name)) { V.toast('Dieser Name ist nicht erlaubt. Bitte wähl einen anderen.', 'bad'); input.focus(); return; }
     if (account()) {
       run('Lege Spielstand an …', async function () { var s = await Cloud.createSave(name, newMode); view = 'slots'; onStart(s.id); });
       return;

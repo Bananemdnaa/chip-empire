@@ -16,6 +16,19 @@ var MODES = {
 var ns = GUEST, broken = false;
 var hooks = { put: null };
 
+/* Namensfilter: dieselbe Liste und Vereinheitlichung wie public.bad_name in der Datenbank
+   (supabase/migrations/20261019000000_name_filter.sql). Bei Änderungen beide Stellen anpassen. */
+var BAD_WORDS = ['nigger', 'nigga', 'neger', 'kanake', 'kanacke', 'zigeuner', 'schwuchtel', 'faggot', 'tranny', 'chink', 'wetback',
+  'retard', 'spast', 'missgeburt', 'judensau', 'hitler', 'siegheil', 'nazi',
+  'hurensohn', 'hure', 'whore', 'nutte', 'fotze', 'cunt', 'wichser', 'arschloch', 'schlampe', 'bitch', 'slut',
+  'fuck', 'fick', 'porno', 'penis'];
+var BAD_RE = BAD_WORDS.map(function (w) { return new RegExp(w.split('').map(function (c) { return c + '+'; }).join('')); });
+var LEET = { 'ä': 'a', 'ö': 'o', 'ü': 'u', '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '@': 'a', '$': 's', '!': 'i', '|': 'i' };
+function badName(n) {
+  var s = String(n || '').toLowerCase().replace(/ß/g, 'ss').replace(/./g, function (c) { return LEET[c] || c; }).replace(/[^a-z]/g, '');
+  return BAD_RE.some(function (re) { return re.test(s); });
+}
+
 function now() { return Date.now(); }
 function uid() { return 's' + now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
 
@@ -129,7 +142,7 @@ function setActive(id) {
 }
 
 return {
-  MAX_SLOTS: MAX_SLOTS, MODES: MODES, summary: summary, hooks: hooks,
+  MAX_SLOTS: MAX_SLOTS, MODES: MODES, summary: summary, hooks: hooks, badName: badName,
   list: list, guestList: guestList, get: get, create: create, put: put, upsert: upsert, patch: patch,
   remove: remove, removeGuest: removeGuest,
   useAccount: useAccount, dropAccount: dropAccount, key: key, isAccount: isAccount,

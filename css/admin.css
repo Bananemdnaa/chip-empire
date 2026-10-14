@@ -26,3 +26,6 @@
   .ad-amt { flex: 1 1 8em; }
 }
 .ad-log th, .ad-log td { text-align: left; }
+
+.tag.bad { color: #FF9AAE; border-color: rgba(255,106,136,.5); }
+.ad-rename .name-in { width: 100%; max-width: 320px; }
