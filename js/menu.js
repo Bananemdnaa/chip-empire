@@ -3,7 +3,7 @@ var Menu = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
 var root, inner, body, navEl, onStart, view = 'slots', confirmDel = null, newMode = 'career';
-var status = '', busy = false, board = null, boardErr = '', boardMode = 'career', pollTimer = 0;
+var status = '', busy = false, board = null, boardErr = '', boardMode = 'season', pollTimer = 0;
 var CHIP_COLORS = ['#8E0E2B', '#1E5E8E', '#1A1418', '#5B2A8E', '#C79A3A', '#0F6A4A'];
 var SECTION_KEY = 'chip-empire-menu-section';
 /* Bereiche der Navigation; online: nur mit Server, cnt: Zähler für offene Dinge */
@@ -329,21 +329,24 @@ function playSection() {
 
 /* ---------- Ranglisten mit Treppchen ---------- */
 var BOARD_TEXT = {
-  career: 'Karriere-Spielstände nach Chips.',
+  career: 'Karriere-Spielstände nach Legenden-Sternen, dann nach Chips.',
+  season: 'Gewinn aus allen Runden seit Montag, nur Karriere. Jeden Montag beginnt eine neue Woche. Die Top 10 bekommen Talentpunkte, Platz 1 bis 3 am meisten.',
   empire: 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).',
   duel: 'Elo-Wertung aus allen Duellen. Der Kontostand spielt keine Rolle.'
 };
+function starTag(r) { return r.stars > 0 ? '★' + (r.stars > 1 ? r.stars : '') + ' ' : ''; }
+function amtText(r) { return boardMode === 'season' ? (r.balance > 0 ? '+' : r.balance < 0 ? '−' : '±') + fmt(Math.abs(r.balance)) : fmt(r.balance); }
 function boardBox() {
   var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' });
   var seg = el('div', { class: 'qseg board-seg', role: 'tablist' });
-  [['career', 'Karriere'], ['empire', 'Imperium'], ['duel', 'Duelle']].forEach(function (x) {
+  [['season', 'Woche'], ['career', 'Karriere'], ['empire', 'Imperium'], ['duel', 'Duelle']].forEach(function (x) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(boardMode === x[0]), text: x[1],
       onclick: function () { if (boardMode === x[0]) return; boardMode = x[0]; board = null; boardErr = ''; V.Snd.click(); render(); loadBoard(); } }));
   });
   box.appendChild(seg);
   if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return box; }
   if (!board) { box.appendChild(el('p', { class: 'fine', text: 'Lade …' })); return box; }
-  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
+  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : boardMode === 'season' ? 'Diese Woche hat noch niemand gespielt. Deine erste Runde bringt dich auf Platz 1.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
   var me = account(), myName = me ? me.username : null;
   var pod = el('div', { class: 'podium' });
   [1, 0, 2].forEach(function (i) {
@@ -352,8 +355,8 @@ function boardBox() {
     pod.appendChild(el('div', { class: 'pod p' + (i + 1) + (r.username === myName ? ' me' : '') },
       i === 0 ? el('span', { class: 'crown', html: Icons.crown }) : null,
       el('span', { class: 'medal', text: String(i + 1) }),
-      el('button', { class: 'who linkbtn', type: 'button', text: r.username, title: 'Profil ansehen', onclick: function () { Social.profile(r.username); } }),
-      el('span', { class: 'amt', text: fmt(r.balance) }),
+      el('button', { class: 'who linkbtn', type: 'button', text: starTag(r) + r.username, title: 'Profil ansehen', onclick: function () { Social.profile(r.username); } }),
+      el('span', { class: 'amt', text: amtText(r) }),
       el('span', { class: 'step' })));
   });
   box.appendChild(pod);
@@ -362,9 +365,9 @@ function boardBox() {
     board.slice(3).forEach(function (r, k) {
       ol.appendChild(el('li', { class: r.username === myName ? 'me' : '' },
         el('span', { class: 'rk', text: String(k + 4) }),
-        el('span', { class: 'nm' }, el('button', { class: 'linkbtn', type: 'button', text: r.username, title: 'Profil ansehen', onclick: function () { Social.profile(r.username); } }),
-          el('small', { text: boardMode === 'duel' ? ' · ' + r.wins + ' S / ' + r.losses + ' N' : ' · ' + E.TIERS[Math.min(5, r.unlocked || 0)].name })),
-        el('span', { class: 'am', text: fmt(r.balance) })));
+        el('span', { class: 'nm' }, el('button', { class: 'linkbtn', type: 'button', text: starTag(r) + r.username, title: 'Profil ansehen', onclick: function () { Social.profile(r.username); } }),
+          el('small', { text: boardMode === 'duel' ? ' · ' + r.wins + ' S / ' + r.losses + ' N' : boardMode === 'season' ? ' · ' + r.rounds + ' Runden · bester Treffer ' + fmt(r.best || 0) : ' · ' + E.TIERS[Math.min(5, r.unlocked || 0)].name })),
+        el('span', { class: 'am' + (boardMode === 'season' ? (r.balance >= 0 ? ' pos' : ' neg') : ''), text: amtText(r) })));
     });
     box.appendChild(ol);
   }
@@ -376,6 +379,8 @@ function loadBoard() {
   var mode = boardMode;
   var req = mode === 'duel'
     ? Cloud.rpc('duel_board', { lim: 20 }).then(function (rows) { return (rows || []).map(function (r) { return Object.assign({ balance: r.rating }, r); }); })
+    : mode === 'season'
+    ? Cloud.seasonBoard(20, V.legend.mondayKey()).then(function (rows) { return (rows || []).map(function (r) { return Object.assign({ balance: Number(r.net) || 0 }, r); }); })
     : Cloud.leaderboard(20, mode);
   req.then(function (rows) { if (mode !== boardMode) return; board = rows; boardErr = ''; if (section === 'ranks') renderBody(); })
     .catch(function (e) { if (mode !== boardMode) return; boardErr = mode !== 'career' ? 'Diese Bestenliste braucht noch das Datenbank-Update.' : 'Bestenliste nicht verfügbar: ' + (e.message || e); if (section === 'ranks') renderBody(); });

@@ -168,6 +168,7 @@ async function startGame(id) {
   V.games.forEach(function (g) { g.init(); });
   V.side.build();
   V.track.init();
+  V.legend.init();
   renderSideNav();
   $('#drawerClose').addEventListener('click', closeSide);
   $('#drawer').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSide(); });

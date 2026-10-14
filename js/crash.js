@@ -3,6 +3,8 @@
 'use strict';
 var E = V.E, el = V.el, fmt = V.fmt, fmtX = V.fmtX;
 
+/* Auszahlen erst ab 1,20×: Sonst gewinnt man mit 1,01× fast jede Runde und Crash wird zur sicheren Umsatzmaschine */
+var MIN_CASH = 1.2;
 var root, canvas, ctx, multEl, subEl, histEl, betCtl, goBtn, autoIn, autoChk, msgEl;
 var running = false, cashed = false, cp = 1, t0 = 0, raf = 0, bet = 0, cashAt = 0, curM = 1, curT = 0, crashedAt = 0;
 var colors = {};
@@ -22,7 +24,7 @@ function build() {
 
   betCtl = V.betControl('crash');
   autoChk = el('input', { type: 'checkbox', id: 'crashAutoChk', checked: !!V.S.crashAutoOn });
-  autoIn = el('input', { type: 'number', id: 'crashAuto', min: '1.01', max: '10000', step: '0.01', value: V.S.crashAuto || '2.00', inputmode: 'decimal' });
+  autoIn = el('input', { type: 'number', id: 'crashAuto', min: '1.20', max: '10000', step: '0.01', value: V.S.crashAuto || '2.00', inputmode: 'decimal' });
   function keepAuto() { V.S.crashAutoOn = autoChk.checked; V.S.crashAuto = String(autoIn.value || '2.00'); V.save(); }
   autoChk.addEventListener('change', keepAuto); autoIn.addEventListener('change', keepAuto);
   var autoRow = el('label', { class: 'autorow', for: 'crashAutoChk' }, autoChk, el('span', { text: 'Auto-Auszahlen bei' }), autoIn, el('span', { text: '×' }));
@@ -30,7 +32,7 @@ function build() {
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
   root.appendChild(stage); root.appendChild(histEl); root.appendChild(msgEl);
   root.appendChild(el('div', { class: 'controls' }, betCtl.el, el('div', { class: 'spinbox' }, goBtn, autoRow)));
-  root.appendChild(el('p', { class: 'fine', text: 'Der Multiplikator steigt, bis er an einem zufälligen Punkt abstürzt. Zahlst du vorher aus, bekommst du Einsatz × Multiplikator. Hausvorteil 1 %: Die Chance, 2,00× zu erreichen, liegt bei 49,5 %, für 10× bei 9,9 %.' }));
+  root.appendChild(el('p', { class: 'fine', text: 'Der Multiplikator steigt, bis er an einem zufälligen Punkt abstürzt. Zahlst du vorher aus, bekommst du Einsatz × Multiplikator. Auszahlen geht erst ab 1,20×, vorher stürzt die Rakete in etwa jeder sechsten Runde ab. Hausvorteil 1 %: Die Chance, 2,00× zu erreichen, liegt bei 49,5 %, für 10× bei 9,9 %.' }));
   V.busyFns.push(function () { return running; });
   window.addEventListener('resize', function () { size(); draw(); });
   readColors(); renderHist(); renderBtn();
@@ -47,13 +49,14 @@ function size() {
 function autoVal() {
   if (!autoChk.checked) return 0;
   var v = parseFloat(String(autoIn.value).replace(',', '.'));
-  if (!isFinite(v) || v < 1.01) return 0;
-  return Math.floor(v * 100) / 100;
+  if (!isFinite(v)) return 0;
+  return Math.max(MIN_CASH, Math.floor(v * 100) / 100);
 }
 
 function renderBtn() {
   var lb = goBtn.firstChild;
   if (!running) { lb.textContent = 'Einsteigen · ' + fmt(V.S.bets.crash); goBtn.disabled = false; goBtn.classList.remove('cash'); }
+  else if (!cashed && curM < MIN_CASH) { lb.textContent = 'Auszahlen ab ' + fmtX(MIN_CASH); goBtn.disabled = true; goBtn.classList.remove('cash'); }
   else if (!cashed) { lb.textContent = 'Auszahlen · ' + fmt(Math.floor(bet * Math.floor(curM * 100) / 100)); goBtn.disabled = false; goBtn.classList.add('cash'); }
   else { lb.textContent = 'Überspringen'; goBtn.disabled = false; goBtn.classList.remove('cash'); }
   betCtl.disable(running);
@@ -130,7 +133,7 @@ function hexA(c, a) {
 function onGo() {
   V.Snd.ensure();
   if (!running) start();
-  else if (!cashed) cashout(Math.floor(curM * 100) / 100);
+  else if (!cashed) { if (curM >= MIN_CASH) cashout(Math.floor(curM * 100) / 100); }
   else finish();
 }
 
@@ -166,7 +169,7 @@ function loop(now) {
 }
 
 function cashout(at) {
-  if (!running || cashed || at > cp) return;
+  if (!running || cashed || at > cp || at < MIN_CASH) return;
   cashed = true; cashAt = at;
   var ret = Math.floor(bet * at);
   V.settle('crash', bet, ret, { mult: at });

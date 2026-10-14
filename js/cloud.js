@@ -194,6 +194,12 @@ async function leaderboard(n, mode) {
   return check(r) || [];
 }
 
+/* Wochenwertung: Gewinn seit Montag, nur Karriere */
+async function seasonBoard(n, wk) {
+  if (!sb) return [];
+  return check(await sb.rpc('season_board', { lim: n || 20, wk: wk })) || [];
+}
+
 /* ---------- Nachricht an alle (vom Admin-Panel) ---------- */
 var ANN_SEEN = 'chip-empire-ann-seen';
 async function announcement() {
@@ -212,7 +218,7 @@ async function rpc(name, args) {
 return {
   rpc: rpc, announcement: announcement, annSeen: annSeen, annMarkSeen: annMarkSeen,
   available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut, deleteAccount: deleteAccount,
-  syncAll: syncAll, createSave: createSave, deleteSave: deleteSave, flush: flush, flushOnLeave: flushOnLeave, leaderboard: leaderboard,
+  syncAll: syncAll, createSave: createSave, deleteSave: deleteSave, flush: flush, flushOnLeave: flushOnLeave, leaderboard: leaderboard, seasonBoard: seasonBoard,
   onConflict: function (cb) { conflictCb = cb; }, hasFailed: function () { return failed; }, NAME_RE: NAME_RE
 };
 })();

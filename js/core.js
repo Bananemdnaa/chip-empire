@@ -61,7 +61,8 @@ var GAME_LIST = [
   { id: 'crash', name: 'Crash', tier: 2, edge: 0.01, cat: 'thrill' },
   { id: 'tower', name: 'Dragon Tower', short: 'Tower', tier: 2, edge: 0.03, cat: 'thrill' },
   { id: 'bj', name: 'Blackjack', tier: 3, edge: 0.005, cat: 'strat' },
-  { id: 'poker', name: 'Video-Poker', short: 'Poker', tier: 3, edge: 0.02, cat: 'strat' }
+  { id: 'hilo', name: 'Hi-Lo-Leiter', short: 'Hi-Lo', tier: 3, edge: 0.04, cat: 'thrill' },
+  { id: 'vault', name: 'Tresorknacker', short: 'Tresor', tier: 4, edge: 0.03, cat: 'thrill' }
 ];
 var GAME_TIER = {}, GAME_NAME = {}, GAME_BY = {};
 GAME_LIST.forEach(function (g) { GAME_TIER[g.id] = g.tier; GAME_NAME[g.id] = g.name; GAME_BY[g.id] = g; });
@@ -80,8 +81,9 @@ function fresh(mode) {
     bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0,
     xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0,
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
-    qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, pokerGood: 0, miles: {}, init: 0 },
-    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid'
+    qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, vaultBig: 0, hiloBest: 0, miles: {}, init: 0 },
+    turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3,
+    stars: 0, season: { key: '', net: 0, best: 0, rounds: 0 }, seasonPrev: { key: '', net: 0, best: 0, rounds: 0 }, seasonClaimed: '', trophies: 0
   };
 }
 var S = fresh('career');
@@ -155,10 +157,10 @@ function refund(n) { S.balance += n; S.escrow -= n; }
 /* ---------- Karriere: Freischaltungen, Notgroschen, Tagesbonus ---------- */
 /* Karriere-Regeln gelten auch im Imperium-Modus */
 function isCareer() { return S.mode !== 'sandbox'; }
-function gameOpen(id) { return !isCareer() || S.unlocked >= GAME_TIER[id]; }
+function gameOpen(id) { return GAME_TIER.hasOwnProperty(id) && (!isCareer() || S.unlocked >= GAME_TIER[id]); }
 function gamesAt(t) { return Object.keys(GAME_TIER).filter(function (g) { return GAME_TIER[g] === t; }); }
 function isBroke() { return S.balance + S.escrow < E.TIERS[0].min; }
-function bailoutAmt() { return E.TIERS[S.unlocked].min * CAREER.bailoutMult; }
+function bailoutAmt() { return E.TIERS[S.unlocked].min * CAREER.bailoutMult * (1 + perk('legBail')); }
 function perk(id) { return V.meta ? V.meta.perk(id) : 0; }
 function cooldown() { return CAREER.bailoutCooldown - perk('rescue'); }
 function bailoutWait() { return Math.max(0, S.bailoutAt + cooldown() - Date.now()); }
@@ -172,7 +174,7 @@ function bailout() {
 function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
 function dailyAvailable() { return isCareer() && S.dailyLast !== dayKey(Date.now()); }
 function dailyStreakNext() { return S.dailyLast === dayKey(Date.now() - 864e5) ? S.dailyStreak + 1 : 1; }
-function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1)) * (1 + perk('daily'))); }
+function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1)) * (1 + perk('daily') + perk('legDaily'))); }
 function claimDaily() {
   if (!dailyAvailable()) return;
   var streak = dailyStreakNext(), amt = dailyAmt(streak);
@@ -239,6 +241,8 @@ var Snd = (function () {
     lose: function () { tone(196, 0.22, 'sawtooth', 0.03); tone(147, 0.3, 'sawtooth', 0.03, 0.12); },
     crash: function () { tone(150, 0.4, 'sawtooth', 0.07); tone(90, 0.5, 'square', 0.05, 0.05); },
     cash: function () { tone(880, 0.12, 'triangle', 0.06); tone(1175, 0.2, 'triangle', 0.06, 0.09); },
+    /* Jede weitere Stufe einen Halbton höher: die Spannung steigt hörbar */
+    step: function (k) { var f = 392 * Math.pow(2, Math.min(k, 30) / 12); tone(f, 0.14, 'triangle', 0.05); tone(f * 1.5, 0.12, 'sine', 0.025, 0.05); },
     unlock: function () { [392, 523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.25, 'triangle', 0.06, i * 0.1); }); },
     ensure: ensure
   };
@@ -392,7 +396,8 @@ function settle(game, staked, ret, opt) {
   if (staked > 0) {
     S.wagered += staked; S.rounds++;
     var g = S.gst[game]; g.r++; g.w += staked; g.ret += ret;
-    S.comps += staked * room().comp * compMult() * (1 + perk('comps'));
+    /* Jeder Legenden-Stern: +5 % Comps (bis 5 Sterne) */
+    S.comps += staked * GAME_BY[game].edge * room().comp * compMult() * (1 + perk('comps') + 0.05 * Math.min(5, S.stars));
     S.hist.push({ g: game, bet: staked, ret: ret, bal: before }); if (S.hist.length > 80) S.hist.shift();
     S.series.push(Math.round(S.balance + S.escrow)); if (S.series.length > 400) S.series.shift();
     addAff(0.2);
@@ -420,6 +425,7 @@ function settle(game, staked, ret, opt) {
   }
   if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt, prevLoss: prevLoss, atMax: staked > 0 && staked >= room().max });
   if (V.track) V.track.round(game, staked, ret);
+  if (V.legend) V.legend.round(staked, ret);
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
 }
@@ -477,7 +483,7 @@ function renderTier() {
   var T = room(), U = E.TIERS[S.unlocked];
   $('#app').setAttribute('data-tier', String(S.room));
   $('#tierName').textContent = T.name;
-  $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %';
+  $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils';
   var badge = $('#tierBadge');
   if (badge) { badge.setAttribute('data-tier', String(S.unlocked)); badge.textContent = RANK[S.unlocked]; badge.title = 'Deine Stufe: ' + U.name; }
   if ($('#roomName')) $('#roomName').textContent = T.name;

@@ -109,3 +109,34 @@
 @media (prefers-reduced-motion: reduce) {
   .bal-fly { animation-duration: 1.6s !important; }
 }
+
+/* ---------- Legende ---------- */
+.stars { flex: none; margin-left: -2px; font: 700 12px/1 var(--f-mono); color: #D9C2FF !important; letter-spacing: 0 !important; text-shadow: 0 0 8px rgba(185,138,255,.8); }
+.legend-box { display: grid; gap: 8px; margin-bottom: 16px; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(185,138,255,.45);
+  background: radial-gradient(120% 120% at 0% 0%, rgba(185,138,255,.18), rgba(0,0,0,.25) 60%); }
+.legend-box.ready { border-color: #D9C2FF; box-shadow: 0 0 0 1px rgba(217,194,255,.4), 0 0 30px rgba(185,138,255,.25); }
+.legend-box .mbar i { background: linear-gradient(90deg, #6B3FB8, #D9C2FF); box-shadow: 0 0 10px rgba(185,138,255,.6); }
+.legend-box > .btn { justify-self: start; }
+.legend-box .fine { margin: 0; }
+.lg-h { display: flex; align-items: center; gap: 12px; }
+.lg-h b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 21px; color: #E8DAFF; }
+.lg-h small { color: var(--muted); font-size: 12.5px; }
+.lg-stars { flex: none; min-width: 46px; height: 46px; padding: 0 8px; border-radius: 999px; display: grid; place-items: center; font-size: 20px; color: #fff;
+  background: radial-gradient(circle at 35% 30%, #D9C2FF, #7A4FCF 55%, #3A1F6A); box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 0 18px rgba(185,138,255,.6); }
+.lg-list { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; color: var(--ivory); }
+.tbranch.legend { grid-column: 1 / -1; }
+.tbranch.legend .tpath { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 6px 0; }
+.tbranch.legend .tlink { width: 22px; height: 4px; margin-top: 30px; }
+.tbranch.legend .tnode { width: 104px; }
+.sess-pop .sp-week { margin-top: 8px; }
+
+/* Name bleibt sichtbar, der Raumname wird zuerst gekürzt */
+.hud-pname b { flex: 0 1 auto; min-width: 4ch; }
+#tierName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) {
+  /* Kontostand über zwei Spalten, damit Comps in der zweiten Zeile genug Platz haben */
+  .hud { grid-template-areas: "logo player bal bal" "comp comp reload snd"; }
+  .comp-box { min-width: 0; overflow: hidden; }
+  #tierName { display: none; }
+}
+.vt-board { max-width: 620px; justify-self: center; width: 100%; }

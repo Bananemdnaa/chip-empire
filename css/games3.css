@@ -1,0 +1,101 @@
+/* Chip Empire – Spiele mit Steigerung: Tresorknacker, Hi-Lo-Leiter */
+
+#g-vault.game, #g-hilo.game { background: radial-gradient(120% 90% at 50% 0%, #2A1420, #12070B 75%); }
+
+/* gemeinsam: großer Multiplikator, der mit jedem Treffer springt */
+.vt-mult, .hl-mult { font: 600 clamp(30px, 5vw, 44px)/1 var(--f-mono); color: var(--ivory); text-shadow: 0 4px 18px rgba(0,0,0,.6); transition: color .3s, text-shadow .3s; }
+.vt-mult.hot, .hl-mult.hot { color: var(--gold-hi); text-shadow: 0 0 22px rgba(242,214,142,.55), 0 4px 18px rgba(0,0,0,.6); }
+.vt-mult.bump, .hl-mult.bump { animation: multBump .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes multBump { 30% { transform: scale(1.22); } }
+.shake { animation: hardShake .5s; }
+@keyframes hardShake { 15%, 55% { transform: translateX(-8px) rotate(-.6deg); } 35%, 75% { transform: translateX(8px) rotate(.6deg); } }
+
+/* ---------- Tresorknacker ---------- */
+.vt-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+.vt-board { --heat: 0; position: relative; padding: 14px; border-radius: 20px;
+  background: linear-gradient(180deg, #2A2A30, #121216 70%); border: 3px solid #5E5E66;
+  box-shadow: inset 0 0 0 2px #1A1A1E, inset 0 2px 0 rgba(255,255,255,.12), 0 24px 50px rgba(0,0,0,.6),
+    0 0 calc(var(--heat) * 60px) rgba(242,180,80, calc(var(--heat) * .55)); transition: box-shadow .5s; }
+.vt-board::before { content: ""; position: absolute; inset: 6px; border-radius: 14px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0 2px, transparent 2px 5px); }
+.vt-top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin: 0 4px 12px; }
+.vt-next { font-size: 13px; color: var(--muted); }
+.vt-grid { --heat: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.vt-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 10px; cursor: pointer; padding: 0; display: grid; place-items: center;
+  border: 1px solid #6E6E78; color: var(--ivory);
+  background: radial-gradient(circle at 50% 50%, transparent 0 18%, rgba(0,0,0,.25) 19% 22%, transparent 23%), linear-gradient(160deg, #5A5A64, #34343C 60%, #26262C);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.35), 0 4px 8px rgba(0,0,0,.4);
+  transition: transform .12s, box-shadow .2s, background .25s; }
+.vt-cell::after { content: ""; position: absolute; right: 12%; top: 50%; width: 9%; height: 24%; margin-top: -12%; border-radius: 3px; background: linear-gradient(180deg, #C9C9D2, #7A7A84); }
+.vt-cell:not(:disabled):hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 0 2px var(--gold), 0 8px 16px rgba(0,0,0,.45); }
+.vt-cell:disabled { cursor: default; }
+.vt-face { position: relative; z-index: 1; font-size: clamp(20px, 4vw, 34px); line-height: 1; }
+.vt-cell.safe { background: radial-gradient(circle at 50% 40%, #FFF3C9, var(--gold) 55%, var(--gold-lo)); border-color: var(--gold-hi);
+  box-shadow: 0 0 0 2px rgba(242,214,142,.4), 0 0 18px rgba(242,214,142,.55); animation: cellOpen .4s cubic-bezier(.2,1.5,.4,1); }
+.vt-cell.safe::after, .vt-cell.alarm::after, .vt-cell.miss::after { content: none; }
+.vt-cell.alarm { background: radial-gradient(circle, #FF5A6E, #8E0E2B 70%); border-color: #FF8A9A; }
+.vt-cell.alarm.hit { box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(255,60,90,.9); animation: alarmFlash .35s 4 alternate; }
+.vt-cell.miss { background: linear-gradient(160deg, #3A3A42, #222228); opacity: .55; }
+@keyframes cellOpen { 0% { transform: scale(.7) rotateY(90deg); } 100% { transform: none; } }
+@keyframes alarmFlash { to { filter: brightness(1.6); } }
+.vt-side { display: grid; gap: 10px; align-content: start; }
+.vt-side .btn.big { min-width: 0; width: 100%; }
+.vt-side .chipbtn.on { background: var(--gold); color: #2A1608; border-color: var(--gold-hi); }
+
+/* ---------- Hi-Lo-Leiter ---------- */
+.hl-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.hl-table { display: grid; justify-items: center; gap: 12px; padding: 22px 14px 16px; border-radius: 22px;
+  background: radial-gradient(ellipse 80% 70% at 50% 30%, #1B8A60, #0F5A3E 55%, #083A27);
+  box-shadow: 0 0 0 10px #4A2410, 0 0 0 11px var(--gold-lo), inset 0 0 70px rgba(0,0,0,.5), 0 24px 50px rgba(0,0,0,.55); margin: 10px; }
+.hl-stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 14px; width: 100%; max-width: 560px; }
+.hl-center { display: grid; justify-items: center; gap: 10px; }
+.hl-card .pcard { width: 110px; height: 154px; border-radius: 12px; }
+.hl-card .pcard .cr { font-size: 24px; left: 9px; top: 8px; } .hl-card .pcard .cs { font-size: 20px; left: 10px; top: 36px; }
+.hl-card .pcard .cmid { font-size: 56px; } .hl-card .pcard .cbr b { font-size: 24px; } .hl-card .pcard .cbr i { font-size: 20px; } .hl-card .pcard .cbr { right: 9px; bottom: 8px; }
+.hl-card .pcard.deal { animation: flipIn .35s ease-out; }
+@keyframes flipIn { from { transform: rotateY(90deg) scale(.9); } to { transform: none; } }
+.hl-guess { display: grid; justify-items: center; gap: 3px; padding: 16px 8px; border-radius: 16px; cursor: pointer; color: #fff;
+  border: 2px solid rgba(255,255,255,.35); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 8px 18px rgba(0,0,0,.4); transition: transform .1s, filter .2s; }
+.hl-guess.hi { background: linear-gradient(180deg, #2FB37E, #157552); }
+.hl-guess.lo { background: linear-gradient(180deg, #D9364F, #8E0E2B); }
+.hl-guess:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+.hl-guess:disabled { opacity: .4; cursor: default; }
+.hl-guess b { font-size: 17px; }
+.hl-guess small { font: 600 12.5px var(--f-mono); opacity: .9; }
+.hl-side { display: grid; gap: 10px; align-content: start; }
+.hl-side .btn.big { min-width: 0; width: 100%; }
+.hl-ladder { list-style: none; margin: 0; padding: 6px; display: grid; gap: 3px; max-height: 330px; overflow-y: auto; border-radius: 12px; background: rgba(0,0,0,.3); border: 1px solid var(--line); scrollbar-width: thin; }
+.hl-rung { display: grid; grid-template-columns: 2em 3em minmax(0, 1fr); align-items: center; gap: 6px; padding: 3px 8px; border-radius: 8px; font-size: 13px; color: var(--muted);
+  border: 1px solid transparent; }
+.hl-rung .hl-no { font: 600 11px var(--f-mono); }
+.hl-rung .hl-c { font-weight: 700; color: var(--ivory); }
+.hl-rung b { font: 600 13px var(--f-mono); text-align: right; color: var(--gold-hi); }
+.hl-rung.done { background: rgba(111,211,162,.12); color: var(--good); }
+.hl-rung.next { border-color: var(--gold); background: rgba(212,171,82,.1); animation: rungPulse 1.2s ease-in-out infinite; }
+.hl-rung.fail { background: rgba(196,32,63,.25); color: #FF8A7A; }
+@keyframes rungPulse { 50% { box-shadow: 0 0 12px rgba(242,214,142,.4); } }
+
+@media (max-width: 980px) {
+  .vt-layout, .hl-layout { grid-template-columns: minmax(0, 1fr); }
+  .hl-ladder { max-height: 180px; }
+}
+@media (max-width: 720px) {
+  .vt-board { padding: 10px; }
+  .vt-grid { gap: 6px; }
+  .hl-table { margin: 6px 4px; padding: 16px 8px 12px; }
+  .hl-stage { gap: 8px; }
+  .hl-card .pcard { width: 84px; height: 118px; }
+  .hl-card .pcard .cmid { font-size: 40px; }
+  .hl-guess { padding: 12px 4px; }
+  .hl-guess b { font-size: 15px; }
+  .hl-guess small { font-size: 11px; }
+}
+
+/* ---------- Dragon Tower: Goldfelder und Drachenhort ---------- */
+.tw-tile.gold { background: radial-gradient(circle at 50% 40%, #FFF3C9, var(--gold) 55%, var(--gold-lo)) !important; border-color: var(--gold-hi);
+  box-shadow: 0 0 0 2px rgba(242,214,142,.5), 0 0 18px rgba(242,214,142,.7); }
+.tw-mult.boosted { color: #FFF3C9; text-shadow: 0 0 10px rgba(242,214,142,.8); }
+.tower.goldflash { animation: goldFlash .9s ease-out; }
+@keyframes goldFlash { 20% { box-shadow: 0 0 0 3px var(--gold-hi), 0 0 60px rgba(242,214,142,.8), inset 0 0 60px rgba(242,214,142,.35); } }
+.tower.hoard { animation: hoard 1.2s ease-in-out 2; }
+@keyframes hoard { 50% { box-shadow: 0 0 0 4px var(--gold-hi), 0 0 90px rgba(255,170,60,.9), inset 0 0 80px rgba(255,190,90,.45); filter: brightness(1.15); } }

@@ -34,6 +34,7 @@ function refresh() {
 
 function stufen() {
   var S = V.S, list = el('div', { class: 'tiers' });
+  if (S.mode === 'career') body.appendChild(V.legend.box());
   E.TIERS.forEach(function (T, i) {
     var h = A.HOSTESSES[i], locked = i > S.unlocked, here = i === S.room;
     var card = el('div', { class: 'tier' + (locked ? ' locked' : '') + (here ? ' here' : '') });
@@ -43,7 +44,7 @@ function stufen() {
       el('div', { class: 'tier-l', text: h.name + ' · ' + h.role }),
       el('div', { class: 'tier-k' },
         el('span', { text: 'Einsatz ' + short(T.min) + ' bis ' + short(T.max) }),
-        el('span', { text: 'Comps ' + (T.comp * 100).toFixed(1).replace('.', ',') + ' %' }),
+        el('span', { text: 'Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils' }),
         el('span', { text: i === 0 ? 'Startraum' : 'ab ' + short(T.wager) + ' Umsatz' }),
         T.bonus ? el('span', { text: 'Aufstiegsbonus ' + short(T.bonus) }) : null,
         V.isCareer() && V.gamesAt(i).length ? el('span', { class: 'unlock', text: 'Schaltet frei: ' + V.gamesAt(i).map(function (g) { return GNAME[g]; }).join(', ') }) : null,

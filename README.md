@@ -1,17 +1,19 @@
 # Chip Empire
 
-Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel, Roulette, Entenrennen, Plinko, Crash, Dragon Tower, Blackjack und Video-Poker. Steig durch die Lounges auf, sammle Comps und baue dein Chip-Imperium.
+Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel, Roulette, Entenrennen, Plinko, Crash, Dragon Tower, Blackjack, Hi-Lo-Leiter und Tresorknacker. Steig durch die Lounges auf, sammle Comps und baue dein Chip-Imperium.
 
 **Spielen:** https://bananemdnaa.github.io/chip-empire/
 
 ## Spielmodi
 
-- **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Glücksrad, Würfel · Bronze: Roulette, Entenrennen, Plinko · Silver: Crash, Dragon Tower · Gold: Blackjack, Video-Poker). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie.
+- **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Glücksrad, Würfel · Bronze: Roulette, Entenrennen, Plinko · Silver: Crash, Dragon Tower · Gold: Blackjack, Hi-Lo-Leiter · Platinum: Tresorknacker). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie. Comps sind ein Anteil des Hausvorteils (10 bis 35 % je Raum), damit bleibt jedes Spiel auf Dauer ein Minus.
+- **Legende** (nur Karriere): Im Black Room ab 25 Mio. Chips (jeder weitere Stern 25 Mio. mehr) kannst du zur Legende aufsteigen. Chips, Räume, Umsatz und Comps gehen zurück auf Anfang, Level, Talente, Quests und Statistik bleiben. Pro Stern gibt es 2 Talentpunkte, dauerhaft +10 % XP und +5 % Comps sowie den Legenden-Ast im Talentbaum. Die Karriere-Bestenliste sortiert zuerst nach Sternen.
+- **Wochen-Saison**: Eigene Bestenliste mit dem Gewinn aus allen Karriere-Runden seit Montag. Die Top 10 der Vorwoche bekommen beim nächsten Spielstart Talentpunkte (Platz 1: 5, Platz 2: 3, Platz 3: 2, sonst 1).
 - **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert.
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
 
 **Fortschritt (in allen Modi):**
-- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business) mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
+- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business), dazu der Legenden-Ast in der Karriere, mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
 - **Quests**: drei Daily Quests pro Tag, drei Weekly Quests pro Woche (Truhe mit Talentpunkt) und dauerhafte Meilensteine in Stufen.
 - **Arena** (mit Konto, Taste `D`): Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung, in drei Spielen: Crash (10 Runden, dieselben Absturzpunkte), Dragon Tower (10 Türme mit denselben Drachen) und Blackjack (8 Hände aus demselben Kartenschuh; Ziehen, Halten, Verdoppeln). Beide starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Der Server rechnet jedes Ergebnis aus dem Protokoll nach. Siege bringen Elo-Punkte für die Duell-Rangliste. Spielerprofile öffnen sich per Klick auf einen Namen in den Bestenlisten.
 - **Freunde** (in der Arena): Spieler per Namensanfang suchen, Anfragen senden, annehmen, ablehnen oder zurückziehen. Neue Anfragen und angenommene Anfragen werden gemeldet, auch im Hauptmenü. Freunde, die gerade spielen, sind grün markiert.
@@ -58,9 +60,13 @@ py -3 -m http.server 8765
 | `js/cloud.js` | Online-Konten, Cloud-Spielstände und Bestenliste über Supabase |
 | `js/core.js` | Zustand, Speichern, Karriere-Regeln, Ton, HUD, Gastgeberin, Einsatz-Steuerung |
 | `js/meta.js` | Level, Talentbaum, Quests, Imperium |
-| `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `poker.js` | Die zehn Spiele |
+| `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `hilo.js`, `vault.js` | Die elf Spiele |
+| `js/tracker.js` | Gewinn und Verlust: Sitzungsbilanz, Rundenbeträge, letzte Runden |
+| `js/legend.js` | Legende (Prestige) und Wochen-Saison |
 | `js/chipbets.js` | Gemeinsamer Chip-Tisch für Spiele mit mehreren Wettfeldern |
-| `css/games2.css` | Glücksrad, Würfel, Entenrennen, Plinko, Dragon Tower, Video-Poker |
+| `css/games2.css` | Glücksrad, Würfel, Entenrennen, Plinko, Dragon Tower |
+| `css/games3.css` | Tresorknacker, Hi-Lo-Leiter, Dragon-Tower-Goldfelder |
+| `css/polish.css` | Gewinn/Verlust-Anzeigen, Bilanz-Fenster, Legende, Handy-Feinschliff |
 | `css/social.css` | Arena, Duell-Fenster, Spielerprofile |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
 | `js/menu.js` | Hauptmenü mit Bereichen: Spielen, Arena, Freunde, Ranglisten, Profil |

@@ -10,9 +10,14 @@ var DIFF = {
   expert: { name: 'Extrem', tiles: 3, dragons: 2 }
 };
 var KEYS = ['a', 's', 'd', 'f'];
+/* Goldfelder: Jedes sichere Feld ist mit 10 % Chance aus Gold und verdoppelt den Gewinn dieser Runde.
+   Damit die Quote bei 97 % bleibt, steigt der Grund-Multiplikator pro Etage um diesen Anteil langsamer. */
+var GOLD = 0.1;
 /* Multiplikator nach k geschafften Etagen: fair geteilt durch die Überlebenschance, mal 97 % */
 /* Talent Drachenschuppen erhöht die Quote leicht */
-function multAt(diff, k) { var D = DIFF[diff], p = (D.tiles - D.dragons) / D.tiles; return k ? Math.floor((RTP + V.meta.perk('towerScale')) / Math.pow(p, k) * 100) / 100 : 0; }
+function multAt(diff, k) { var D = DIFF[diff], p = (D.tiles - D.dragons) / D.tiles; return k ? Math.floor((RTP + V.meta.perk('towerScale')) / Math.pow(p * (1 + GOLD), k) * 100) / 100 : 0; }
+/* Was die Runde gerade wert ist: Grund-Multiplikator mal 2 je Goldfeld */
+function runMult() { return run && run.floor ? Math.round(multAt(run.diff, run.floor) * Math.pow(2, run.gold) * 100) / 100 : 0; }
 
 var root, towerEl, floorEls = [], bet, goBtn, diffBtns = {}, msgEl;
 var run = null; /* { diff, bet, floor, dragons: [[...]], picks: [] } */
@@ -30,7 +35,7 @@ function build() {
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
   root.appendChild(el('div', { class: 'tw-layout' }, towerEl,
     el('div', { class: 'tw-side' }, el('span', { class: 'lbl', text: 'Schwierigkeit' }), dsel, bet.el, goBtn, msgEl,
-      el('p', { class: 'fine', text: 'Wähle pro Etage ein Feld. Ist es sicher, steigst du auf und der Multiplikator wächst. Erwischst du einen Drachen, ist der Einsatz weg. Auszahlen kannst du jederzeit. Auszahlungsquote 97 %.' }))));
+      el('p', { class: 'fine', text: 'Wähle pro Etage ein Feld. Ist es sicher, steigst du auf und der Multiplikator wächst. Erwischst du einen Drachen, ist der Einsatz weg. Jedes sichere Feld kann aus Gold sein (10 %) und verdoppelt dann deinen Gewinn. Auszahlen kannst du jederzeit. Auszahlungsquote 97 %.' }))));
   V.busyFns.push(function () { return !!run; });
   setDiff(V.S.towerDiff || 'mid', true);
 }
@@ -52,16 +57,16 @@ function renderTower(reveal) {
     var row = el('div', { class: 'tw-floor' + (cur ? ' cur' : '') + (done ? ' done' : '') });
     var tiles = el('div', { class: 'tw-tiles' });
     for (var t = 0; t < D.tiles; t++) (function (t) {
-      var picked = run && run.picks[f] === t, dragon = run && run.dragons[f].indexOf(t) >= 0;
+      var picked = run && run.picks[f] === t, dragon = run && run.dragons[f].indexOf(t) >= 0, gold = run && run.golds[f] === t;
       var show = run && (f < run.floor || (reveal && f === run.floor) || (run.over && f <= run.floor));
-      var cls = 'tw-tile' + (picked ? ' picked' : '') + (show ? (dragon ? ' dragon' : ' safe') : '');
+      var cls = 'tw-tile' + (picked ? ' picked' : '') + (show ? (dragon ? ' dragon' : gold ? ' safe gold' : ' safe') : '');
       var b = el('button', { class: cls, type: 'button', disabled: !cur, 'aria-label': 'Etage ' + (f + 1) + ', Feld ' + (t + 1),
-        onclick: function () { pick(t); } }, show ? (dragon ? '🐉' : '💎') : (cur ? V.kbd(KEYS[t].toUpperCase()) : ''));
+        onclick: function () { pick(t); } }, show ? (dragon ? '🐉' : gold ? '👑' : '💎') : (cur ? V.kbd(KEYS[t].toUpperCase()) : ''));
       tiles.appendChild(b);
     })(t);
     row.appendChild(el('span', { class: 'tw-no', text: String(f + 1) }));
     row.appendChild(tiles);
-    row.appendChild(el('span', { class: 'tw-mult', text: V.fmtX(multAt(diff, f + 1)) }));
+    row.appendChild(el('span', { class: 'tw-mult' + (run && run.gold ? ' boosted' : ''), text: V.fmtX(Math.round(multAt(diff, f + 1) * Math.pow(2, run ? run.gold : 0) * 100) / 100) }));
     floorEls[f] = row;
     towerEl.appendChild(row);
   })(f);
@@ -76,7 +81,7 @@ function renderBtn() {
   } else if (run.floor === 0) {
     lb.textContent = 'Wähle ein Feld in Etage 1'; goBtn.disabled = true; goBtn.classList.remove('cash');
   } else {
-    lb.textContent = 'Auszahlen · ' + fmt(V.payout(run.bet, multAt(run.diff, run.floor))); goBtn.disabled = false; goBtn.classList.add('cash');
+    lb.textContent = 'Auszahlen · ' + fmt(V.payout(run.bet, runMult())); goBtn.disabled = false; goBtn.classList.add('cash');
   }
   bet.disable(!!run);
   Object.keys(diffBtns).forEach(function (k) { diffBtns[k].disabled = !!run; });
@@ -88,8 +93,14 @@ function start() {
   V.Snd.ensure();
   V.debit(b0, true); V.hud();
   var dragons = [];
-  for (var f = 0; f < FLOORS; f++) dragons.push(E.shuffle(Array.apply(null, { length: D.tiles }).map(function (x, i) { return i; })).slice(0, D.dragons));
-  run = { diff: diff, bet: b0, floor: 0, dragons: dragons, picks: [], over: false };
+  var golds = [];
+  for (var f = 0; f < FLOORS; f++) {
+    var order = E.shuffle(Array.apply(null, { length: D.tiles }).map(function (x, i) { return i; })), safe = D.tiles - D.dragons;
+    dragons.push(order.slice(0, D.dragons));
+    /* Pro Etage höchstens ein Goldfeld, so oft, dass ein sicheres Feld mit 10 % Chance Gold ist */
+    golds.push(E.rand() < GOLD * safe ? order[D.dragons + E.randInt(safe)] : -1);
+  }
+  run = { diff: diff, bet: b0, floor: 0, dragons: dragons, golds: golds, gold: 0, picks: [], over: false };
   msgEl.className = 'slot-msg'; msgEl.textContent = 'Etage 1: Welches Feld ist sicher?';
   V.Snd.click();
   renderTower();
@@ -111,24 +122,35 @@ async function pick(t) {
     return;
   }
   run.floor++;
-  V.Snd.card();
-  if (run.floor >= FLOORS) { await cashout(true); return; }
+  var gold = run.golds[f] === t;
+  if (gold) run.gold++;
+  V.Snd.step(run.floor + (gold ? 5 : 0));
+  if (gold) { V.Snd.cash(); V.burst(floorEls[f], 24, ['#FFF3C9', '#F2D68E', '#D4AB52']); }
+  if (run.floor >= FLOORS) { renderTower(); await cashout(true); return; }
   msgEl.className = 'slot-msg win';
-  msgEl.textContent = 'Sicher! Etage ' + run.floor + ' geschafft: ' + V.fmtX(multAt(run.diff, run.floor)) + '. Weiter oder auszahlen?';
+  msgEl.textContent = (gold ? '👑 GOLD! Dein Gewinn verdoppelt sich: ' : 'Sicher! Etage ' + run.floor + ' geschafft: ') + V.fmtX(runMult()) + '. Weiter oder auszahlen?';
   renderTower();
+  if (gold) { towerEl.classList.remove('goldflash'); void towerEl.offsetWidth; towerEl.classList.add('goldflash'); }
 }
 
 async function cashout(top) {
   if (!run || run.floor === 0 || run.over) return;
-  var m = multAt(run.diff, run.floor), ret = V.payout(run.bet, m), net = ret - run.bet, floors = run.floor;
+  var m = runMult(), ret = V.payout(run.bet, m), net = ret - run.bet, floors = run.floor, golds = run.gold;
   run.over = true;
   renderTower(true);
-  V.settle('tower', run.bet, ret, { towerFloors: floors });
+  V.settle('tower', run.bet, ret, { towerFloors: floors, towerGold: golds });
   msgEl.className = 'slot-msg win';
   msgEl.textContent = (top ? 'Ganz oben! Der Turm ist bezwungen. ' : 'Ausgezahlt nach Etage ' + floors + '. ') + V.fmtX(m) + ': +' + fmt(net) + ' Chips';
-  if (top || m >= 10) { V.Snd.big(); V.burst(V.$('#g-tower .tower'), 36); V.banner(top ? 'Turm bezwungen!' : V.fmtX(m), '+' + fmt(net) + ' Chips', { kind: 'win', ms: 2600 }); }
+  if (top) {
+    /* Ganz oben: große Show mit Drachenhort */
+    V.Snd.unlock(); setTimeout(V.Snd.big, 500);
+    V.burst(V.$('#g-tower .tower'), 70); setTimeout(function () { V.burst(V.$('#g-tower .tower'), 50, ['#FFF3C9', '#F2D68E', '#D4AB52', '#FF6A88']); }, 450);
+    towerEl.classList.add('hoard');
+    V.banner('🐉 DRACHENHORT 🐉', V.fmtX(m) + ' · +' + fmt(net) + ' Chips', { kind: 'win', ms: 4200 });
+  } else if (m >= 10) { V.Snd.big(); V.burst(V.$('#g-tower .tower'), 36); V.banner(V.fmtX(m), '+' + fmt(net) + ' Chips', { kind: 'win', ms: 2600 }); }
   else V.Snd.cash();
-  await sleep(1400);
+  await sleep(top ? 2600 : 1400);
+  towerEl.classList.remove('hoard');
   run = null; renderTower();
 }
 

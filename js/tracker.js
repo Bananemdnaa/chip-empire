@@ -118,6 +118,11 @@ function renderPop() {
     pop.appendChild(el('h4', { text: 'Nach Spiel' }));
     pop.appendChild(list);
   }
+  if (V.legend) {
+    var wk = V.legend.season();
+    pop.appendChild(el('div', { class: 'kv sp-week' }, el('span', { text: 'Diese Woche (Saison, noch ' + V.legend.untilReset() + ')' }),
+      el('b', { class: 'num ' + tone(wk.net), text: signed(wk.net) })));
+  }
   var all = Math.round(S.returned - S.wagered);
   pop.appendChild(el('div', { class: 'sp-foot' },
     el('span', {}, 'Seit Spielstart: ', el('b', { class: 'num ' + tone(all), text: signed(all) })),
