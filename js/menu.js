@@ -185,14 +185,14 @@ function boardBox() {
   if (!Cloud.available()) return null;
   var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' }, el('h3', { class: 'menu-h', text: 'Bestenliste' }));
   var seg = el('div', { class: 'qseg board-seg', role: 'tablist' });
-  [['career', 'Karriere'], ['empire', 'Imperium']].forEach(function (x) {
+  [['career', 'Karriere'], ['empire', 'Imperium'], ['duel', 'Duelle']].forEach(function (x) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(boardMode === x[0]), text: x[1],
       onclick: function () { if (boardMode === x[0]) return; boardMode = x[0]; board = null; boardErr = ''; V.Snd.click(); render(); loadBoard(); } }));
   });
   box.appendChild(seg);
-  if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return box; }
+  if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return arenaBtn(box); }
   if (!board) { box.appendChild(el('p', { class: 'fine', text: 'Lade …' })); return box; }
-  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
+  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return arenaBtn(box); }
   var me = account(), myName = me ? me.username : null;
   var pod = el('div', { class: 'podium' });
   [1, 0, 2].forEach(function (i) {
@@ -201,7 +201,7 @@ function boardBox() {
     pod.appendChild(el('div', { class: 'pod p' + (i + 1) + (r.username === myName ? ' me' : '') },
       i === 0 ? el('span', { class: 'crown', html: Icons.crown }) : null,
       el('span', { class: 'medal', text: String(i + 1) }),
-      el('span', { class: 'who', text: r.username }),
+      el('button', { class: 'who linkbtn', type: 'button', text: r.username, title: 'Profil ansehen', onclick: function () { Social.profile(r.username); } }),
       el('span', { class: 'amt', text: fmt(r.balance) }),
       el('span', { class: 'step' })));
   });
@@ -211,19 +211,29 @@ function boardBox() {
     board.slice(3).forEach(function (r, k) {
       ol.appendChild(el('li', { class: r.username === myName ? 'me' : '' },
         el('span', { class: 'rk', text: String(k + 4) }),
-        el('span', { class: 'nm' }, el('b', { text: r.username }), el('small', { text: ' · ' + E.TIERS[Math.min(5, r.unlocked || 0)].name })),
+        el('span', { class: 'nm' }, el('button', { class: 'linkbtn', type: 'button', text: r.username, title: 'Profil ansehen', onclick: function () { Social.profile(r.username); } }),
+          el('small', { text: boardMode === 'duel' ? ' · ' + r.wins + ' S / ' + r.losses + ' N' : ' · ' + E.TIERS[Math.min(5, r.unlocked || 0)].name })),
         el('span', { class: 'am', text: fmt(r.balance) })));
     });
     box.appendChild(ol);
   }
-  box.appendChild(el('p', { class: 'fine', text: boardMode === 'empire' ? 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).' : 'Karriere-Spielstände nach Chips.' }));
+  box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Elo-Wertung aus Crash-Duellen. Der Kontostand spielt keine Rolle.' : boardMode === 'empire' ? 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).' : 'Karriere-Spielstände nach Chips.' }));
+  return arenaBtn(box);
+}
+/* Mit Konto: Arena mit Duellen und Freunden direkt aus dem Menü */
+function arenaBtn(box) {
+  if (account()) box.appendChild(el('button', { class: 'btn gold arena-btn', type: 'button', onclick: function () { V.Snd.click(); Social.open(); } },
+    el('span', { class: 'ic', html: Icons.arena }), 'Arena: Duelle und Freunde'));
   return box;
 }
 function loadBoard() {
   if (!Cloud.available()) return;
   var mode = boardMode;
-  Cloud.leaderboard(20, mode).then(function (rows) { if (mode !== boardMode) return; board = rows; boardErr = ''; render(); })
-    .catch(function (e) { if (mode !== boardMode) return; boardErr = mode === 'empire' ? 'Die Imperium-Bestenliste braucht noch das Datenbank-Update.' : 'Bestenliste nicht verfügbar: ' + (e.message || e); render(); });
+  var req = mode === 'duel'
+    ? Cloud.rpc('duel_board', { lim: 20 }).then(function (rows) { return (rows || []).map(function (r) { return Object.assign({ balance: r.rating }, r); }); })
+    : Cloud.leaderboard(20, mode);
+  req.then(function (rows) { if (mode !== boardMode) return; board = rows; boardErr = ''; render(); })
+    .catch(function (e) { if (mode !== boardMode) return; boardErr = mode !== 'career' ? 'Diese Bestenliste braucht noch das Datenbank-Update.' : 'Bestenliste nicht verfügbar: ' + (e.message || e); render(); });
 }
 
 /* ---------- Aufbau ---------- */

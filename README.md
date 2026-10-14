@@ -13,6 +13,7 @@ Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel
 **Fortschritt (in allen Modi):**
 - **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business) mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
 - **Quests**: drei Daily Quests pro Tag, drei Weekly Quests pro Woche (Truhe mit Talentpunkt) und dauerhafte Meilensteine in Stufen.
+- **Arena** (mit Konto, Taste `D`): Crash-Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung. Beide fliegen dieselben 10 Runden mit denselben Absturzpunkten und starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Siege bringen Elo-Punkte für die Duell-Rangliste. Dazu Freundesliste und Spielerprofile (Namen in den Bestenlisten anklicken).
 
 Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
@@ -23,8 +24,9 @@ Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel ze
 
 ## Online-Konten (Supabase)
 
-Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenliste für den Karriere-Modus.
+Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenlisten (Karriere, Imperium, Duelle), Freunde und Crash-Duelle.
 Das Datenbank-Schema liegt in `supabase/migrations/`. Jede Datei wird einmal (in Reihenfolge) im SQL-Editor von Supabase ausgeführt.
+Neue Migrationen vor dem Push des passenden Codes ausführen. Sie ergänzen nur, damit Spieler mit noch offenem altem Tab weiterspielen können. Das Spiel prüft alle 5 Minuten, ob eine neue Version online ist, und bietet dann das Neuladen an.
 In Supabase muss unter Authentication der E-Mail-Login an und „Confirm email“ aus sein.
 
 ## Lokal starten
@@ -58,6 +60,9 @@ py -3 -m http.server 8765
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `poker.js` | Die zehn Spiele |
 | `js/chipbets.js` | Gemeinsamer Chip-Tisch für Spiele mit mehreren Wettfeldern |
 | `css/games2.css` | Glücksrad, Würfel, Entenrennen, Plinko, Dragon Tower, Video-Poker |
+| `css/social.css` | Arena, Duell-Fenster, Spielerprofile |
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
 | `js/menu.js` | Hauptmenü |
+| `js/social.js` | Arena: Duelle, Freunde, Duell-Rangliste, Spielerprofile |
+| `js/duel.js` | Crash-Duell (Spielfenster, Protokoll, Fortsetzen nach Neuladen) |
 | `js/main.js` | Start und Navigation |

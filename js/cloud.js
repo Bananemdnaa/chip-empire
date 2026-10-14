@@ -178,7 +178,14 @@ async function leaderboard(n, mode) {
   return check(r) || [];
 }
 
+/* ---------- Freunde, Profile, Duelle (Funktionen in der Datenbank) ---------- */
+async function rpc(name, args) {
+  if (!sb) throw new Error('Keine Verbindung zum Server.');
+  return check(await sb.rpc(name, args || {}));
+}
+
 return {
+  rpc: rpc,
   available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut,
   syncAll: syncAll, createSave: createSave, deleteSave: deleteSave, flush: flush, flushOnLeave: flushOnLeave, leaderboard: leaderboard,
   onConflict: function (cb) { conflictCb = cb; }, hasFailed: function () { return failed; }, NAME_RE: NAME_RE

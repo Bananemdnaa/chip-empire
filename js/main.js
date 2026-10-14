@@ -4,7 +4,7 @@
 var $ = V.$, $$ = V.$$;
 var GAMES = V.GAME_LIST.map(function (g) { return { id: g.id, label: g.name }; });
 /* In der Leiste nur das Wichtigste; Statistik, Profil und Kulissen sind Reiter im selben Fenster */
-var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
+var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
 var SIDE = SIDE_ALL;
 function sideItems() { return SIDE_ALL.filter(function (t) { return !t.empire || V.S.mode === 'empire'; }); }
 
@@ -65,6 +65,7 @@ function renderSideNav() {
 function renderBadges() {
   if (!V.meta || !$('#sideNav')) return;
   var b = V.meta.badges(), any = false;
+  b.arena = V.social.badge();
   SIDE.forEach(function (t) {
     var btn = $('#sideNav [data-side="' + t.id + '"]');
     if (btn) btn.classList.toggle('dot', !!b[t.id]);
@@ -74,7 +75,7 @@ function renderBadges() {
   if (more) more.classList.toggle('dot', any);
 }
 /* ---------- Tastatur ---------- */
-var GLOBAL_KEYS = [['1 – 9, 0', 'Spiel wechseln'], ['Q', 'Quests'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
+var GLOBAL_KEYS = [['1 – 9, 0', 'Spiel wechseln'], ['Q', 'Quests'], ['D', 'Arena (Duelle und Freunde)'], ['G', 'Talentbaum'], ['I', 'Imperium (nur im Imperium-Modus)'], ['?', 'Diese Hilfe'], ['M', 'Ton an/aus'], ['Esc', 'Fenster schließen']];
 function keyList(title, list) {
   var dl = V.el('dl');
   list.forEach(function (k) { dl.appendChild(V.el('dt', {}, V.el('kbd', { text: k[0] }))); dl.appendChild(V.el('dd', { text: k[1] })); });
@@ -94,6 +95,8 @@ function closeKeys() { if ($('#keysDlg').hidden) return; $('#keysDlg').hidden = 
 function onKeyDown(e) {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   var tag = (e.target && e.target.tagName) || '';
+  /* Ein offenes Spielerprofil behandelt seine Tasten selbst */
+  if (document.querySelector('.prof-dlg')) return;
   if (e.key === 'Escape') { closeKeys(); closeSide(); return; }
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) return;
   if (!$('#keysDlg').hidden || !$('#drawer').hidden) { if (e.key === '?') { e.preventDefault(); closeKeys(); } return; }
@@ -103,7 +106,7 @@ function onKeyDown(e) {
   if (e.key === '?') { e.preventDefault(); openKeys(); return; }
   if (/^[0-9]$/.test(e.key)) { var gi = e.key === '0' ? 9 : Number(e.key) - 1; if (GAMES[gi]) { e.preventDefault(); V.Snd.click(); showGame(GAMES[gi].id); } return; }
   if (e.key === 'm' || e.key === 'M') { $('#sndBtn').click(); return; }
-  var SK = { q: 'quests', g: 'talente' };
+  var SK = { q: 'quests', d: 'arena', g: 'talente' };
   if (V.S.mode === 'empire') SK.i = 'imperium';
   if (SK[e.key.toLowerCase()]) { e.preventDefault(); V.Snd.click(); openSide(SK[e.key.toLowerCase()]); return; }
   var g = null;
@@ -201,13 +204,38 @@ async function startGame(id) {
     }
   }, 1000);
   setInterval(function () { if (!V.isBusy() && Math.random() < 0.35) V.say('chat'); }, 45000);
+  /* Arena: neue Herausforderungen und Ergebnisse als Hinweis-Punkt */
+  V.social.poll();
+  setInterval(function () { if (!document.hidden) V.social.poll(); }, 90000);
   /* Erst lokal speichern, dann den Stand noch in die Cloud schicken */
   function leave() { V.save(); Cloud.flushOnLeave(); }
   window.addEventListener('pagehide', leave);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') leave(); });
 }
 
+/* Neue Version online? Dann einen Hinweis zeigen, statt Spieler auf altem Code weiterspielen zu lassen */
+var updateShown = 0;
+function myVersion() {
+  var s = document.querySelector('script[src*="main.js?v="]'), m = s && /v=(\d+)/.exec(s.getAttribute('src'));
+  return m ? m[1] : null;
+}
+function checkUpdate() {
+  if (document.hidden || Date.now() - updateShown < 30 * 60 * 1000) return;
+  fetch('index.html?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+    var m = /main\.js\?v=(\d+)/.exec(t), mine = myVersion();
+    if (!m || !mine || m[1] === mine) return;
+    updateShown = Date.now();
+    V.banner('Neue Version verfügbar', 'Lade neu, um die neuesten Funktionen zu bekommen. Dein Spielstand bleibt erhalten.', { kind: 'level', ms: 60000, actions: [
+      { label: 'Neu laden', gold: true, fn: function () {
+        if (V.isBusy()) { V.toast('Beende erst die laufende Runde, dann lade neu.', 'bad'); updateShown = 0; return; }
+        V.save(); Cloud.flush().finally(function () { location.reload(); });
+      } },
+      { label: 'Später', fn: function () {} }] });
+  }).catch(function () { /* offline: beim nächsten Mal */ });
+}
+
 async function init() {
+  setInterval(checkUpdate, 5 * 60 * 1000);
   var u = await Cloud.init();
   Store.useAccount(u ? u.id : null);
   var id = Store.active();
