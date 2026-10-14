@@ -13,7 +13,7 @@ Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel
 **Fortschritt (in allen Modi):**
 - **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business) mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
 - **Quests**: drei Daily Quests pro Tag, drei Weekly Quests pro Woche (Truhe mit Talentpunkt) und dauerhafte Meilensteine in Stufen.
-- **Arena** (mit Konto, Taste `D`): Crash-Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung. Beide fliegen dieselben 10 Runden mit denselben Absturzpunkten und starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Siege bringen Elo-Punkte für die Duell-Rangliste. Spielerprofile öffnen sich per Klick auf einen Namen in den Bestenlisten.
+- **Arena** (mit Konto, Taste `D`): Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung, in drei Spielen: Crash (10 Runden, dieselben Absturzpunkte), Dragon Tower (10 Türme mit denselben Drachen) und Blackjack (8 Hände aus demselben Kartenschuh; Ziehen, Halten, Verdoppeln). Beide starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Der Server rechnet jedes Ergebnis aus dem Protokoll nach. Siege bringen Elo-Punkte für die Duell-Rangliste. Spielerprofile öffnen sich per Klick auf einen Namen in den Bestenlisten.
 - **Freunde** (in der Arena): Spieler per Namensanfang suchen, Anfragen senden, annehmen, ablehnen oder zurückziehen. Neue Anfragen und angenommene Anfragen werden gemeldet, auch im Hauptmenü. Freunde, die gerade spielen, sind grün markiert.
 
 Das Hauptmenü hat fünf Bereiche: Spielen (Spielstände), Arena, Freunde, Ranglisten und Profil. Am Handy sitzt die Navigation unten. Bis zu 3 Spielstände pro Browser. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
@@ -25,7 +25,7 @@ Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel ze
 
 ## Online-Konten (Supabase)
 
-Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenlisten (Karriere, Imperium, Duelle), Freunde und Crash-Duelle.
+Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenlisten (Karriere, Imperium, Duelle), Freunde und Duelle. Im Profil lässt sich das Konto samt allen Online-Daten löschen.
 Das Datenbank-Schema liegt in `supabase/migrations/`. Jede Datei wird einmal (in Reihenfolge) im SQL-Editor von Supabase ausgeführt.
 Neue Migrationen vor dem Push des passenden Codes ausführen. Sie ergänzen nur, damit Spieler mit noch offenem altem Tab weiterspielen können. Das Spiel prüft alle 5 Minuten, ob eine neue Version online ist, und bietet dann das Neuladen an.
 In Supabase muss unter Authentication der E-Mail-Login an und „Confirm email“ aus sein.
@@ -66,5 +66,5 @@ py -3 -m http.server 8765
 | `js/menu.js` | Hauptmenü mit Bereichen: Spielen, Arena, Freunde, Ranglisten, Profil |
 | `js/social.js` | Arena: Duelle, Freunde, Duell-Rangliste, Spielerprofile |
 | `js/friends.js` | Freundesystem: Liste, Anfragen, Spielersuche, Benachrichtigungen |
-| `js/duel.js` | Crash-Duell (Spielfenster, Protokoll, Fortsetzen nach Neuladen) |
+| `js/duel.js` | Duelle: Fenster, Regeln und Ansicht für Crash, Dragon Tower und Blackjack, Fortsetzen nach Neuladen |
 | `js/main.js` | Start und Navigation |

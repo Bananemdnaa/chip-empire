@@ -53,15 +53,88 @@
 .prof-bal { color: var(--gold-hi); }
 
 /* ---------- Duell-Fenster ---------- */
-.duel-panel { width: min(760px, 100%); }
-.duel-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; font-size: 14px; }
-.duel-top span { color: var(--muted); }
-.duel-top b { font-size: 18px; color: var(--gold-hi); }
+.duel-panel { width: min(780px, 100%); }
+/* Spalte statt Grid: im scrollbaren Fenster sollen die Teile nicht gestaucht werden */
+.duel-body { display: flex; flex-direction: column; gap: 12px; }
+.duel-body > * { flex: none; }
+/* Kopf: Du gegen Gegner */
+.dv-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px;
+  border: 1px solid var(--gold-lo); background: linear-gradient(90deg, rgba(212,171,82,.16), rgba(0,0,0,.3) 50%, rgba(196,32,63,.16)); }
+.dv-side { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; min-width: 0; }
+.dv-side .avatar { grid-row: 1 / 3; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; text-transform: uppercase; color: #2A1608;
+  background: radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 50%, var(--gold-lo)); }
+.dv-side.r { direction: rtl; text-align: right; }
+.dv-side.r .avatar { background: radial-gradient(circle at 35% 30%, #FF9AAE, var(--crimson) 50%, #5A0A1E); color: #fff; }
+.dv-side b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-side small { color: var(--muted); font-size: 12px; direction: ltr; }
+.dv-mid { display: grid; justify-items: center; gap: 2px; }
+.dv-tag { font-family: var(--f-display); font-size: 26px; line-height: 1; color: var(--gold-hi); text-shadow: 0 0 18px rgba(242,214,142,.4); }
+.dv-game { font-size: 12px; color: var(--muted); white-space: nowrap; }
+/* Runde, Rundenpunkte, Stapel */
+.dv-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.dv-round, .dv-chips { display: grid; gap: 0; }
+.dv-round span, .dv-chips span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.dv-chips { text-align: right; }
+.dv-round b { font-size: 17px; }
+.dv-stack { font-size: 24px; color: var(--gold-hi); }
+.dv-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.dv-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); background: rgba(0,0,0,.35); transition: background .2s, transform .2s; }
+.dv-dot.win { background: var(--good); border-color: #BDF7DA; }
+.dv-dot.loss { background: #C4203F; border-color: #FF6A88; }
+.dv-dot.push { background: var(--muted); }
+.dv-dot.cur { border: 2px solid var(--gold-hi); transform: scale(1.2); box-shadow: 0 0 10px rgba(242,214,142,.5); }
+.dv-area { min-height: 220px; }
 .duel-stage { height: 260px; }
-.duel-hist { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; margin-top: 10px; }
-.duel-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.duel-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .duel-bets { display: flex; flex-wrap: wrap; gap: 6px; }
 .duel-bets .chipbtn { padding: 6px 12px; font-size: 13.5px; }
+.dv-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.dv-acts:empty { display: none; }
+.duel-body .slot-msg { min-height: 1.4em; margin: 0; text-align: center; }
+/* Turm im Duell */
+.dv-tower { max-width: 460px; margin: 0 auto; }
+/* Blackjack im Duell */
+.dv-bj { display: grid; gap: 14px; padding: 14px; border-radius: 18px; background: radial-gradient(80% 70% at 50% 40%, #13553F, var(--felt-2)); box-shadow: inset 0 0 40px rgba(0,0,0,.5), 0 0 0 2px var(--gold-lo); }
+.dv-hand { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; gap: 6px 10px; align-items: center; }
+.dv-hand .lbl { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: rgba(244,235,219,.7); }
+.dv-val { justify-self: start; min-width: 2.4em; padding: 1px 10px; border-radius: 999px; background: rgba(0,0,0,.4); font: 600 14px var(--f-mono); text-align: center; }
+.dv-val:empty { display: none; }
+.dv-cards { grid-column: 1 / -1; display: flex; gap: 8px; min-height: 90px; flex-wrap: wrap; }
+.dv-bj .fine { margin: 0; text-align: center; color: rgba(244,235,219,.6); }
+/* Ergebnis */
+.dv-result { display: grid; justify-items: center; gap: 8px; padding: 24px 16px; border-radius: 18px; border: 1px solid var(--gold-lo); background: radial-gradient(70% 90% at 50% 0%, rgba(212,171,82,.2), rgba(0,0,0,.3)); text-align: center; }
+.dv-result.win { border-color: var(--good); background: radial-gradient(70% 90% at 50% 0%, rgba(111,211,162,.22), rgba(0,0,0,.3)); }
+.dv-result.loss { border-color: rgba(255,106,136,.5); background: radial-gradient(70% 90% at 50% 0%, rgba(196,32,63,.22), rgba(0,0,0,.3)); }
+.dv-res-h { font-size: 48px; line-height: 1; }
+.dv-res-big { font-family: var(--f-display); font-size: clamp(34px, 7vw, 54px); color: var(--gold-hi); line-height: 1.1; }
+.dv-result.win .dv-res-big { color: #9CF0C6; }
+.dv-result.loss .dv-res-big { color: #FF9AAE; }
+.dv-score { display: flex; align-items: center; gap: 18px; }
+.dv-score > div { display: grid; justify-items: center; }
+.dv-score span { font-size: 12px; color: var(--muted); }
+.dv-score b { font-size: 28px; }
+.dv-colon { font-size: 28px; color: var(--muted); }
+.dv-result .fine { margin: 0; }
+
+/* ---------- Spielauswahl für Duelle ---------- */
+.dn-step { margin: 12px 0 8px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+.dg-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.dg-tile { display: grid; justify-items: start; align-content: start; gap: 4px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: rgba(0,0,0,.3);
+  color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s, transform .15s; }
+.dg-tile:hover { border-color: var(--gold-lo); transform: translateY(-2px); }
+.dg-tile[aria-checked="true"] { border-color: var(--gold-hi); background: linear-gradient(180deg, rgba(212,171,82,.2), rgba(0,0,0,.25)); box-shadow: 0 0 0 1px var(--gold-hi), 0 8px 24px rgba(212,171,82,.15); }
+.dg-ico { font-size: 28px; line-height: 1; }
+.dg-tile b { font-size: 15px; }
+.dg-tag { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.dg-desc { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.dg-chip { text-transform: none; letter-spacing: 0; font-size: 11px; margin-right: 2px; }
+.dg-intro { margin: 0 0 12px; }
+.dg-go { margin-top: 16px; justify-content: center; }
+.chipbtn.online { border-color: rgba(111,211,162,.5); }
+
+/* ---------- Konto löschen ---------- */
+.panel.danger { border-color: rgba(196,32,63,.5); }
+.panel.danger h2 { color: #FF9AAE; }
 
 
 @media (max-width: 640px) {
@@ -70,6 +143,16 @@
   .duel-detail { margin-left: 0; }
   .duel-stage { height: 200px; }
   .duel-ctl .btn.big { width: 100%; }
+  .dg-pick { grid-template-columns: minmax(0, 1fr); }
+  .dg-tile { grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; }
+  .dg-ico { grid-row: 1 / 4; align-self: center; }
+  .dv-vs { padding: 10px; gap: 6px; }
+  .dv-side .avatar { width: 34px; height: 34px; }
+  .dv-side small { display: none; }
+  .dv-top { grid-template-columns: auto auto; }
+  .dv-dots { grid-column: 1 / -1; grid-row: 2; }
+  .dv-cards .pcard { width: 52px; height: 74px; }
+  .dv-cards { min-height: 74px; }
 }
 
 /* ---------- Freunde ---------- */

@@ -117,6 +117,8 @@ function removeGuest(id) {
 
 /* Welcher Speicher gilt: Gast oder Zwischenspeicher eines Kontos */
 function useAccount(userId) { ns = userId ? 'chip-empire-cloud-v1-' + userId : GUEST; broken = false; readAll(); }
+/* Zwischenspeicher eines gelöschten Kontos verwerfen */
+function dropAccount(userId) { try { localStorage.removeItem('chip-empire-cloud-v1-' + userId); } catch (e) { /* */ } }
 function key() { return ns; }
 function isAccount() { return ns !== GUEST; }
 
@@ -130,7 +132,7 @@ return {
   MAX_SLOTS: MAX_SLOTS, MODES: MODES, summary: summary, hooks: hooks,
   list: list, guestList: guestList, get: get, create: create, put: put, upsert: upsert, patch: patch,
   remove: remove, removeGuest: removeGuest,
-  useAccount: useAccount, key: key, isAccount: isAccount,
+  useAccount: useAccount, dropAccount: dropAccount, key: key, isAccount: isAccount,
   active: active, setActive: setActive, isBroken: function () { return broken; }
 };
 })();

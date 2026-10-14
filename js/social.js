@@ -1,4 +1,4 @@
-/* Chip Empire – Mitspieler: Arena mit Crash-Duellen, Freunden und Duell-Rangliste, dazu Spielerprofile */
+/* Chip Empire – Mitspieler: Arena mit Duellen, Freunden und Duell-Rangliste, dazu Spielerprofile */
 var Social = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
@@ -75,23 +75,52 @@ function canDuel() {
   if (V.isBusy && V.isBusy()) { V.toast('Beende erst die laufende Runde.', 'bad'); return false; }
   return true;
 }
-function challenge(name) {
+var GAME_KEY = 'chip-empire-duel-game';
+var newGame = (function () { try { return localStorage.getItem(GAME_KEY) || 'crash'; } catch (e) { return 'crash'; } })();
+function setGame(g) { newGame = g; try { localStorage.setItem(GAME_KEY, g); } catch (e) { /* */ } }
+function gameInfo(g) { return Duel.GAMES[g] || Duel.GAMES.crash; }
+/* Ohne Spielangabe (z. B. aus Profil oder Freundesliste) erst das Spiel wählen lassen */
+function challenge(name, game) {
   if (!account() || !canDuel()) return;
+  if (!game) { pickGame(name); return; }
+  setGame(game);
   act(async function () {
-    var rows = await Cloud.rpc('duel_create', { opp: name || null });
+    var rows = await Cloud.rpc('duel_create', { opp: name || null, gm: game });
     var r = rows && rows[0];
     if (!r) throw new Error('Duell konnte nicht angelegt werden.');
     closeProfile();
-    Duel.start({ id: r.id, opp: name || '', role: 'a', points: r.points }, function () { load(true); });
+    Duel.start({ id: r.id, opp: name || '', role: 'a', game: game, points: r.points, setup: r.setup }, function () { load(true); });
   });
 }
 function accept(id, opp) {
   if (!canDuel()) return;
   act(async function () {
-    var pts = await Cloud.rpc('duel_accept', { did: id });
-    Duel.start({ id: id, opp: opp, role: 'b', points: pts }, function () { load(true); });
+    var r = await Cloud.rpc('duel_join', { did: id });
+    Duel.start({ id: id, opp: opp, role: 'b', game: r.game, points: r.points, setup: r.setup }, function () { load(true); });
   });
 }
+function $$(sel, r) { return Array.prototype.slice.call(r.querySelectorAll(sel)); }
+/* Auswahl der drei Duell-Spiele als Kacheln */
+function gamePicker() {
+  var box = el('div', { class: 'dg-pick', role: 'radiogroup', 'aria-label': 'Spiel für das Duell' });
+  Object.keys(Duel.GAMES).forEach(function (g) {
+    var G = Duel.GAMES[g];
+    box.appendChild(el('button', { class: 'dg-tile', type: 'button', role: 'radio', 'aria-checked': String(newGame === g),
+      onclick: function () { setGame(g); V.Snd.click(); $$('.dg-tile', box).forEach(function (b) { b.setAttribute('aria-checked', String(b === this)); }, this); } },
+      el('span', { class: 'dg-ico', text: G.icon }), el('b', { text: G.name }), el('span', { class: 'dg-tag', text: G.tag }), el('span', { class: 'dg-desc', text: G.desc })));
+  });
+  return box;
+}
+function pickGame(name) {
+  closeProfile();
+  var p = panel('Duell gegen ' + name, closeProfile);
+  profDlg = p.dlg;
+  p.body.appendChild(el('p', { class: 'fine dg-intro', text: 'Wähle das Spiel. ' + name + ' spielt danach genau dieselben Runden.' }));
+  p.body.appendChild(gamePicker());
+  p.body.appendChild(el('div', { class: 'rrow dg-go' }, el('button', { class: 'btn gold big', type: 'button', text: '⚔ Duell starten', onclick: function () { challenge(name, newGame); } })));
+  p.dlg.querySelector('.dg-tile[aria-checked="true"]').focus();
+}
+function gameChip(g) { var G = gameInfo(g); return el('span', { class: 'tag dg-chip', title: G.name, text: G.icon + ' ' + G.name }); }
 
 /* ---------- Arena ---------- */
 /* only = 'duels': nur die Duelle ohne Reiter (das Hauptmenü hat Freunde und Ranglisten als eigene Bereiche) */
@@ -100,7 +129,7 @@ function render(host, refresh, only) {
   if (only) view = only;
   var a = account();
   if (!a) {
-    host.appendChild(el('p', { class: 'side-intro', text: 'In der Arena trittst du gegen andere Spieler an: Crash-Duelle mit gleichen Chancen für beide, Freunde und eine eigene Rangliste.' }));
+    host.appendChild(el('p', { class: 'side-intro', text: 'In der Arena trittst du gegen andere Spieler an: Duelle in Crash, Dragon Tower oder Blackjack mit gleichen Chancen für beide, Freunde und eine eigene Rangliste.' }));
     host.appendChild(el('p', { class: 'fine', text: Cloud.available() ? 'Dafür brauchst du ein Konto. Geh ins Hauptmenü und logg dich ein, deine Gast-Spielstände kannst du mitnehmen.' : 'Gerade keine Verbindung zum Server.' }));
     return;
   }
@@ -135,30 +164,33 @@ function duels(host) {
     host.appendChild(el('div', { class: 'duel-row hot' },
       el('div', { class: 'dr-ico', text: '⏸' }),
       el('div', { class: 'dr-info' }, el('b', { text: 'Laufendes Duell' + (p.opp ? ' gegen ' + p.opp : '') }),
-        el('span', { class: 'fine', text: 'Runde ' + (p.log.length + 1) + ' von ' + Duel.ROUNDS + '. Nach 30 Minuten zählt es mit 0 Chips.' })),
+        el('span', { class: 'fine', text: gameInfo(p.game).name + ' · Runde ' + Math.min(Duel.rounds(p), p.log.length + (p.log.length && !p.log[p.log.length - 1].f ? 0 : 1)) + ' von ' + Duel.rounds(p) + '. Nach 30 Minuten zählt es mit 0 Chips.' })),
       el('button', { class: 'btn gold sm', type: 'button', text: 'Weiterspielen', onclick: function () { Duel.resume(function () { load(true); }); } })));
   }
-  /* Neues Duell */
+  /* Neues Duell: erst das Spiel, dann der Gegner */
   var input = el('input', { class: 'name-in sm', type: 'text', maxlength: '16', placeholder: 'Benutzername', 'aria-label': 'Gegner', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
-  input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && input.value.trim()) challenge(input.value.trim()); });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && input.value.trim()) challenge(input.value.trim(), newGame); });
   var fr = Friends.friends();
   host.appendChild(el('div', { class: 'duel-new' },
-    el('h4', { text: 'Neues Crash-Duell' }),
-    el('p', { class: 'fine', text: '10 Runden, beide Spieler bekommen dieselben Absturzpunkte und starten mit 1.000 Duell-Chips. Dein Kontostand ist egal, nur dein Timing zählt.' }),
+    el('h4', { text: 'Neues Duell' }),
+    el('p', { class: 'fine', text: 'Beide spielen dieselben Runden mit demselben Zufall und starten mit 1.000 Duell-Chips. Dein Kontostand ist egal.' }),
+    el('div', { class: 'dn-step', text: '1. Spiel wählen' }),
+    gamePicker(),
+    el('div', { class: 'dn-step', text: '2. Gegner wählen' }),
     el('div', { class: 'dn-row' },
-      el('button', { class: 'btn gold', type: 'button', text: '⚔ Offene Herausforderung', title: 'Jeder kann sie annehmen', onclick: function () { challenge(null); } }),
+      el('button', { class: 'btn gold', type: 'button', text: '⚔ Offen für alle', title: 'Jeder kann die Herausforderung annehmen', onclick: function () { challenge(null, newGame); } }),
       el('span', { class: 'dn-or', text: 'oder' }), input,
-      el('button', { class: 'btn ghost', type: 'button', text: 'Herausfordern', onclick: function () { if (input.value.trim()) challenge(input.value.trim()); else input.focus(); } })),
+      el('button', { class: 'btn ghost', type: 'button', text: 'Herausfordern', onclick: function () { if (input.value.trim()) challenge(input.value.trim(), newGame); else input.focus(); } })),
     fr.length ? el('div', { class: 'dn-friends' }, el('span', { class: 'fine', text: 'Freunde:' }),
-      fr.slice(0, 8).map(function (f) { return el('button', { class: 'chipbtn', type: 'button', text: '⚔ ' + f.username, onclick: function () { challenge(f.username); } }); })) : null));
+      fr.slice(0, 8).map(function (f) { return el('button', { class: 'chipbtn' + (Friends.online(f) ? ' online' : ''), type: 'button', text: '⚔ ' + f.username, title: Friends.online(f) ? 'Spielt gerade' : '', onclick: function () { challenge(f.username, newGame); } }); })) : null));
 
   var inv = invites();
   if (inv.length) {
     host.appendChild(el('h4', { text: 'Einladungen' }));
     inv.forEach(function (r) {
       host.appendChild(el('div', { class: 'duel-row hot' },
-        el('div', { class: 'dr-ico', text: '⚔' }),
-        el('div', { class: 'dr-info' }, el('b', {}, nameBtn(r.opponent), ' fordert dich heraus'), el('span', { class: 'fine', text: ago(r.created_at) + ' · hat schon gespielt' })),
+        el('div', { class: 'dr-ico', text: gameInfo(r.game).icon }),
+        el('div', { class: 'dr-info' }, el('b', {}, nameBtn(r.opponent), ' fordert dich heraus'), el('span', { class: 'fine' }, gameChip(r.game), ' ' + ago(r.created_at) + ' · hat schon gespielt')),
         el('div', { class: 'dr-act' },
           el('button', { class: 'btn gold sm', type: 'button', text: 'Annehmen', onclick: function () { accept(r.id, r.opponent); } }),
           el('button', { class: 'btn ghost sm', type: 'button', text: 'Ablehnen', onclick: function () { act(function () { return Cloud.rpc('duel_decline', { did: r.id }); }); } }))));
@@ -168,8 +200,8 @@ function duels(host) {
     host.appendChild(el('h4', { text: 'Offene Herausforderungen' }));
     D.lobby.forEach(function (r) {
       host.appendChild(el('div', { class: 'duel-row' },
-        el('div', { class: 'dr-ico', text: '🚀' }),
-        el('div', { class: 'dr-info' }, el('b', {}, nameBtn(r.challenger)), el('span', { class: 'fine', text: 'Wertung ' + fmt(r.rating) + ' · ' + ago(r.created_at) })),
+        el('div', { class: 'dr-ico', text: gameInfo(r.game).icon }),
+        el('div', { class: 'dr-info' }, el('b', {}, nameBtn(r.challenger)), el('span', { class: 'fine' }, gameChip(r.game), ' Wertung ' + fmt(r.rating) + ' · ' + ago(r.created_at))),
         el('button', { class: 'btn gold sm', type: 'button', text: 'Annehmen', onclick: function () { accept(r.id, r.challenger); } })));
     });
   }
@@ -179,8 +211,8 @@ function duels(host) {
     waiting.forEach(function (r) {
       var txt = r.status === 'open' ? (r.opponent ? r.opponent + ' ist dran' : 'Offen für alle') : r.status === 'b_playing' && r.role === 'a' ? (r.opponent || 'Gegner') + ' spielt gerade' : 'Läuft noch';
       host.appendChild(el('div', { class: 'duel-row' },
-        el('div', { class: 'dr-ico', text: '⏳' }),
-        el('div', { class: 'dr-info' }, el('b', { text: txt }), el('span', { class: 'fine', text: (r.my_score != null ? 'Dein Ergebnis: ' + fmt(r.my_score) + ' · ' : '') + ago(r.created_at) }))));
+        el('div', { class: 'dr-ico', text: gameInfo(r.game).icon }),
+        el('div', { class: 'dr-info' }, el('b', { text: txt }), el('span', { class: 'fine' }, gameChip(r.game), ' ' + (r.my_score != null ? 'Dein Ergebnis: ' + fmt(r.my_score) + ' · ' : '') + ago(r.created_at)))));
     });
   }
   var done = D.list.filter(function (r) { return r.status === 'done' || r.status === 'declined' || r.status === 'expired'; });
@@ -208,25 +240,28 @@ function resultRow(r, fresh) {
     el('div', { class: 'dr-ico', text: kind === 'win' ? '🏆' : kind === 'loss' ? '💥' : '🤝' }),
     el('div', { class: 'dr-info' },
       el('b', {}, (kind === 'win' ? 'Sieg gegen ' : kind === 'loss' ? 'Niederlage gegen ' : 'Unentschieden gegen '), nameBtn(r.opponent || '?')),
-      el('span', { class: 'fine', text: fmt(mine) + ' zu ' + fmt(theirs) + ' · ' + ago(r.finished_at) })),
+      el('span', { class: 'fine' }, gameChip(r.game), ' ' + fmt(mine) + ' zu ' + fmt(theirs) + ' · ' + ago(r.finished_at))),
     el('div', { class: 'dr-act' },
       el('span', { class: 'delta num ' + (d >= 0 ? 'pos' : 'neg'), text: (d >= 0 ? '+' : '−') + Math.abs(d) }),
       el('button', { class: 'btn ghost xs', type: 'button', text: openDetail === r.id ? 'Zu' : 'Runden', 'aria-expanded': String(openDetail === r.id),
         onclick: function () { openDetail = openDetail === r.id ? null : r.id; redraw(); } })));
-  if (openDetail !== r.id || !r.points) return row;
-  /* Runde für Runde: wer ist wann ausgestiegen */
-  var tb = el('tbody');
-  r.points.forEach(function (p, i) {
-    p = Number(p);
-    tb.appendChild(el('tr', {}, el('td', { class: 'num', text: String(i + 1) }), el('td', { class: 'num', text: V.fmtX(p) }), cell((r.my_log || [])[i], p), cell((r.their_log || [])[i], p)));
-  });
+  if (openDetail !== r.id) return row;
+  /* Runde für Runde: Gewinn oder Verlust beider Spieler, bei Crash mit Absturzpunkt und Ausstieg */
+  var game = r.game || 'crash', crash = game === 'crash', pts = (r.points || []).map(Number);
+  var mine = Duel.nets(game, pts, r.setup, r.my_log), theirs = Duel.nets(game, pts, r.setup, r.their_log);
+  var n = Math.max(mine.length, theirs.length), tb = el('tbody');
+  for (var i = 0; i < n; i++) {
+    tb.appendChild(el('tr', {}, el('td', { class: 'num', text: String(i + 1) }),
+      crash ? el('td', { class: 'num', text: pts[i] ? V.fmtX(pts[i]) : '–' }) : null,
+      cell(mine[i], crash && (r.my_log || [])[i]), cell(theirs[i], crash && (r.their_log || [])[i])));
+  }
   return el('div', {}, row, el('div', { class: 'tscroll duel-detail' }, el('table', { class: 'stbl' },
-    el('thead', {}, el('tr', {}, el('th', { text: '#' }), el('th', { text: 'Absturz' }), el('th', { text: 'Du' }), el('th', { text: r.opponent || 'Gegner' }))), tb)));
+    el('thead', {}, el('tr', {}, el('th', { text: game === 'bj' ? 'Hand' : '#' }), crash ? el('th', { text: 'Absturz' }) : null, el('th', { text: 'Du' }), el('th', { text: r.opponent || 'Gegner' }))), tb)));
 }
-function cell(e, p) {
-  if (!e) return el('td', { class: 'fine', text: '–' });
-  var won = e.c && Number(e.c) <= p;
-  return el('td', { class: 'num ' + (won ? 'pos' : 'neg'), text: fmt(e.b) + (won ? ' @ ' + V.fmtX(Number(e.c)) : ' ✗') });
+function cell(net, e) {
+  if (net == null) return el('td', { class: 'fine', text: '–' });
+  var at = e && e.c && net > 0 ? ' @ ' + V.fmtX(Number(e.c)) : '';
+  return el('td', { class: 'num ' + (net > 0 ? 'pos' : net < 0 ? 'neg' : ''), text: (net > 0 ? '+' : net < 0 ? '−' : '±') + fmt(Math.abs(net)) + at });
 }
 
 function board(host) {

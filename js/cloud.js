@@ -62,6 +62,18 @@ async function signIn(name, pw) {
   user = data.user; token = data.session.access_token;
   return current();
 }
+/* Konto endgültig löschen. Zur Sicherheit muss das Passwort stimmen (erneutes Einloggen). */
+async function deleteAccount(pw) {
+  var a = current();
+  if (!a) throw new Error('Nicht eingeloggt.');
+  check(await sb.auth.signInWithPassword({ email: a.username + '@' + MAIL_DOMAIN, password: pw }));
+  clearTimeout(timer);
+  check(await sb.rpc('delete_account'));
+  try { await sb.auth.signOut(); } catch (e) { /* das Konto gibt es nicht mehr */ }
+  Store.dropAccount(a.id);
+  try { localStorage.removeItem('chip-empire-friends-' + a.id); localStorage.removeItem('chip-empire-duel'); } catch (e) { /* */ }
+  user = null; token = null;
+}
 async function signOut() {
   await flush();
   try { await sb.auth.signOut(); } catch (e) { /* trotzdem lokal abmelden */ }
@@ -186,7 +198,7 @@ async function rpc(name, args) {
 
 return {
   rpc: rpc,
-  available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut,
+  available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut, deleteAccount: deleteAccount,
   syncAll: syncAll, createSave: createSave, deleteSave: deleteSave, flush: flush, flushOnLeave: flushOnLeave, leaderboard: leaderboard,
   onConflict: function (cb) { conflictCb = cb; }, hasFailed: function () { return failed; }, NAME_RE: NAME_RE
 };

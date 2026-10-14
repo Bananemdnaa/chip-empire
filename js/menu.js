@@ -58,7 +58,7 @@ function background() {
 /* ---------- Navigation ---------- */
 function go(id) {
   if (section === id && view === 'slots') return;
-  section = id; view = 'slots'; status = '';
+  section = id; view = 'slots'; status = ''; deleteOpen = false;
   try { localStorage.setItem(SECTION_KEY, id); } catch (e) { /* */ }
   V.Snd.click();
   render();
@@ -144,6 +144,37 @@ function profileSection() {
     el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Abmelden', disabled: busy, onclick: function () {
       run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); });
     } }))));
+  body.appendChild(deleteBox(a));
+}
+/* Konto löschen: Benutzername abtippen und Passwort eingeben, erst dann wird der Knopf scharf */
+var deleteOpen = false;
+function deleteBox(a) {
+  var box = el('section', { class: 'panel wide danger' }, el('h2', { text: 'Konto löschen' }));
+  if (!deleteOpen) {
+    box.appendChild(el('p', { class: 'fine', text: 'Löscht dein Konto mit allen Online-Spielständen, Freunden, Duellen und deiner Wertung. Das lässt sich nicht rückgängig machen.' }));
+    box.appendChild(el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Konto löschen …', onclick: function () { deleteOpen = true; renderBody(); } })));
+    return box;
+  }
+  var name = el('input', { class: 'name-in', type: 'text', maxlength: '16', placeholder: a.username, 'aria-label': 'Benutzername zur Bestätigung', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
+  var pw = el('input', { class: 'name-in', type: 'password', placeholder: 'Dein Passwort', 'aria-label': 'Passwort', autocomplete: 'current-password' });
+  var btn = el('button', { class: 'btn crimson', type: 'button', text: 'Konto endgültig löschen', disabled: true, onclick: function () {
+    if (name.value.trim().toLowerCase() !== a.username || !pw.value) return;
+    run('Lösche dein Konto …', async function () {
+      await Cloud.deleteAccount(pw.value);
+      Store.useAccount(null);
+      deleteOpen = false; section = 'play'; board = null; loadBoard();
+      V.toast('Dein Konto wurde gelöscht.', 'good');
+    });
+  } });
+  function check() { btn.disabled = busy || name.value.trim().toLowerCase() !== a.username || !pw.value; }
+  name.addEventListener('input', check); pw.addEventListener('input', check);
+  pw.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !btn.disabled) btn.click(); });
+  setTimeout(function () { name.focus(); }, 0);
+  box.appendChild(el('p', { class: 'fine', text: 'Alle Online-Spielstände, Freundschaften, Duelle und deine Wertung werden gelöscht. Gast-Spielstände auf diesem Gerät bleiben. Tippe zur Bestätigung deinen Benutzernamen „' + a.username + '“ und dein Passwort ein.' }));
+  box.appendChild(name); box.appendChild(pw);
+  box.appendChild(el('div', { class: 'slot-act' }, btn,
+    el('button', { class: 'btn ghost', type: 'button', text: 'Abbrechen', onclick: function () { deleteOpen = false; renderBody(); } })));
+  return box;
 }
 
 /* ---------- Spielstände als VIP-Karten ---------- */
@@ -270,7 +301,7 @@ function playSection() {
 var BOARD_TEXT = {
   career: 'Karriere-Spielstände nach Chips.',
   empire: 'Imperium-Spielstände nach Imperiumswert (Chips plus Geschäfte).',
-  duel: 'Elo-Wertung aus Crash-Duellen. Der Kontostand spielt keine Rolle.'
+  duel: 'Elo-Wertung aus allen Duellen. Der Kontostand spielt keine Rolle.'
 };
 function boardBox() {
   var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' });
@@ -329,8 +360,8 @@ function renderBody() {
   body.setAttribute('data-sec', section);
   var a = account();
   if (section === 'arena') {
-    body.appendChild(head('Arena', 'Crash-Duelle gegen andere Spieler: gleiche Absturzpunkte, gleiche Startchips, nur dein Timing zählt.'));
-    if (!a) { body.appendChild(needAccount('In der Arena forderst du andere Spieler zu Crash-Duellen heraus und sammelst Wertungspunkte.')); return; }
+    body.appendChild(head('Arena', 'Duelle gegen andere Spieler in Crash, Dragon Tower oder Blackjack: derselbe Zufall und dieselben Startchips für beide.'));
+    if (!a) { body.appendChild(needAccount('In der Arena forderst du andere Spieler zu Duellen in Crash, Dragon Tower oder Blackjack heraus und sammelst Wertungspunkte.')); return; }
     var box = el('div', { class: 'msec-box' });
     body.appendChild(box);
     Social.render(box, function () { if (section === 'arena' && !typing()) renderBody(); }, 'duels');
