@@ -12,7 +12,8 @@ var SECTIONS = [
   { id: 'arena', label: 'Arena', icon: 'arena', online: true, cnt: function () { return Social.invites(); } },
   { id: 'friends', label: 'Freunde', icon: 'friends', online: true, cnt: function () { return Friends.incoming().length; } },
   { id: 'ranks', label: 'Ranglisten', icon: 'ranks', online: true },
-  { id: 'profile', label: 'Profil', icon: 'user', online: true }
+  { id: 'profile', label: 'Profil', icon: 'user', online: true },
+  { id: 'admin', label: 'Admin', icon: 'admin', online: true, admin: true }
 ];
 var section = (function () { try { return localStorage.getItem(SECTION_KEY) || 'play'; } catch (e) { return 'play'; } })();
 
@@ -25,7 +26,7 @@ function when(t) {
 function $$(s, r) { return Array.prototype.slice.call(r.querySelectorAll(s)); }
 function account() { return Store.isAccount() ? Cloud.current() : null; }
 function chipImg(cls) { return el('img', { class: cls || '', src: 'favicon.svg', alt: '' }); }
-function sections() { return SECTIONS.filter(function (s) { return !s.online || Cloud.available(); }); }
+function sections() { return SECTIONS.filter(function (s) { return (!s.online || Cloud.available()) && (!s.admin || Admin.is()); }); }
 
 /* Führt eine Server-Aktion aus, sperrt solange das Menü und zeigt Fehler an */
 async function run(label, fn) {
@@ -62,7 +63,7 @@ function go(id) {
   try { localStorage.setItem(SECTION_KEY, id); } catch (e) { /* */ }
   V.Snd.click();
   render();
-  if (id === 'ranks' && !board) loadBoard();
+  if (id === 'ranks') loadBoard();
   window.scrollTo(0, 0);
 }
 function topBar() {
@@ -118,6 +119,7 @@ function loginForm() {
       section = 'play';
       board = null; loadBoard();
       Social.poll();
+      Admin.check();
     });
   }
   pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit('in'); });
@@ -142,7 +144,7 @@ function profileSection() {
     el('h2', { text: 'Konto' }),
     el('p', { class: 'fine', text: 'Angemeldet als ' + a.username + '. Deine Spielstände liegen online und funktionieren auf jedem Gerät.' }),
     el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Abmelden', disabled: busy, onclick: function () {
-      run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); });
+      run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); Admin.check(); });
     } }))));
   body.appendChild(deleteBox(a));
 }
@@ -162,7 +164,7 @@ function deleteBox(a) {
     run('Lösche dein Konto …', async function () {
       await Cloud.deleteAccount(pw.value);
       Store.useAccount(null);
-      deleteOpen = false; section = 'play'; board = null; loadBoard();
+      deleteOpen = false; section = 'play'; board = null; loadBoard(); Admin.check();
       V.toast('Dein Konto wurde gelöscht.', 'good');
     });
   } });
@@ -376,6 +378,11 @@ function renderBody() {
     body.appendChild(boardBox());
   } else if (section === 'profile') {
     profileSection();
+  } else if (section === 'admin') {
+    body.appendChild(head('Admin', 'Spieler verwalten. Jede Aktion wird auf dem Server geprüft und im Protokoll festgehalten.'));
+    var abox = el('div', { class: 'msec-box' });
+    body.appendChild(abox);
+    Admin.render(abox, function () { if (section === 'admin') renderBody(); });
   } else playSection();
 }
 function render() {
@@ -392,6 +399,7 @@ function render() {
 
 /* Neue Anfragen, Einladungen oder Ergebnisse: Zähler und den offenen Bereich auffrischen */
 Social.onChange(syncNav);
+Admin.onChange(function () { if (root && !root.hidden) render(); });
 Friends.onChange(function () { syncNav(); if (section === 'friends' && root && !root.hidden && !typing()) renderBody(); });
 
 function show(cb) {
@@ -410,6 +418,7 @@ function show(cb) {
   if (Store.isAccount()) run('Gleiche mit der Cloud ab …', function () { return Cloud.syncAll(); });
   loadBoard();
   Social.poll();
+  Admin.check();
   clearInterval(pollTimer);
   pollTimer = setInterval(function () { if (!root.hidden) Social.poll(); }, 45000);
 }
