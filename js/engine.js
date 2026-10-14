@@ -27,7 +27,7 @@ function shuffle(a) {
 /* comp = Anteil des Hausvorteils, der als Comps zurückfließt. So bleibt jedes Spiel auf Dauer ein Minus,
    auch mit Beziehung und Talent (höchstens etwa 57 % des erwarteten Verlusts kommen zurück). */
 var TIERS = [
-  { id: 0, name: 'Lobby',              wager: 0,        min: 10,    max: 500,     comp: 0.10, reload: 10000,    bonus: 0 },
+  { id: 0, name: 'Lobby',              wager: 0,        min: 10,    max: 1000,    comp: 0.10, reload: 10000,    bonus: 0 },
   { id: 1, name: 'Bronze Lounge',      wager: 60000,    min: 50,    max: 2500,    comp: 0.15, reload: 25000,    bonus: 5000 },
   { id: 2, name: 'Silver Salon',       wager: 300000,   min: 100,   max: 10000,   comp: 0.20, reload: 100000,   bonus: 10000 },
   { id: 3, name: 'Gold Suite',         wager: 1500000,  min: 500,   max: 50000,   comp: 0.25, reload: 500000,   bonus: 50000 },

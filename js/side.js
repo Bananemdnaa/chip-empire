@@ -171,7 +171,8 @@ function haus() {
   else reset = el('span', { class: 'confirm' }, el('span', { text: 'Wirklich von vorn beginnen?' }),
     el('button', { class: 'btn crimson sm', type: 'button', text: 'Ja, zurücksetzen', onclick: function () { V.hardReset(); } }),
     el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { confirmReset = false; refresh(); } }));
-  body.appendChild(el('div', { class: 'rrow' }, snd, reset));
+  var tut = el('button', { class: 'btn ghost sm', type: 'button', text: 'Einführung erneut zeigen', onclick: function () { V.tutorial.start(); } });
+  body.appendChild(el('div', { class: 'rrow' }, snd, tut, reset));
   body.appendChild(el('p', { class: 'fine', text: 'Alles hier ist Spielgeld ohne Wert. Wenn echtes Glücksspiel für dich oder jemanden in deiner Nähe zum Problem wird: Die Telefonberatung zur Glücksspielsucht des BIÖG (früher BZgA) ist kostenlos und anonym: 0800 1 37 27 00.' }));
 }
 

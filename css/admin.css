@@ -72,3 +72,4 @@
 .ad-field { display: grid; gap: 4px; }
 .ad-field span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .ad-field .name-in { width: 100%; }
+.ad-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }

@@ -189,6 +189,7 @@ async function startGame(id) {
   $('#sndBtn').addEventListener('click', function () { V.S.sound = !V.S.sound; syncSound(); V.save(); if (V.S.sound) V.Snd.click(); });
   V.renderHost(); V.hud(); V.renderDopa(); syncSound();
   showGame(V.S.game);
+  V.tutorial.maybeStart(V.slotId);
   V.say('greet', true);
   V.meta.migrate();
   V.meta.ensureQuests();

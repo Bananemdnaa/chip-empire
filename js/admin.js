@@ -12,7 +12,7 @@ var ACTIONS = { chips: 'Chips gesetzt', rename_save: 'Spielstand umbenannt', del
   show: 'Wieder in Ranglisten', reset_rating: 'Wertung zurückgesetzt', ban: 'Gesperrt', unban: 'Entsperrt', tp: 'Talentpunkte',
   admin_on: 'Admin-Rechte gegeben', admin_off: 'Admin-Rechte entzogen', announce: 'Nachricht an alle', announce_clear: 'Nachricht entfernt',
   note: 'Notiz', void_duel: 'Duell annulliert', gift: 'Geschenk erstellt', gift_stop: 'Geschenk beendet' };
-var role = null, view = 'overview', q = '', dq = '', players = null, stats = null, log = null, duels = null, gifts = null, ann = undefined, err = '', busy = false;
+var role = null, view = 'overview', q = '', dq = '', players = null, stats = null, online = null, log = null, duels = null, gifts = null, ann = undefined, err = '', busy = false;
 var timer = 0, seq = 0, confirm = null, rerender = null, renaming = null, banFor = null, noteFor = null;
 
 function when(t) { var d = new Date(t); return !t || isNaN(d) ? '–' : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }
@@ -29,7 +29,11 @@ async function load(what) {
   try {
     if (role === null) role = (await Cloud.rpc('my_role')) || 'admin';
     if (what === 'players') { var r = await Cloud.rpc('admin_players', { q: q, lim: 30 }); if (s === seq) players = r || []; }
-    else if (what === 'overview') stats = await Cloud.rpc('admin_stats');
+    else if (what === 'overview') {
+      stats = await Cloud.rpc('admin_stats');
+      /* Liste der Online-Spieler: ohne Datenbank-Update einfach weglassen */
+      try { online = (await Cloud.rpc('admin_online')) || []; } catch (e) { online = null; }
+    }
     else if (what === 'log') log = (await Cloud.rpc('admin_log_list', { lim: 80 })) || [];
     else if (what === 'duels') { var d = await Cloud.rpc('admin_duels', { q: dq, lim: 40 }); if (s === seq) duels = d || []; }
     else if (what === 'gifts') gifts = (await Cloud.rpc('admin_gifts')) || [];
@@ -91,6 +95,20 @@ function overview(host) {
     tile('Duelle', fmt(S.duels), fmt(S.duels1) + ' heute · ' + fmt(S.open_duels) + ' offen'),
     tile('Freundschaften', fmt(S.friendships)),
     tile('Gesperrt / ausgeblendet', fmt(S.banned) + ' / ' + fmt(S.hidden))));
+  /* Wer gerade spielt: Name, Spielstand, Spiel, Kontostand */
+  if (online) {
+    var on = el('section', { class: 'ad-box ad-online' }, el('h4', { text: 'Gerade online (' + online.length + ')' }));
+    if (!online.length) on.appendChild(el('p', { class: 'fine', text: 'Gerade spielt niemand.' }));
+    online.forEach(function (o) {
+      var secs = Math.max(0, Math.round((Date.now() - Date.parse(o.seen)) / 1000));
+      on.appendChild(el('div', { class: 'ad-line' },
+        el('span', {}, el('i', { class: 'ad-dot' }), ' ',
+          el('button', { class: 'linkbtn', type: 'button', text: (o.stars > 0 ? '★' + (o.stars > 1 ? o.stars : '') + ' ' : '') + o.username, onclick: function () { q = o.username; players = null; view = 'players'; redraw(); } })),
+        el('span', { class: 'fine', text: o.save_name + ' · ' + (MODES[o.mode] || o.mode) + (o.game && V.GAME_NAME[o.game] ? ' · ' + V.GAME_NAME[o.game] : '') }),
+        el('span', { class: 'fine num', text: fmt(o.balance) + ' · vor ' + (secs < 60 ? secs + ' s' : Math.round(secs / 60) + ' min') })));
+    });
+    host.appendChild(on);
+  }
   var two = el('div', { class: 'ad-two' });
   var team = el('section', { class: 'ad-box' }, el('h4', { text: 'Team' }));
   (S.team || []).forEach(function (t) {
@@ -109,7 +127,7 @@ function overview(host) {
   if (!S.recent_duels.length) rd.appendChild(el('p', { class: 'fine', text: 'Noch keine.' }));
   S.recent_duels.forEach(function (d) { rd.appendChild(duelLine(d)); });
   host.appendChild(rd);
-  host.appendChild(el('div', { class: 'rrow' }, el('button', { class: 'btn ghost sm', type: 'button', text: '↻ Neu laden', onclick: function () { stats = null; redraw(); } })));
+  host.appendChild(el('div', { class: 'rrow' }, el('button', { class: 'btn ghost sm', type: 'button', text: '↻ Neu laden', onclick: function () { stats = null; online = null; redraw(); } })));
 }
 function duelLine(d) {
   var aw = Number(d.as) > Number(d.bs), bw = Number(d.bs) > Number(d.as);

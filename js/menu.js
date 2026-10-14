@@ -2,7 +2,7 @@
 var Menu = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
-var root, inner, body, navEl, onStart, view = 'slots', confirmDel = null, newMode = 'career';
+var root, inner, body, navEl, onStart, view = 'slots', confirmDel = null, newMode = 'career', newTut = true;
 var status = '', busy = false, board = null, boardErr = '', boardMode = 'season', pollTimer = 0;
 var CHIP_COLORS = ['#8E0E2B', '#1E5E8E', '#1A1418', '#5B2A8E', '#C79A3A', '#0F6A4A'];
 var SECTION_KEY = 'chip-empire-menu-section';
@@ -265,11 +265,12 @@ function newForm() {
     var name = input.value.trim().replace(/\s+/g, ' ').slice(0, 20) || 'Spielstand ' + (Store.list().length + 1);
     if (Store.badName(name)) { V.toast('Dieser Name ist nicht erlaubt. Bitte wähl einen anderen.', 'bad'); input.focus(); return; }
     if (account()) {
-      run('Lege Spielstand an …', async function () { var s = await Cloud.createSave(name, newMode); view = 'slots'; onStart(s.id); });
+      run('Lege Spielstand an …', async function () { var s = await Cloud.createSave(name, newMode); if (newTut) V.tutorial.want(s.id); view = 'slots'; onStart(s.id); });
       return;
     }
     var s = Store.create(name, newMode);
     if (!s) { V.toast('Spielstand konnte nicht angelegt werden.', 'bad'); return; }
+    if (newTut) V.tutorial.want(s.id);
     view = 'slots';
     onStart(s.id);
   }
@@ -279,6 +280,10 @@ function newForm() {
     el('h2', { text: 'Neues Spiel' }),
     el('label', { class: 'lbl', text: 'Name deines Imperiums' }), input,
     el('div', { class: 'lbl', text: 'Modus' }), modes,
+    /* Einführung beim ersten Start: an oder aus */
+    el('button', { class: 'tut-toggle', type: 'button', role: 'switch', 'aria-checked': String(newTut),
+      onclick: function () { newTut = !newTut; this.setAttribute('aria-checked', String(newTut)); V.Snd.click(); } },
+      el('span', { class: 'sw' }), el('span', {}, el('b', { text: 'Kurze Einführung beim ersten Start' }), el('small', { text: 'Zeigt dir in ein paar Schritten, wie alles funktioniert.' }))),
     el('div', { class: 'slot-act' },
       el('button', { class: 'btn gold big', type: 'button', text: 'Los geht’s', disabled: busy, onclick: create }),
       el('button', { class: 'btn ghost', type: 'button', text: 'Abbrechen', onclick: function () { view = 'slots'; render(); } })));
@@ -317,7 +322,7 @@ function playSection() {
   var grid = el('div', { class: 'slots' });
   slots.forEach(function (s) { grid.appendChild(vipCard(s)); });
   if (slots.length < Store.MAX_SLOTS && !Store.isBroken()) {
-    grid.appendChild(el('button', { class: 'slot-new', type: 'button', disabled: busy, onclick: function () { view = 'new'; newMode = 'career'; V.Snd.click(); render(); } },
+    grid.appendChild(el('button', { class: 'slot-new', type: 'button', disabled: busy, onclick: function () { view = 'new'; newMode = 'career'; newTut = true; V.Snd.click(); render(); } },
       el('span', { class: 'plus', text: '+' }), el('b', { text: 'Neues Spiel' }), el('span', { text: 'Platz ' + (slots.length + 1) + ' von ' + Store.MAX_SLOTS })));
   }
   body.appendChild(el('section', { 'aria-label': 'Spielstände' }, el('h2', { class: 'menu-h', text: a ? 'Deine Spielstände' : 'Spielstände auf diesem Gerät' }), grid));

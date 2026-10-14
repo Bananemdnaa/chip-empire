@@ -82,3 +82,23 @@
   .stage.evshake { animation: none; }
   .ev-bolt { animation-duration: .6s !important; }
 }
+
+/* ---------- Einführung (Tutorial) ---------- */
+.tut { position: fixed; inset: 0; z-index: 90; }
+.tut-hole { position: fixed; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(6,2,4,.72), 0 0 0 2px var(--gold-hi), 0 0 24px rgba(242,214,142,.6); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+.tut-tip { position: fixed; display: grid; gap: 8px; padding: 14px 16px 12px; border-radius: 16px; background: linear-gradient(180deg, var(--velvet-2), var(--velvet)); border: 1px solid var(--gold); box-shadow: 0 20px 50px rgba(0,0,0,.6); animation: pop .25s ease-out; }
+.tut-tip.center { left: 50%; top: 50%; width: min(400px, calc(100vw - 24px)); transform: translate(-50%, -50%); }
+.tut-tip b { font-family: var(--f-display); font-weight: 400; font-size: 22px; color: var(--gold-hi); }
+.tut-tip p { margin: 0; font-size: 14px; line-height: 1.45; }
+.tut-step { font: 600 11px var(--f-mono); color: var(--muted); letter-spacing: .08em; }
+.tut-acts { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tut-acts .btn.ghost:first-child { margin-right: auto; }
+/* Schalter im Formular „Neues Spiel“ */
+.tut-toggle { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.25); color: var(--ivory); text-align: left; cursor: pointer; font: inherit; }
+.tut-toggle:hover { border-color: var(--gold-lo); }
+.tut-toggle > span:last-child { display: grid; gap: 2px; }
+.tut-toggle small { color: var(--muted); font-size: 12.5px; }
+.tut-toggle .sw { position: relative; flex: none; width: 40px; height: 22px; border-radius: 999px; background: rgba(255,255,255,.15); transition: background .2s; }
+.tut-toggle .sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.tut-toggle[aria-checked="true"] .sw { background: var(--gold); }
+.tut-toggle[aria-checked="true"] .sw::after { transform: translateX(18px); }

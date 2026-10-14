@@ -57,13 +57,13 @@ var GAME_LIST = [
   { id: 'slots', name: 'Slots', tier: 0, edge: 0.021, cat: 'dream' },
   { id: 'wheel', name: 'Glücksrad', tier: 0, edge: 0.05, cat: 'ritual' },
   { id: 'dice', name: 'Würfel', tier: 0, edge: 0.04, cat: 'ritual' },
+  { id: 'plinko', name: 'Plinko', tier: 0, edge: 0.01, cat: 'thrill' },
   { id: 'roulette', name: 'Roulette', tier: 1, edge: 1 / 37, cat: 'ritual' },
   { id: 'ducks', name: 'Entenrennen', short: 'Enten', tier: 1, edge: 0.034, cat: 'ritual' },
-  { id: 'plinko', name: 'Plinko', tier: 1, edge: 0.01, cat: 'thrill' },
+  { id: 'tower', name: 'Dragon Tower', short: 'Tower', tier: 1, edge: 0.03, cat: 'thrill' },
   { id: 'crash', name: 'Crash', tier: 2, edge: 0.011, cat: 'thrill' },
-  { id: 'tower', name: 'Dragon Tower', short: 'Tower', tier: 2, edge: 0.03, cat: 'thrill' },
+  { id: 'hilo', name: 'Hi-Lo-Leiter', short: 'Hi-Lo', tier: 2, edge: 0.04, cat: 'thrill' },
   { id: 'bj', name: 'Blackjack', tier: 3, edge: 0.005, cat: 'strat' },
-  { id: 'hilo', name: 'Hi-Lo-Leiter', short: 'Hi-Lo', tier: 3, edge: 0.04, cat: 'thrill' },
   { id: 'vault', name: 'Tresorknacker', short: 'Tresor', tier: 4, edge: 0.03, cat: 'thrill' }
 ];
 var GAME_TIER = {}, GAME_NAME = {}, GAME_BY = {};
