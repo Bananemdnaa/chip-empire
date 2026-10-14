@@ -63,25 +63,27 @@ function build() {
 
   /* Tisch */
   var board = el('div', { class: 'rboard' });
-  function cell(key, label, cls, col, row) {
+  /* Jede Zelle kennt zwei Plätze: quer (Desktop) und hochkant (Handy, ohne seitliches Scrollen) */
+  function cell(key, label, cls, col, row, vcol, vrow) {
     var c = el('button', { class: 'rcell ' + cls, type: 'button', 'data-key': key, 'aria-label': label.label || label, onclick: function () { onCell(key); },
       oncontextmenu: function (e) { e.preventDefault(); clearSpot(key); } },
       el('span', { class: 'rl', html: label.html || label }), el('span', { class: 'rchip', hidden: true }));
-    c.style.gridColumn = col; c.style.gridRow = row;
+    c.style.setProperty('--c', col); c.style.setProperty('--r', row);
+    c.style.setProperty('--vc', vcol); c.style.setProperty('--vr', vrow);
     board.appendChild(c); cellMap[key] = c;
     return c;
   }
-  cell('n0', '0', 'green', '1', '1 / 4');
+  cell('n0', '0', 'green', '1', '1 / 4', '3 / 6', '1');
   for (var n = 1; n <= 36; n++) {
     var col = Math.ceil(n / 3) + 1, row = 3 - ((n - 1) % 3);
-    cell('n' + n, String(n), E.rColor(n), String(col), String(row));
+    cell('n' + n, String(n), E.rColor(n), String(col), String(row), String(3 + (n - 1) % 3), String(1 + Math.ceil(n / 3)));
   }
-  cell('c3', '2:1', 'out', '14', '1'); cell('c2', '2:1', 'out', '14', '2'); cell('c1', '2:1', 'out', '14', '3');
-  cell('d1', '1. Dutzend', 'out', '2 / 6', '4'); cell('d2', '2. Dutzend', 'out', '6 / 10', '4'); cell('d3', '3. Dutzend', 'out', '10 / 14', '4');
-  cell('low', '1 – 18', 'out', '2 / 4', '5'); cell('even', 'Gerade', 'out', '4 / 6', '5');
-  cell('red', { label: 'Rot', html: '<i class="dia red"></i>' }, 'out', '6 / 8', '5');
-  cell('black', { label: 'Schwarz', html: '<i class="dia black"></i>' }, 'out', '8 / 10', '5');
-  cell('odd', 'Ungerade', 'out', '10 / 12', '5'); cell('high', '19 – 36', 'out', '12 / 14', '5');
+  cell('c3', '2:1', 'out', '14', '1', '5', '14'); cell('c2', '2:1', 'out', '14', '2', '4', '14'); cell('c1', '2:1', 'out', '14', '3', '3', '14');
+  cell('d1', '1. Dutzend', 'out side', '2 / 6', '4', '1', '2 / 6'); cell('d2', '2. Dutzend', 'out side', '6 / 10', '4', '1', '6 / 10'); cell('d3', '3. Dutzend', 'out side', '10 / 14', '4', '1', '10 / 14');
+  cell('low', '1 – 18', 'out side', '2 / 4', '5', '2', '2 / 4'); cell('even', 'Gerade', 'out side', '4 / 6', '5', '2', '4 / 6');
+  cell('red', { label: 'Rot', html: '<i class="dia red"></i>' }, 'out side', '6 / 8', '5', '2', '6 / 8');
+  cell('black', { label: 'Schwarz', html: '<i class="dia black"></i>' }, 'out side', '8 / 10', '5', '2', '8 / 10');
+  cell('odd', 'Ungerade', 'out side', '10 / 12', '5', '2', '10 / 12'); cell('high', '19 – 36', 'out side', '12 / 14', '5', '2', '12 / 14');
   var scroll = el('div', { class: 'rscroll' }, board);
 
   /* Steuerung */

@@ -16,14 +16,15 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chip Empire">
-<link rel="stylesheet" href="css/style.css?v=37">
-<link rel="stylesheet" href="css/shell.css?v=37">
-<link rel="stylesheet" href="css/games.css?v=37">
-<link rel="stylesheet" href="css/tables.css?v=37">
-<link rel="stylesheet" href="css/host.css?v=37">
-<link rel="stylesheet" href="css/meta.css?v=37">
-<link rel="stylesheet" href="css/games2.css?v=37">
-<link rel="stylesheet" href="css/social.css?v=37">
+<link rel="stylesheet" href="css/style.css?v=38">
+<link rel="stylesheet" href="css/shell.css?v=38">
+<link rel="stylesheet" href="css/games.css?v=38">
+<link rel="stylesheet" href="css/tables.css?v=38">
+<link rel="stylesheet" href="css/host.css?v=38">
+<link rel="stylesheet" href="css/meta.css?v=38">
+<link rel="stylesheet" href="css/games2.css?v=38">
+<link rel="stylesheet" href="css/social.css?v=38">
+<link rel="stylesheet" href="css/polish.css?v=38">
 </head>
 <body>
 <main id="menu" class="menu">
@@ -47,7 +48,9 @@
       </div>
     </div>
     <div class="hud-wallet">
-      <div class="bal-box" title="Deine Chips"><img src="favicon.svg" alt=""><b id="bal" class="num">0</b></div>
+      <button id="balBtn" class="bal-box" type="button" title="Deine Chips · Klick zeigt die Bilanz dieser Sitzung" aria-haspopup="dialog" aria-expanded="false">
+        <img src="favicon.svg" alt=""><span class="bal-col"><b id="bal" class="num">0</b><small id="sessNet" class="sess zero">Sitzung ±0</small></span>
+      </button>
       <div class="comp-box"><span class="lbl">Comps</span><b id="comp" class="num">0</b><button id="claimComp" class="btn ghost xs" type="button">Einlösen</button></div>
       <button id="reload" class="btn gold sm" type="button"></button>
       <button id="keysBtn" class="icon-btn only-fine" type="button" aria-label="Tastenkürzel" title="Tastenkürzel (?)">⌨</button>
@@ -64,6 +67,7 @@
     <div class="stage-head">
       <h1 id="gameTitle" class="game-title">Slots</h1>
       <span id="tierLimits" class="limits"></span>
+      <div id="lastRounds" class="last-rounds" aria-label="Letzte Runden in diesem Spiel" hidden></div>
     </div>
     <div id="g-slots" class="game"></div>
     <div id="g-roulette" class="game" hidden></div>
@@ -133,30 +137,31 @@
 <div id="banner" class="banner" hidden role="status"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
-<script src="js/engine.js?v=37"></script>
-<script src="js/art.js?v=37"></script>
+<script src="js/engine.js?v=38"></script>
+<script src="js/art.js?v=38"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-<script src="js/store.js?v=37"></script>
-<script src="js/cloud.js?v=37"></script>
-<script src="js/icons.js?v=37"></script>
-<script src="js/core.js?v=37"></script>
-<script src="js/meta.js?v=37"></script>
-<script src="js/slots.js?v=37"></script>
-<script src="js/roulette.js?v=37"></script>
-<script src="js/blackjack.js?v=37"></script>
-<script src="js/crash.js?v=37"></script>
-<script src="js/chipbets.js?v=37"></script>
-<script src="js/wheel.js?v=37"></script>
-<script src="js/dice.js?v=37"></script>
-<script src="js/ducks.js?v=37"></script>
-<script src="js/plinko.js?v=37"></script>
-<script src="js/tower.js?v=37"></script>
-<script src="js/poker.js?v=37"></script>
-<script src="js/side.js?v=37"></script>
-<script src="js/friends.js?v=37"></script>
-<script src="js/duel.js?v=37"></script>
-<script src="js/social.js?v=37"></script>
-<script src="js/menu.js?v=37"></script>
-<script src="js/main.js?v=37"></script>
+<script src="js/store.js?v=38"></script>
+<script src="js/cloud.js?v=38"></script>
+<script src="js/icons.js?v=38"></script>
+<script src="js/core.js?v=38"></script>
+<script src="js/meta.js?v=38"></script>
+<script src="js/tracker.js?v=38"></script>
+<script src="js/slots.js?v=38"></script>
+<script src="js/roulette.js?v=38"></script>
+<script src="js/blackjack.js?v=38"></script>
+<script src="js/crash.js?v=38"></script>
+<script src="js/chipbets.js?v=38"></script>
+<script src="js/wheel.js?v=38"></script>
+<script src="js/dice.js?v=38"></script>
+<script src="js/ducks.js?v=38"></script>
+<script src="js/plinko.js?v=38"></script>
+<script src="js/tower.js?v=38"></script>
+<script src="js/poker.js?v=38"></script>
+<script src="js/side.js?v=38"></script>
+<script src="js/friends.js?v=38"></script>
+<script src="js/duel.js?v=38"></script>
+<script src="js/social.js?v=38"></script>
+<script src="js/menu.js?v=38"></script>
+<script src="js/main.js?v=38"></script>
 </body>
 </html>

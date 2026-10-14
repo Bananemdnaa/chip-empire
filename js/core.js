@@ -56,12 +56,12 @@ var GAME_LIST = [
   { id: 'wheel', name: 'Glücksrad', tier: 0, edge: 0.05, cat: 'ritual' },
   { id: 'dice', name: 'Würfel', tier: 0, edge: 0.04, cat: 'ritual' },
   { id: 'roulette', name: 'Roulette', tier: 1, edge: 1 / 37, cat: 'ritual' },
-  { id: 'ducks', name: 'Entenrennen', tier: 1, edge: 0.034, cat: 'ritual' },
+  { id: 'ducks', name: 'Entenrennen', short: 'Enten', tier: 1, edge: 0.034, cat: 'ritual' },
   { id: 'plinko', name: 'Plinko', tier: 1, edge: 0.01, cat: 'thrill' },
   { id: 'crash', name: 'Crash', tier: 2, edge: 0.01, cat: 'thrill' },
-  { id: 'tower', name: 'Dragon Tower', tier: 2, edge: 0.03, cat: 'thrill' },
+  { id: 'tower', name: 'Dragon Tower', short: 'Tower', tier: 2, edge: 0.03, cat: 'thrill' },
   { id: 'bj', name: 'Blackjack', tier: 3, edge: 0.005, cat: 'strat' },
-  { id: 'poker', name: 'Video-Poker', tier: 3, edge: 0.02, cat: 'strat' }
+  { id: 'poker', name: 'Video-Poker', short: 'Poker', tier: 3, edge: 0.02, cat: 'strat' }
 ];
 var GAME_TIER = {}, GAME_NAME = {}, GAME_BY = {};
 GAME_LIST.forEach(function (g) { GAME_TIER[g.id] = g.tier; GAME_NAME[g.id] = g.name; GAME_BY[g.id] = g; });
@@ -419,6 +419,7 @@ function settle(game, staked, ret, opt) {
     else if (net < 0 && Math.random() < 0.5) say('loss');
   }
   if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt, prevLoss: prevLoss, atMax: staked > 0 && staked >= room().max });
+  if (V.track) V.track.round(game, staked, ret);
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
 }
@@ -454,7 +455,7 @@ function hud() {
   if (shownBal === null) { shownBal = total; b.textContent = fmt(total); }
   else {
     var from = shownBal, to = total, t0 = performance.now();
-    if (to > from) { var bx = b.parentNode; bx.classList.remove('bump'); void bx.offsetWidth; bx.classList.add('bump'); }
+    if (to > from) { var bx = b.closest('.bal-box'); bx.classList.remove('bump'); void bx.offsetWidth; bx.classList.add('bump'); }
     cancelAnimationFrame(balAnim);
     var step = function (t) {
       var k = clamp((t - t0) / 450, 0, 1), e = 1 - Math.pow(1 - k, 3);

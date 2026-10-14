@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 var $ = V.$, $$ = V.$$;
-var GAMES = V.GAME_LIST.map(function (g) { return { id: g.id, label: g.name }; });
+var GAMES = V.GAME_LIST.map(function (g) { return { id: g.id, label: g.name, short: g.short }; });
 /* In der Leiste nur das Wichtigste; Statistik, Profil und Kulissen sind Reiter im selben Fenster */
 var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
 var SIDE = SIDE_ALL;
@@ -21,6 +21,7 @@ function showGame(id) {
   S.game = id;
   GAMES.forEach(function (g2) { var n = $('#g-' + g2.id); n.hidden = g2.id !== id; if (changed && g2.id === id) { n.style.animation = 'none'; void n.offsetWidth; n.style.animation = ''; } });
   $('#gameTitle').textContent = V.GAME_NAME[id];
+  V.track.strip();
   renderNav();
   V.games.forEach(function (g3) { if (g3.id === id && g3.onShow) g3.onShow(); });
   V.save();
@@ -28,7 +29,9 @@ function showGame(id) {
 /* Spiele als Icon-Leiste (am Handy unten), dazu Stufen/Profil/Statistik als Fenster */
 function railBtn(item, selected, onclick) {
   return V.el('button', { class: 'rail-btn', type: 'button', role: 'tab', 'aria-selected': String(selected), onclick: onclick },
-    V.el('span', { html: Icons[item.id] }), V.el('span', { text: item.label }));
+    V.el('span', { html: Icons[item.id] }),
+    /* Am Handy ist die Leiste schmal: dort der kurze Name, falls es einen gibt */
+    item.short ? V.el('span', {}, V.el('span', { class: 'rl-long', text: item.label }), V.el('span', { class: 'rl-short', text: item.short })) : V.el('span', { text: item.label }));
 }
 function renderNav() {
   var box = $('#gameTabs');
@@ -164,6 +167,7 @@ async function startGame(id) {
   V.clampBets();
   V.games.forEach(function (g) { g.init(); });
   V.side.build();
+  V.track.init();
   renderSideNav();
   $('#drawerClose').addEventListener('click', closeSide);
   $('#drawer').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSide(); });
