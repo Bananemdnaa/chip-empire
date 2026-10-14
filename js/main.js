@@ -207,6 +207,8 @@ async function startGame(id) {
   /* Arena: neue Herausforderungen und Ergebnisse als Hinweis-Punkt */
   V.social.poll();
   setInterval(function () { if (!document.hidden) V.social.poll(); }, 90000);
+  /* Freundschaftsanfragen kommen öfter an als Duelle, deshalb eigener, kürzerer Takt */
+  setInterval(Friends.poll, 45000);
   /* Erst lokal speichern, dann den Stand noch in die Cloud schicken */
   function leave() { V.save(); Cloud.flushOnLeave(); }
   window.addEventListener('pagehide', leave);

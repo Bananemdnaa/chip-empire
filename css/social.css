@@ -34,7 +34,7 @@
 .dr-info .fine { margin: 0; }
 .dr-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .delta { font-weight: 700; font-size: 14px; }
-.duel-row .avatar, .prof-head .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; text-transform: uppercase; color: #2A1608;
+.duel-row .avatar, .prof-head .avatar, .fr-hit .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; text-transform: uppercase; color: #2A1608;
   background: radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 50%, var(--gold-lo)); }
 .rank-em { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-size: 17px; color: var(--gold-hi);
   border: 2px solid var(--gold-lo); background: rgba(0,0,0,.35); }
@@ -64,7 +64,7 @@
 .duel-bets .chipbtn { padding: 6px 12px; font-size: 13.5px; }
 
 /* Menü: Arena-Knopf unter der Bestenliste */
-.board .arena-btn { width: 100%; margin-top: 12px; }
+.board .arena-btn { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
 @media (max-width: 640px) {
   .duel-row { grid-template-columns: 36px minmax(0, 1fr); }
@@ -73,3 +73,21 @@
   .duel-stage { height: 200px; }
   .duel-ctl .btn.big { width: 100%; }
 }
+
+/* ---------- Freunde ---------- */
+.fr-search { display: grid; gap: 6px; margin-bottom: 6px; }
+.fr-search .name-in { width: 100%; max-width: 420px; }
+.fr-results { display: grid; gap: 4px; max-width: 520px; }
+.fr-results .fine { margin: 2px 0 0; }
+.fr-hit { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px;
+  border: 1px solid var(--line); background: rgba(0,0,0,.3); }
+.fr-hit .avatar { width: 34px; height: 34px; font-size: 14px; }
+.fr-hit .dr-info .linkbtn { justify-self: start; }
+.duel-row .avatar, .fr-hit .avatar { position: relative; }
+.avatar.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--good); border: 2px solid var(--velvet); box-shadow: 0 0 8px rgba(111,211,162,.7); }
+.duel-row.online { border-color: rgba(111,211,162,.35); }
+.duel-row.dim-soft { opacity: .8; }
+.tag.good { color: var(--good); border-color: rgba(111,211,162,.5); }
+.btn.icon-only { padding: 6px 10px; }
+

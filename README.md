@@ -13,7 +13,8 @@ Ein Browser-Casinospiel mit Spielgeld und 10 Spielen: Slots, Glücksrad, Würfel
 **Fortschritt (in allen Modi):**
 - **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business) mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
 - **Quests**: drei Daily Quests pro Tag, drei Weekly Quests pro Woche (Truhe mit Talentpunkt) und dauerhafte Meilensteine in Stufen.
-- **Arena** (mit Konto, Taste `D`): Crash-Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung. Beide fliegen dieselben 10 Runden mit denselben Absturzpunkten und starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Siege bringen Elo-Punkte für die Duell-Rangliste. Dazu Freundesliste und Spielerprofile (Namen in den Bestenlisten anklicken).
+- **Arena** (mit Konto, Taste `D`): Crash-Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung. Beide fliegen dieselben 10 Runden mit denselben Absturzpunkten und starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Siege bringen Elo-Punkte für die Duell-Rangliste. Spielerprofile öffnen sich per Klick auf einen Namen in den Bestenlisten.
+- **Freunde** (in der Arena): Spieler per Namensanfang suchen, Anfragen senden, annehmen, ablehnen oder zurückziehen. Neue Anfragen und angenommene Anfragen werden gemeldet, auch im Hauptmenü. Freunde, die gerade spielen, sind grün markiert.
 
 Bis zu 3 Spielstände pro Browser, verwaltet im Hauptmenü. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
@@ -64,5 +65,6 @@ py -3 -m http.server 8765
 | `js/side.js` | Seitenpanel: Stufen, Profil, Statistik, Hinter den Kulissen |
 | `js/menu.js` | Hauptmenü |
 | `js/social.js` | Arena: Duelle, Freunde, Duell-Rangliste, Spielerprofile |
+| `js/friends.js` | Freundesystem: Liste, Anfragen, Spielersuche, Benachrichtigungen |
 | `js/duel.js` | Crash-Duell (Spielfenster, Protokoll, Fortsetzen nach Neuladen) |
 | `js/main.js` | Start und Navigation |

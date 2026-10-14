@@ -71,6 +71,7 @@ function loginForm() {
       await Cloud.syncAll();
       view = 'slots';
       loadBoard();
+      Social.poll();
     });
   }
   pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') go('in'); });
@@ -223,9 +224,19 @@ function boardBox() {
 /* Mit Konto: Arena mit Duellen und Freunden direkt aus dem Menü */
 function arenaBtn(box) {
   if (account()) box.appendChild(el('button', { class: 'btn gold arena-btn', type: 'button', onclick: function () { V.Snd.click(); Social.open(); } },
-    el('span', { class: 'ic', html: Icons.arena }), 'Arena: Duelle und Freunde'));
+    el('span', { class: 'ic', html: Icons.arena }), 'Arena: Duelle und Freunde', arenaCount()));
   return box;
 }
+function arenaCount() { var n = Social.count(); return n ? el('span', { class: 'qcount', text: String(n) }) : null; }
+/* Neue Anfragen oder Einladungen: nur den Zähler am Arena-Knopf auffrischen, nicht das ganze Menü */
+function syncArena() {
+  var b = inner && inner.querySelector('.arena-btn');
+  if (!b) return;
+  var old = b.querySelector('.qcount'); if (old) old.remove();
+  var c = arenaCount(); if (c) b.appendChild(c);
+}
+Social.onChange(syncArena);
+var pollTimer = 0;
 function loadBoard() {
   if (!Cloud.available()) return;
   var mode = boardMode;
@@ -284,6 +295,9 @@ function show(cb) {
   render();
   if (Store.isAccount()) run('Gleiche mit der Cloud ab …', function () { return Cloud.syncAll(); });
   loadBoard();
+  Social.poll();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(function () { if (!root.hidden) Social.poll(); }, 45000);
 }
 /* Blendet das Menü aus; wartet die Animation ab, wenn es sichtbar war */
 function leave() {

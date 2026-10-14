@@ -2,7 +2,7 @@
 var Social = (function () {
 'use strict';
 var el = V.el, fmt = V.fmt, E = V.E;
-var view = 'duels', D = { me: null, list: null, lobby: null, friends: null, board: null }, err = '', loading = false, stamp = 0;
+var view = 'duels', D = { me: null, list: null, lobby: null, board: null }, err = '', loading = false, stamp = 0;
 var openDetail = null, busy = false, rerender = null, overlay = null;
 
 function account() { return Store.isAccount() ? Cloud.current() : null; }
@@ -15,7 +15,14 @@ function ago(t) {
   return 'vor ' + Math.round(s / 86400) + ' Tagen';
 }
 function tierName(u) { return E.TIERS[Math.max(0, Math.min(5, u || 0))].name; }
-function redraw() { if (rerender) rerender(); }
+/* Nicht neu zeichnen, solange jemand in der Spielersuche tippt; das holt der nächste Anlass nach */
+function redraw() {
+  var a = document.activeElement;
+  if (a && a.tagName === 'INPUT' && a.closest && a.closest('.fr-search')) return;
+  if (rerender) rerender();
+}
+Friends.onChange(function () { redraw(); if (V.renderBadges) V.renderBadges(); listeners.forEach(function (fn) { fn(); }); });
+var listeners = [];
 
 /* ---------- Daten ---------- */
 async function load(force) {
@@ -25,14 +32,15 @@ async function load(force) {
   try {
     var r = await Promise.all([
       Cloud.rpc('player_profile', { name: a.username }), Cloud.rpc('duel_list'), Cloud.rpc('duel_lobby'),
-      Cloud.rpc('friend_list'), Cloud.rpc('duel_board', { lim: 20 })]);
-    D.me = r[0]; D.list = r[1] || []; D.lobby = r[2] || []; D.friends = r[3] || []; D.board = r[4] || []; err = '';
+      Cloud.rpc('duel_board', { lim: 20 }), Friends.load(force)]);
+    D.me = r[0]; D.list = r[1] || []; D.lobby = r[2] || []; D.board = r[3] || []; err = '';
   } catch (e) {
     err = /noch nicht eingerichtet/.test(e.message || '') ? 'Für die Arena fehlt noch das Datenbank-Update (SQL in Supabase ausführen).' : 'Arena gerade nicht erreichbar: ' + (e.message || e);
   }
   stamp = Date.now(); loading = false;
   if (V.renderBadges) V.renderBadges();
   redraw();
+  listeners.forEach(function (fn) { fn(); });
 }
 /* Einladungen, Freundschaftsanfragen und neue Ergebnisse */
 function seenIds() { try { return JSON.parse(localStorage.getItem('chip-empire-seen-duels') || '[]'); } catch (e) { return []; } }
@@ -43,10 +51,12 @@ function markSeen() {
 }
 function unseenResults() { var s = seenIds(); return (D.list || []).filter(function (r) { return r.status === 'done' && s.indexOf(r.id) < 0; }).length; }
 function invites() { return (D.list || []).filter(function (r) { return r.role === 'b' && r.status === 'open'; }); }
-function badge() {
-  if (!account()) return false;
-  return !!Duel.pending() || invites().length > 0 || (D.friends || []).some(function (f) { return f.state === 'incoming'; }) || unseenResults() > 0;
+/* Anzahl offener Dinge: laufendes Duell, Einladungen, neue Ergebnisse, Freundschaftsanfragen */
+function count() {
+  if (!account()) return 0;
+  return (Duel.pending() ? 1 : 0) + invites().length + unseenResults() + Friends.incoming().length;
 }
+function badge() { return count() > 0; }
 
 /* Server-Aktion mit Sperre und Fehlermeldung */
 async function act(fn, ok) {
@@ -93,7 +103,7 @@ function render(host, refresh) {
     return;
   }
   load();
-  var cnt = { duels: invites().length + unseenResults() + (Duel.pending() ? 1 : 0), friends: (D.friends || []).filter(function (f) { return f.state === 'incoming'; }).length, board: 0 };
+  var cnt = { duels: invites().length + unseenResults() + (Duel.pending() ? 1 : 0), friends: Friends.incoming().length, board: 0 };
   var seg = el('div', { class: 'qseg', role: 'tablist' });
   [['duels', 'Duelle'], ['friends', 'Freunde'], ['board', 'Rangliste']].forEach(function (x) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(view === x[0]), onclick: function () { view = x[0]; V.Snd.click(); redraw(); } },
@@ -102,7 +112,7 @@ function render(host, refresh) {
   host.appendChild(seg);
   if (err) { host.appendChild(el('p', { class: 'fine', text: err })); return; }
   if (!D.list) { host.appendChild(el('p', { class: 'fine', text: 'Lade die Arena …' })); return; }
-  if (view === 'friends') friends(host);
+  if (view === 'friends') Friends.render(host);
   else if (view === 'board') board(host);
   else duels(host);
 }
@@ -129,7 +139,7 @@ function duels(host) {
   /* Neues Duell */
   var input = el('input', { class: 'name-in sm', type: 'text', maxlength: '16', placeholder: 'Benutzername', 'aria-label': 'Gegner', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && input.value.trim()) challenge(input.value.trim()); });
-  var fr = (D.friends || []).filter(function (f) { return f.state === 'friend'; });
+  var fr = Friends.friends();
   host.appendChild(el('div', { class: 'duel-new' },
     el('h4', { text: 'Neues Crash-Duell' }),
     el('p', { class: 'fine', text: '10 Runden, beide Spieler bekommen dieselben Absturzpunkte und starten mit 1.000 Duell-Chips. Dein Kontostand ist egal, nur dein Timing zählt.' }),
@@ -217,32 +227,6 @@ function cell(e, p) {
   return el('td', { class: 'num ' + (won ? 'pos' : 'neg'), text: fmt(e.b) + (won ? ' @ ' + V.fmtX(Number(e.c)) : ' ✗') });
 }
 
-function friends(host) {
-  var input = el('input', { class: 'name-in sm', type: 'text', maxlength: '16', placeholder: 'Benutzername', 'aria-label': 'Freund hinzufügen', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
-  function add() {
-    var n = input.value.trim(); if (!n) { input.focus(); return; }
-    act(function () { return Cloud.rpc('friend_request', { name: n }); }, function (r) { return r === 'accepted' ? 'Ihr seid jetzt Freunde.' : r === 'exists' ? 'Gibt es schon.' : 'Anfrage an ' + n + ' gesendet.'; });
-  }
-  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
-  host.appendChild(el('div', { class: 'dn-row' }, input, el('button', { class: 'btn gold', type: 'button', text: 'Anfrage senden', onclick: add })));
-  var F = D.friends;
-  if (!F.length) { host.appendChild(el('p', { class: 'fine', text: 'Noch keine Freunde. Schick eine Anfrage per Benutzername oder klick in einer Bestenliste auf einen Namen.' })); return; }
-  F.forEach(function (f) {
-    var acts;
-    if (f.state === 'incoming') acts = [
-      el('button', { class: 'btn gold sm', type: 'button', text: 'Annehmen', onclick: function () { act(function () { return Cloud.rpc('friend_respond', { name: f.username, ok: true }); }, 'Ihr seid jetzt Freunde.'); } }),
-      el('button', { class: 'btn ghost sm', type: 'button', text: 'Ablehnen', onclick: function () { act(function () { return Cloud.rpc('friend_respond', { name: f.username, ok: false }); }); } })];
-    else if (f.state === 'outgoing') acts = [el('span', { class: 'tag', text: 'Angefragt' }),
-      el('button', { class: 'btn ghost sm', type: 'button', text: 'Zurückziehen', onclick: function () { act(function () { return Cloud.rpc('friend_remove', { name: f.username }); }); } })];
-    else acts = [el('button', { class: 'btn gold sm', type: 'button', text: '⚔ Duell', onclick: function () { challenge(f.username); } })];
-    host.appendChild(el('div', { class: 'duel-row' + (f.state === 'incoming' ? ' hot' : '') },
-      el('span', { class: 'avatar', text: f.username.charAt(0) }),
-      el('div', { class: 'dr-info' }, el('b', {}, nameBtn(f.username), f.state === 'incoming' ? ' möchte dein Freund sein' : ''),
-        el('span', { class: 'fine', text: [f.level ? 'Level ' + f.level : '', f.unlocked != null ? tierName(f.unlocked) : '', 'Wertung ' + fmt(f.rating), f.last_active ? 'aktiv ' + ago(f.last_active) : ''].filter(Boolean).join(' · ') })),
-      el('div', { class: 'dr-act' }, acts)));
-  });
-}
-
 function board(host) {
   var B = D.board, myName = (account() || {}).username;
   if (!B.length) { host.appendChild(el('p', { class: 'fine', text: 'Noch niemand hat ein Duell beendet. Sei der Erste.' })); return; }
@@ -296,10 +280,22 @@ function fillProfile(body, P) {
     !P.me && a && P.vs ? el('div', {}, el('span', { text: 'Deine Bilanz' }), el('b', { class: 'num', text: P.vs.wins + ' : ' + P.vs.losses })) : null));
   if (a && !P.me) {
     var row = el('div', { class: 'rrow' }, el('button', { class: 'btn gold', type: 'button', text: '⚔ Herausfordern', onclick: function () { challenge(P.username); } }));
-    var fAct = function (fn, ok) { return function () { act(fn, ok).then(function () { profile(P.username); }); }; };
-    if (!P.friend) row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: '+ Freund hinzufügen', onclick: fAct(function () { return Cloud.rpc('friend_request', { name: P.username }); }, 'Anfrage gesendet.') }));
-    else if (P.friend === 'incoming') row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Freundschaft annehmen', onclick: fAct(function () { return Cloud.rpc('friend_respond', { name: P.username, ok: true }); }, 'Ihr seid jetzt Freunde.') }));
-    else row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: P.friend === 'outgoing' ? 'Anfrage zurückziehen' : 'Freund entfernen', onclick: fAct(function () { return Cloud.rpc('friend_remove', { name: P.username }); }) }));
+    /* Nach der Aktion das Profil neu laden, damit der Knopf zum neuen Stand passt */
+    var fAct = function (fn) { return function () { this.disabled = true; fn(P.username).then(function () { if (profDlg) profile(P.username); }); }; };
+    if (!P.friend) row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: '+ Freund hinzufügen', onclick: fAct(Friends.send) }));
+    else if (P.friend === 'incoming') {
+      row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Freundschaft annehmen', onclick: fAct(Friends.accept) }));
+      row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Ablehnen', onclick: fAct(Friends.decline) }));
+    } else if (P.friend === 'outgoing') {
+      row.appendChild(el('span', { class: 'tag', text: 'Angefragt' }));
+      row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Anfrage zurückziehen', onclick: fAct(Friends.withdraw) }));
+    } else {
+      row.appendChild(el('span', { class: 'tag good', text: 'Freund' }));
+      row.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Freund entfernen', onclick: function () {
+        if (this.dataset.sure) { fAct(Friends.remove).call(this); return; }
+        this.dataset.sure = '1'; this.textContent = 'Wirklich entfernen?'; this.classList.add('crimson');
+      } }));
+    }
     body.appendChild(row);
   }
   if ((P.saves || []).length) {
@@ -326,8 +322,9 @@ function open() {
 }
 
 /* Im Hintergrund nachsehen, ob jemand herausgefordert hat */
-function poll() { if (account()) load(true); }
+function poll() { if (account() && !document.hidden) load(true); }
 
-return { render: render, profile: profile, open: open, badge: badge, poll: poll, challenge: challenge };
+return { render: render, profile: profile, open: open, badge: badge, count: count, poll: poll, challenge: challenge,
+  onChange: function (fn) { listeners.push(fn); } };
 })();
 V.social = Social;
