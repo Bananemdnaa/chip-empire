@@ -243,7 +243,7 @@ async function startGame(id) {
   }, 1000);
   setInterval(function () { if (!V.isBusy() && Math.random() < 0.35) V.say('chat'); }, 45000);
   /* Arena: neue Herausforderungen und Ergebnisse als Hinweis-Punkt */
-  V.social.poll();
+  V.social.poll(); V.social.startPing();
   setInterval(function () { if (!document.hidden) V.social.poll(); }, 90000);
   /* Freundschaftsanfragen kommen öfter an als Duelle, deshalb eigener, kürzerer Takt */
   setInterval(Friends.poll, 45000);
@@ -253,29 +253,46 @@ async function startGame(id) {
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') leave(); });
 }
 
-/* Neue Version online? Dann einen Hinweis zeigen, statt Spieler auf altem Code weiterspielen zu lassen */
-var updateShown = 0;
+/* Neue Version online? Dann eine eigene Leiste oben zeigen, statt Spieler auf altem Code weiterspielen zu lassen.
+   Bewusst nicht das normale Banner: Das ersetzt jeder Gewinn nach ein paar Sekunden. Geprüft wird beim Start,
+   alle 3 Minuten und jedes Mal, wenn man die App (am Handy) wieder in den Vordergrund holt. */
+var updateBar = null, snoozeUntil = 0, lastCheck = 0;
 function myVersion() {
   var s = document.querySelector('script[src*="main.js?v="]'), m = s && /v=(\d+)/.exec(s.getAttribute('src'));
   return m ? m[1] : null;
 }
+function reloadTo(v) {
+  if (V.isBusy()) { V.toast('Beende erst die laufende Runde, dann lade neu.', 'bad'); return; }
+  V.save();
+  /* Neue Adresse statt reload(): sonst kann der Browser die alte index.html aus dem Zwischenspeicher nehmen */
+  var go = function () { location.replace(location.pathname + '?v=' + v); };
+  Cloud.flush().then(go, go);
+}
+function showUpdate(v) {
+  if (updateBar || Date.now() < snoozeUntil) return;
+  updateBar = V.el('div', { class: 'upd-bar', role: 'status' },
+    V.el('span', { class: 'upd-ico', text: '✨' }),
+    V.el('span', { class: 'upd-txt' }, V.el('b', { text: 'Neue Version da' }), V.el('small', { text: 'Neu laden holt die neuesten Funktionen. Dein Spielstand bleibt.' })),
+    V.el('button', { class: 'btn gold sm', type: 'button', text: 'Neu laden', onclick: function () { reloadTo(v); } }),
+    V.el('button', { class: 'icon-btn upd-x', type: 'button', 'aria-label': 'Später', title: 'Später', text: '✕', onclick: function () {
+      snoozeUntil = Date.now() + 20 * 60 * 1000; if (updateBar) updateBar.remove(); updateBar = null;
+    } }));
+  document.body.appendChild(updateBar);
+}
 function checkUpdate() {
-  if (document.hidden || Date.now() - updateShown < 30 * 60 * 1000) return;
+  if (document.hidden || updateBar || Date.now() - lastCheck < 30000) return;
+  lastCheck = Date.now();
   fetch('index.html?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
     var m = /main\.js\?v=(\d+)/.exec(t), mine = myVersion();
-    if (!m || !mine || m[1] === mine) return;
-    updateShown = Date.now();
-    V.banner('Neue Version verfügbar', 'Lade neu, um die neuesten Funktionen zu bekommen. Dein Spielstand bleibt erhalten.', { kind: 'level', ms: 60000, actions: [
-      { label: 'Neu laden', gold: true, fn: function () {
-        if (V.isBusy()) { V.toast('Beende erst die laufende Runde, dann lade neu.', 'bad'); updateShown = 0; return; }
-        V.save(); Cloud.flush().finally(function () { location.reload(); });
-      } },
-      { label: 'Später', fn: function () {} }] });
+    if (m && mine && Number(m[1]) > Number(mine)) showUpdate(m[1]);
   }).catch(function () { /* offline: beim nächsten Mal */ });
 }
 
 async function init() {
-  setInterval(checkUpdate, 5 * 60 * 1000);
+  setInterval(checkUpdate, 3 * 60 * 1000);
+  setTimeout(checkUpdate, 15000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkUpdate(); });
+  window.addEventListener('focus', checkUpdate);
   var u = await Cloud.init();
   Store.useAccount(u ? u.id : null);
   var id = Store.active();

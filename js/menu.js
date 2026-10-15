@@ -431,7 +431,7 @@ function renderBody() {
   body.setAttribute('data-sec', section);
   var a = account();
   if (section === 'arena') {
-    body.appendChild(head('Arena', 'Duelle gegen andere Spieler in Crash, Dragon Tower oder Blackjack: derselbe Zufall und dieselben Startchips für beide.'));
+    body.appendChild(head('Arena', 'Live-Duelle gegen andere Spieler in Crash, Dragon Tower oder Blackjack: Ihr spielt gleichzeitig, mit demselben Zufall und denselben Startchips.'));
     if (!a) { body.appendChild(needAccount('In der Arena forderst du andere Spieler zu Duellen in Crash, Dragon Tower oder Blackjack heraus und sammelst Wertungspunkte.')); return; }
     var box = el('div', { class: 'msec-box' });
     body.appendChild(box);
@@ -489,7 +489,7 @@ function show(cb) {
   render();
   if (Store.isAccount()) run('Gleiche mit der Cloud ab …', function () { return Cloud.syncAll(); });
   loadBoard();
-  Social.poll();
+  Social.poll(); Social.startPing();
   checkAdmin();
   Cloud.announcement().then(function (a) { ann = a; if (a && !root.hidden) render(); });
   clearInterval(pollTimer);

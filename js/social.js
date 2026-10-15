@@ -50,7 +50,13 @@ function markSeen() {
   try { localStorage.setItem('chip-empire-seen-duels', JSON.stringify(ids.slice(0, 60))); } catch (e) { /* */ }
 }
 function unseenResults() { var s = seenIds(); return (D.list || []).filter(function (r) { return r.status === 'done' && s.indexOf(r.id) < 0; }).length; }
-function invites() { return (D.list || []).filter(function (r) { return r.role === 'b' && r.status === 'open'; }); }
+/* Einladungen an mich: aus der Arena-Liste und frisch aus dem schnellen Abgleich (duel_ping) */
+function invites() {
+  var seen = {}, out = [];
+  (D.list || []).filter(function (r) { return r.role === 'b' && (r.status === 'open' || r.status === 'invited'); }).forEach(function (r) { seen[r.id] = 1; out.push(r); });
+  (P.invites || []).forEach(function (x) { if (!seen[x.id]) out.push({ id: x.id, role: 'b', status: 'invited', opponent: x.challenger, game: x.game, created_at: x.created_at, rating: x.rating }); });
+  return out.filter(function (r) { return !gone[r.id]; });
+}
 /* Anzahl offener Dinge: laufendes Duell, Einladungen, neue Ergebnisse, Freundschaftsanfragen */
 function count() {
   if (!account()) return 0;
@@ -71,7 +77,10 @@ async function act(fn, ok) {
 /* ---------- Duelle starten ---------- */
 function canDuel() {
   if (Duel.isOpen()) return false;
-  if (Duel.pending()) { V.toast('Spiel erst dein laufendes Duell zu Ende.', 'bad'); return false; }
+  var pd = Duel.pending();
+  /* Ein Live-Duell von vorhin: wieder öffnen, der Server sagt, ob es noch läuft oder schon fertig ist */
+  if (pd && pd.live) { Duel.resume(function () { load(true); }); return false; }
+  if (pd) { V.toast('Spiel erst dein laufendes Duell zu Ende.', 'bad'); return false; }
   if (V.isBusy && V.isBusy()) { V.toast('Beende erst die laufende Runde.', 'bad'); return false; }
   return true;
 }
@@ -85,19 +94,66 @@ function challenge(name, game) {
   if (!game) { pickGame(name); return; }
   setGame(game);
   act(async function () {
-    var rows = await Cloud.rpc('duel_create', { opp: name || null, gm: game });
-    var r = rows && rows[0];
-    if (!r) throw new Error('Duell konnte nicht angelegt werden.');
     closeProfile();
-    Duel.start({ id: r.id, opp: name || '', role: 'a', game: game, points: r.points, setup: r.setup }, function () { load(true); });
+    await Duel.invite(name || null, game, function () { load(true); });
   });
 }
 function accept(id, opp) {
   if (!canDuel()) return;
-  act(async function () {
-    var r = await Cloud.rpc('duel_join', { did: id });
-    Duel.start({ id: id, opp: opp, role: 'b', game: r.game, points: r.points, setup: r.setup }, function () { load(true); });
-  });
+  hideInvite(id);
+  act(async function () { await Duel.join(id, opp, function () { load(true); }); });
+}
+function decline(id) {
+  gone[id] = 1; hideInvite(id);
+  act(function () { return Cloud.rpc('duel_decline', { did: id }); });
+}
+
+/* ---------- Schneller Abgleich: Einladungen sofort melden ----------
+   Alle paar Sekunden (nur sichtbarer Tab, nur mit Konto) fragt duel_ping nach Einladungen an mich.
+   Eine neue Einladung erscheint als Karte mit Annehmen und Ablehnen, egal ob im Spiel oder im Menü. */
+var P = { invites: [], lobby: 0, active: null }, gone = {}, shown = {}, resumed = {}, pingSig = '', pingTimer = 0, pingOff = false, invCard = null, invId = null;
+function startPing() {
+  if (pingTimer) return;
+  pingTimer = setInterval(ping, 5000);
+  setTimeout(ping, 1500);
+}
+async function ping() {
+  if (pingOff || !account() || document.hidden) return;
+  try { P = (await Cloud.rpc('duel_ping')) || P; }
+  catch (e) { if (/noch nicht eingerichtet|does not exist|schema cache/.test(e.message || '')) pingOff = true; return; }
+  P.invites = P.invites || [];
+  var ids = {}; P.invites.forEach(function (x) { ids[x.id] = 1; });
+  /* Neue oder verschwundene Einladungen: Arena-Ansicht auffrischen */
+  var sig = Object.keys(ids).sort().join(',') + '|' + P.lobby;
+  if (sig !== pingSig) { var first = !pingSig; pingSig = sig; redraw(); if (!first) load(true); }
+  if (invId && !ids[invId]) hideInvite(invId);
+  var fresh = P.invites.filter(function (x) { return !shown[x.id] && !gone[x.id]; });
+  if (fresh.length && !Duel.isOpen() && !invCard) showInvite(fresh[0]);
+  /* Nach einem Neuladen mitten im Live-Duell: sofort zurück ins Duell */
+  var A = P.active, pd = Duel.pending();
+  if (A && A.status === 'live' && !A.done && !Duel.isOpen() && pd && pd.id === A.id && !resumed[A.id]) { resumed[A.id] = 1; Duel.resume(function () { load(true); }); }
+  if (V.renderBadges) V.renderBadges();
+  listeners.forEach(function (fn) { fn(); });
+}
+function showInvite(x) {
+  shown[x.id] = 1; invId = x.id;
+  var G = gameInfo(x.game);
+  invCard = el('div', { class: 'inv-card', role: 'alertdialog', 'aria-label': 'Duell-Einladung' },
+    el('span', { class: 'gc-kick', text: '⚔ Live-Duell' }),
+    el('div', { class: 'inv-h' }, el('span', { class: 'avatar', text: x.challenger.charAt(0) }),
+      el('div', {}, el('b', { text: x.challenger + ' fordert dich heraus' }), el('small', { text: G.icon + ' ' + G.name + ' · Wertung ' + fmt(x.rating) }))),
+    el('p', { class: 'fine', text: 'Ihr spielt gleichzeitig dieselben Runden mit je 1.000 Duell-Chips. ' + x.challenger + ' wartet gerade.' }),
+    el('div', { class: 'gc-acts' },
+      el('button', { class: 'btn ghost sm', type: 'button', text: 'Ablehnen', onclick: function () { decline(x.id); } }),
+      el('button', { class: 'btn gold sm', type: 'button', text: '⚔ Annehmen', onclick: function () { accept(x.id, x.challenger); } })));
+  document.body.appendChild(invCard);
+  V.Snd.unlock();
+  if (navigator.vibrate) { try { navigator.vibrate([80, 60, 80]); } catch (e) { /* */ } }
+}
+function hideInvite(id) {
+  if (!invCard || (id && id !== invId)) return;
+  var c = invCard; invCard = null; invId = null;
+  c.classList.add('out'); setTimeout(function () { c.remove(); }, 250);
 }
 function $$(sel, r) { return Array.prototype.slice.call(r.querySelectorAll(sel)); }
 /* Auswahl der drei Duell-Spiele als Kacheln */
@@ -115,7 +171,7 @@ function pickGame(name) {
   closeProfile();
   var p = panel('Duell gegen ' + name, closeProfile);
   profDlg = p.dlg;
-  p.body.appendChild(el('p', { class: 'fine dg-intro', text: 'Wähle das Spiel. ' + name + ' spielt danach genau dieselben Runden.' }));
+  p.body.appendChild(el('p', { class: 'fine dg-intro', text: 'Wähle das Spiel. ' + name + ' bekommt sofort eine Einladung, dann spielt ihr gleichzeitig dieselben Runden. Dafür muss ' + name + ' gerade online sein.' }));
   p.body.appendChild(gamePicker());
   p.body.appendChild(el('div', { class: 'rrow dg-go' }, el('button', { class: 'btn gold big', type: 'button', text: '⚔ Duell starten', onclick: function () { challenge(name, newGame); } })));
   p.dlg.querySelector('.dg-tile[aria-checked="true"]').focus();
@@ -160,7 +216,7 @@ function nameBtn(name) { return el('button', { class: 'linkbtn', type: 'button',
 function duels(host) {
   host.appendChild(meCard());
   var p = Duel.pending();
-  if (p) {
+  if (p && !p.live) {
     host.appendChild(el('div', { class: 'duel-row hot' },
       el('div', { class: 'dr-ico', text: '⏸' }),
       el('div', { class: 'dr-info' }, el('b', { text: 'Laufendes Duell' + (p.opp ? ' gegen ' + p.opp : '') }),
@@ -171,18 +227,18 @@ function duels(host) {
   var input = el('input', { class: 'name-in sm', type: 'text', maxlength: '16', placeholder: 'Benutzername', 'aria-label': 'Gegner', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && input.value.trim()) challenge(input.value.trim(), newGame); });
   var fr = Friends.friends();
-  host.appendChild(el('div', { class: 'duel-new' },
+  var newBox = el('div', { class: 'duel-new' },
     el('h4', { text: 'Neues Duell' }),
-    el('p', { class: 'fine', text: 'Beide spielen dieselben Runden mit demselben Zufall und starten mit 1.000 Duell-Chips. Dein Kontostand ist egal.' }),
+    el('p', { class: 'fine', text: 'Live: Ihr spielt gleichzeitig dieselben Runden mit demselben Zufall, beide mit 1.000 Duell-Chips, und seht euch dabei gegenseitig. Dein Gegner muss gerade online sein, Freunde mit grünem Punkt spielen gerade. Dein Kontostand ist egal.' }),
     el('div', { class: 'dn-step', text: '1. Spiel wählen' }),
     gamePicker(),
     el('div', { class: 'dn-step', text: '2. Gegner wählen' }),
     el('div', { class: 'dn-row' },
-      el('button', { class: 'btn gold', type: 'button', text: '⚔ Offen für alle', title: 'Jeder kann die Herausforderung annehmen', onclick: function () { challenge(null, newGame); } }),
+      el('button', { class: 'btn gold', type: 'button', text: '⚔ Offen für alle', title: 'Jeder, der gerade in der Arena ist, kann annehmen', onclick: function () { challenge(null, newGame); } }),
       el('span', { class: 'dn-or', text: 'oder' }), input,
       el('button', { class: 'btn ghost', type: 'button', text: 'Herausfordern', onclick: function () { if (input.value.trim()) challenge(input.value.trim(), newGame); else input.focus(); } })),
     fr.length ? el('div', { class: 'dn-friends' }, el('span', { class: 'fine', text: 'Freunde:' }),
-      fr.slice(0, 8).map(function (f) { return el('button', { class: 'chipbtn' + (Friends.online(f) ? ' online' : ''), type: 'button', text: '⚔ ' + f.username, title: Friends.online(f) ? 'Spielt gerade' : '', onclick: function () { challenge(f.username, newGame); } }); })) : null));
+      fr.slice(0, 8).map(function (f) { return el('button', { class: 'chipbtn' + (Friends.online(f) ? ' online' : ''), type: 'button', text: '⚔ ' + f.username, title: Friends.online(f) ? 'Spielt gerade' : '', onclick: function () { challenge(f.username, newGame); } }); })) : null);
 
   var inv = invites();
   if (inv.length) {
@@ -190,14 +246,15 @@ function duels(host) {
     inv.forEach(function (r) {
       host.appendChild(el('div', { class: 'duel-row hot' },
         el('div', { class: 'dr-ico', text: gameInfo(r.game).icon }),
-        el('div', { class: 'dr-info' }, el('b', {}, nameBtn(r.opponent), ' fordert dich heraus'), el('span', { class: 'fine' }, gameChip(r.game), ' ' + ago(r.created_at) + ' · hat schon gespielt')),
+        el('div', { class: 'dr-info' }, el('b', {}, nameBtn(r.opponent), ' fordert dich heraus'),
+          el('span', { class: 'fine' }, gameChip(r.game), ' ' + (r.status === 'invited' ? '● wartet gerade auf dich' : ago(r.created_at) + ' · hat schon gespielt'))),
         el('div', { class: 'dr-act' },
           el('button', { class: 'btn gold sm', type: 'button', text: 'Annehmen', onclick: function () { accept(r.id, r.opponent); } }),
-          el('button', { class: 'btn ghost sm', type: 'button', text: 'Ablehnen', onclick: function () { act(function () { return Cloud.rpc('duel_decline', { did: r.id }); }); } }))));
+          el('button', { class: 'btn ghost sm', type: 'button', text: 'Ablehnen', onclick: function () { decline(r.id); } }))));
     });
   }
   if (D.lobby.length) {
-    host.appendChild(el('h4', { text: 'Offene Herausforderungen' }));
+    host.appendChild(el('h4', { text: 'Offene Herausforderungen · warten gerade' }));
     D.lobby.forEach(function (r) {
       host.appendChild(el('div', { class: 'duel-row' },
         el('div', { class: 'dr-ico', text: gameInfo(r.game).icon }),
@@ -205,6 +262,16 @@ function duels(host) {
         el('button', { class: 'btn gold sm', type: 'button', text: 'Annehmen', onclick: function () { accept(r.id, r.challenger); } })));
     });
   }
+  /* Mein laufendes Live-Duell (z. B. Fenster geschlossen, während der Gegner noch spielt) */
+  D.list.filter(function (r) { return r.status === 'live'; }).forEach(function (r) {
+    host.appendChild(el('div', { class: 'duel-row hot' },
+      el('div', { class: 'dr-ico', text: gameInfo(r.game).icon }),
+      el('div', { class: 'dr-info' }, el('b', { text: '● Live gegen ' + (r.opponent || '?') }),
+        el('span', { class: 'fine' }, gameChip(r.game), ' ' + (r.my_score != null ? 'Du bist fertig (' + fmt(r.my_score) + '), ' + (r.opponent || 'dein Gegner') + ' spielt noch' : 'läuft gerade'))),
+      p ? el('button', { class: 'btn gold sm', type: 'button', text: 'Zum Duell', onclick: function () { Duel.resume(function () { load(true); }); } }) : null));
+  });
+  /* Neues Duell erst nach Einladungen und offenen Herausforderungen, damit die am Handy ganz oben stehen */
+  host.appendChild(newBox);
   var waiting = D.list.filter(function (r) { return (r.role === 'a' && r.status === 'open') || r.status === 'a_playing' || r.status === 'b_playing'; });
   if (waiting.length) {
     host.appendChild(el('h4', { text: 'Warten auf Gegner' }));
@@ -359,7 +426,7 @@ function fillProfile(body, P) {
 function poll() { if (account() && !document.hidden) load(true); }
 
 return { render: render, profile: profile, profileInto: profileInto, badge: badge, count: count, invites: function () { return invites().length + unseenResults() + (Duel.pending() ? 1 : 0); },
-  poll: poll, challenge: challenge,
+  poll: poll, challenge: challenge, startPing: startPing, ping: ping,
   onChange: function (fn) { listeners.push(fn); } };
 })();
 V.social = Social;

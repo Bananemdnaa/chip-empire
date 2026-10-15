@@ -172,3 +172,44 @@
 .tag.good { color: var(--good); border-color: rgba(111,211,162,.5); }
 .btn.icon-only { padding: 6px 10px; }
 
+
+/* ---------- Live-Duelle ---------- */
+.duel-panel { position: relative; }
+.dv-vs.live .dv-side small { display: block; line-height: 1.3; }
+.dv-mini { color: var(--gold-hi); font-weight: 700; font-size: 13px; }
+.dv-hint { color: var(--muted); font-size: 10.5px; }
+.dv-livetag { font: 700 10px var(--f-mono); letter-spacing: .12em; color: #FF6A88; animation: livePulse 1.4s ease-in-out infinite; }
+@keyframes livePulse { 50% { opacity: .35; } }
+.dv-lead { text-align: center; padding: 6px 12px; border-radius: 999px; font-size: 13.5px; font-weight: 700; border: 1px solid var(--line); background: rgba(0,0,0,.25); }
+.dv-lead.up { color: #9CF0C6; border-color: rgba(111,211,162,.5); background: rgba(111,211,162,.1); }
+.dv-lead.down { color: #FF9AAE; border-color: rgba(255,106,136,.45); background: rgba(196,32,63,.1); }
+.dv-count { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 6px; border-radius: inherit;
+  background: radial-gradient(circle, rgba(30,13,21,.82), rgba(10,4,7,.94)); }
+.dv-count b { font-family: var(--f-display); font-weight: 400; font-size: 120px; line-height: 1; color: var(--gold-hi); text-shadow: 0 0 40px rgba(242,214,142,.6); animation: countPop .9s ease-out; }
+.dv-count b.go { color: #9CF0C6; text-shadow: 0 0 40px rgba(111,211,162,.6); }
+.dv-count span { color: var(--muted); font-size: 15px; }
+@keyframes countPop { from { transform: scale(1.8); opacity: .4; } 30% { transform: scale(1); opacity: 1; } }
+.dv-wait .dv-res-big.dv-wait-t { font-size: clamp(24px, 6vw, 36px); }
+.dv-spin { animation: waitSpin 2.4s ease-in-out infinite; }
+@keyframes waitSpin { 50% { transform: rotate(180deg); } }
+
+/* Einladung zum Live-Duell: sofort sichtbar, im Spiel und im Menü */
+.inv-card { position: fixed; z-index: 96; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(420px, calc(100vw - 20px));
+  display: grid; gap: 8px; padding: 14px 16px 12px; border-radius: 18px; border: 2px solid var(--gold-hi);
+  background: linear-gradient(180deg, #3A1424, #1A0A10); box-shadow: 0 20px 50px rgba(0,0,0,.7), 0 0 36px rgba(242,214,142,.3);
+  animation: invIn .45s cubic-bezier(.2,1.4,.4,1); transition: opacity .25s, transform .25s; }
+.inv-card.out { opacity: 0; transform: translate(-50%, -16px); }
+@keyframes invIn { from { opacity: 0; transform: translate(-50%, -30px) scale(.94); } }
+.inv-h { display: flex; align-items: center; gap: 12px; }
+.inv-h .avatar { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; text-transform: uppercase; color: #fff;
+  background: radial-gradient(circle at 35% 30%, #FF9AAE, var(--crimson) 50%, #5A0A1E); }
+.inv-h b { display: block; font-size: 16px; }
+.inv-h small { color: var(--muted); font-size: 12.5px; }
+.inv-card .fine { margin: 0; }
+.inv-card .gc-acts .btn { min-height: 40px; }
+@media (max-width: 520px) {
+  .dv-vs.live { padding: 10px; gap: 6px; }
+  .dv-vs.live .dv-side .avatar { width: 34px; height: 34px; }
+  .dv-vs.live .dv-tag { font-size: 20px; }
+  .dv-count b { font-size: 96px; }
+}

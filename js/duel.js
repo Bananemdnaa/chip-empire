@@ -93,8 +93,11 @@ function nets(game, points, setup, log) {
 }
 
 /* ================= Zustand, auch über ein Neuladen hinweg ================= */
-/* cur: { id, opp, role, game, points, setup, log, user, started } */
+/* cur: { id, opp, role, game, points, setup, log, user, started, live }
+   live = gleichzeitig gespielt (neu); ohne live läuft ein älteres Duell zum Nacheinander-Spielen zu Ende. */
 var cur = null, onDone = null, bet = 100, phase = 'bet', lockUntil = 0;
+/* L: letzter Live-Stand vom Server (Gegner, Status, Ergebnis) */
+var L = null, liveTimer = 0, ticking = false, countTimer = 0, waitSince = 0;
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(cur)); } catch (e) { /* */ } }
 function forget() { try { localStorage.removeItem(KEY); } catch (e) { /* */ } }
 function pending() {
@@ -110,10 +113,11 @@ function pending() {
 }
 
 /* ================= Fenster ================= */
-var dlg, titleEl, vsEl, dotsEl, roundEl, stackEl, areaEl, betsEl, actsEl, mainBtn, msgEl, resultEl;
+var dlg, titleEl, vsEl, leadEl, dotsEl, roundEl, stackEl, areaEl, betsEl, actsEl, mainBtn, msgEl, resultEl, countEl;
 function build() {
   titleEl = el('h2', { id: 'duelTitle' });
   vsEl = el('div', { class: 'dv-vs' });
+  leadEl = el('div', { class: 'dv-lead', 'aria-live': 'polite', hidden: true });
   dotsEl = el('div', { class: 'dv-dots', 'aria-label': 'Runden' });
   roundEl = el('b', { class: 'num' }); stackEl = el('b', { class: 'num dv-stack' });
   areaEl = el('div', { class: 'dv-area' });
@@ -122,18 +126,20 @@ function build() {
   mainBtn = el('button', { class: 'btn gold big', type: 'button', onclick: onMain });
   msgEl = el('div', { class: 'slot-msg', 'aria-live': 'polite' });
   resultEl = el('div', { class: 'dv-result', hidden: true });
+  countEl = el('div', { class: 'dv-count', hidden: true, 'aria-live': 'assertive' });
   dlg = el('div', { class: 'drawer duel-dlg', hidden: true },
     el('div', { class: 'drawer-panel duel-panel', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'duelTitle' },
       el('header', { class: 'drawer-h' }, titleEl,
         el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Schließen', text: '✕', onclick: tryClose })),
       el('section', { class: 'side duel-body' },
-        vsEl,
+        vsEl, leadEl,
         el('div', { class: 'dv-top' },
           el('div', { class: 'dv-round' }, el('span', { text: 'Runde' }), roundEl),
           dotsEl,
           el('div', { class: 'dv-chips' }, el('span', { text: 'Duell-Chips' }), stackEl)),
         areaEl, resultEl, msgEl,
-        el('div', { class: 'duel-ctl' }, betsEl, actsEl, mainBtn))));
+        el('div', { class: 'duel-ctl' }, betsEl, actsEl, mainBtn)),
+      countEl));
   document.body.appendChild(dlg);
   window.addEventListener('keydown', onKey, true);
   window.addEventListener('resize', function () { if (isOpen() && play.onResize) play.onResize(); });
@@ -141,24 +147,58 @@ function build() {
 function isOpen() { return !!dlg && !dlg.hidden; }
 
 function avatar(name, me) { return el('span', { class: 'avatar' + (me ? ' me' : ''), text: name ? name.charAt(0) : '?' }); }
-function renderVs() {
-  var me = Cloud.current(), G = gameOf(cur);
-  vsEl.innerHTML = '';
-  vsEl.appendChild(el('div', { class: 'dv-side' }, avatar(me && me.username, true), el('b', { text: 'Du' })));
-  vsEl.appendChild(el('div', { class: 'dv-mid' }, el('span', { class: 'dv-game', text: G.icon + ' ' + G.name }), el('span', { class: 'dv-tag', text: 'VS' })));
-  vsEl.appendChild(el('div', { class: 'dv-side r' }, avatar(cur.opp), el('b', { text: cur.opp || 'Offen für alle' }),
-    el('small', { text: cur.role === 'b' ? 'hat schon gespielt' : cur.opp ? 'spielt danach' : 'jeder kann annehmen' })));
+/* Chips nach jeder fertigen Runde */
+function myProg() {
+  var s = START, out = [];
+  gameOf(cur).results(cur).forEach(function (r) { if (!r.done) return; s += r.ret - r.stake; out.push(s); });
+  return out;
 }
+/* Stand des Gegners. Fair: seine Chips nur bis zu der Runde, die du selbst schon gespielt hast,
+   sonst könnte man z. B. aus seinem Crash-Gewinn den Absturzpunkt ablesen. Seine Rundenzahl siehst du immer. */
+function oppView() {
+  if (!L) return null;
+  var op = (L.opp_prog || []).map(Number), mine = myProg().length;
+  var all = phase === 'waitOpp' || phase === 'done' || phase === 'submit';
+  var k = all ? op.length : Math.min(op.length, mine);
+  return { played: op.length, k: k, stack: k ? op[k - 1] : START, done: !!L.opp_done, away: Number(L.opp_away) || 0 };
+}
+function renderVs() {
+  var me = Cloud.current(), G = gameOf(cur), n = G.rounds(cur), mp = myProg();
+  vsEl.innerHTML = '';
+  vsEl.classList.toggle('live', !!cur.live);
+  var mySub = cur.live ? (phase === 'waitOpp' || phase === 'done' ? 'fertig ✓' : 'R' + Math.min(n, mp.length + 1) + '/' + n) : '';
+  vsEl.appendChild(el('div', { class: 'dv-side' }, avatar(me && me.username, true), el('b', { text: 'Du' }),
+    cur.live ? el('small', {}, el('span', { class: 'num dv-mini', text: fmt(mp.length ? mp[mp.length - 1] : START) }), ' · ' + mySub) : null));
+  vsEl.appendChild(el('div', { class: 'dv-mid' }, el('span', { class: 'dv-game', text: G.icon + ' ' + G.name }), el('span', { class: 'dv-tag', text: 'VS' }),
+    cur.live && phase !== 'wait' && phase !== 'done' ? el('span', { class: 'dv-livetag', text: '● LIVE' }) : null));
+  var right;
+  if (!cur.live) right = el('small', { text: cur.role === 'b' ? 'hat schon gespielt' : cur.opp ? 'spielt danach' : 'jeder kann annehmen' });
+  else if (phase === 'wait' || !L || !cur.opp) right = el('small', { text: cur.opp ? 'eingeladen …' : 'noch niemand' });
+  else {
+    var o = oppView(), txt = o.done ? 'fertig ✓' : o.away > 15 ? '⚠ weg (' + Math.round(o.away) + ' s)' : 'R' + Math.min(n, o.played + 1) + '/' + n;
+    right = el('small', {}, el('span', { class: 'num dv-mini', text: fmt(o.stack) }), ' · ' + txt);
+  }
+  vsEl.appendChild(el('div', { class: 'dv-side r' }, avatar(cur.opp), el('b', { text: cur.opp || 'Offen für alle' }), right));
+  /* Wer liegt vorn? Verglichen wird nach derselben Runde */
+  var show = cur.live && L && cur.opp && phase !== 'wait' && phase !== 'count' && phase !== 'done';
+  leadEl.hidden = !show;
+  if (show) {
+    var ov = oppView(), k = ov.k, a = k ? mp[k - 1] : START, d = a - ov.stack;
+    leadEl.className = 'dv-lead ' + (d > 0 ? 'up' : d < 0 ? 'down' : '');
+    leadEl.textContent = !k ? 'Noch alles offen: beide 1.000' : 'Nach Runde ' + k + ': ' + (d > 0 ? 'Du führst mit +' + fmt(d) : d < 0 ? 'Du liegst ' + fmt(-d) + ' zurück' : 'Gleichstand');
+  }
+}
+function canRematch() { return !!(cur.live && cur.opp && L && L.status === 'done'); }
 function render() {
   var G = gameOf(cur), n = G.rounds(cur), res = G.results(cur), s = stackOf(cur);
   var curIdx = phase === 'bet' ? cur.log.length : cur.log.length - 1;
-  roundEl.textContent = Math.min(n, curIdx + 1) + ' / ' + n;
+  roundEl.textContent = Math.min(n, Math.max(1, curIdx + 1)) + ' / ' + n;
   stackEl.textContent = fmt(s);
   dotsEl.innerHTML = '';
   for (var i = 0; i < n; i++) {
     var r = res[i], cls = 'dv-dot';
     if (r && r.done) cls += r.ret > r.stake ? ' win' : r.ret === r.stake ? ' push' : ' loss';
-    else if (i === curIdx && phase !== 'done') cls += ' cur';
+    else if (i === curIdx && (phase === 'bet' || phase === 'play')) cls += ' cur';
     dotsEl.appendChild(el('i', { class: cls, title: r && r.done ? 'Runde ' + (i + 1) + ': ' + (r.ret - r.stake >= 0 ? '+' : '−') + fmt(Math.abs(r.ret - r.stake)) : 'Runde ' + (i + 1) }));
   }
   betsEl.innerHTML = '';
@@ -176,11 +216,15 @@ function render() {
     : phase === 'play' ? play.main()
     : phase === 'submit' ? { label: 'Wird gewertet …', disabled: true }
     : phase === 'retry' ? { label: 'Ergebnis erneut senden' }
-    : { label: 'Zur Arena' };
+    : phase === 'wait' ? { label: 'Einladung zurückziehen' }
+    : phase === 'count' || phase === 'sync' || phase === 'waitOpp' ? null
+    : { label: canRematch() ? '⚔ Revanche' : 'Zur Arena' };
   mainBtn.hidden = !m;
-  if (m) { mainBtn.textContent = m.label; mainBtn.disabled = !!m.disabled; mainBtn.classList.toggle('cash', !!m.cash); }
+  if (m) { mainBtn.textContent = m.label; mainBtn.disabled = !!m.disabled; mainBtn.classList.toggle('cash', !!m.cash); mainBtn.classList.toggle('ghost', phase === 'wait'); mainBtn.classList.toggle('gold', phase !== 'wait'); }
   actsEl.innerHTML = '';
   if (phase === 'play' && play.acts) play.acts(actsEl);
+  if (phase === 'done' && canRematch()) actsEl.appendChild(el('button', { class: 'btn ghost', type: 'button', text: 'Schließen', onclick: close }));
+  if (cur.live) renderVs();
 }
 
 /* ================= Ablauf ================= */
@@ -196,6 +240,7 @@ var api = {
     phase = finished(cur) ? 'submit' : 'bet';
     lockUntil = performance.now() + 900;
     render();
+    if (cur.live) tick();
     if (phase === 'submit') setTimeout(submit, 1100);
   },
   msg: function (t, cls) { msgEl.className = 'slot-msg' + (cls ? ' ' + cls : ''); msgEl.textContent = t || ''; },
@@ -206,32 +251,136 @@ var api = {
 
 function open(d, done) {
   if (!dlg) build();
-  cur = d; onDone = done || null;
+  cur = d; onDone = done || null; L = null;
   persist();
   play = PLAY[cur.game] || PLAY.crash;
-  titleEl.textContent = gameOf(cur).name + '-Duell';
+  titleEl.textContent = (cur.live ? 'Live-' : '') + gameOf(cur).name + '-Duell';
   dlg.hidden = false;
-  resultEl.hidden = true; areaEl.hidden = false;
+  resultEl.hidden = true; areaEl.hidden = false; countEl.hidden = true;
   areaEl.innerHTML = '';
   play.build(areaEl);
   api.msg('');
   renderVs();
-  /* Nach einem Neuladen: Crash-Runden in der Luft sind verloren, Turm und Blackjack gehen weiter */
+  bet = Math.min(bet, stackOf(cur)) || MIN_BET;
+  if (cur.live) {
+    /* Erst beim Server nachsehen, wo das Duell steht (Warteraum, Countdown, läuft, fertig) */
+    phase = 'sync'; play.idle(); render();
+    clearInterval(liveTimer); liveTimer = setInterval(tick, 2000);
+    tick(true);
+  } else resumePlay();
+  requestAnimationFrame(function () { if (play.onResize) play.onResize(); if (!mainBtn.hidden) mainBtn.focus(); });
+}
+/* Weiterspielen: Crash-Runden in der Luft sind nach einem Neuladen verloren, Turm und Blackjack gehen weiter */
+function resumePlay() {
   var last = cur.log[cur.log.length - 1];
   if (last && !last.f && play.resume && play.resume(last)) phase = 'play';
   else { if (last) last.f = 1; phase = finished(cur) ? 'submit' : 'bet'; play.idle(); }
-  bet = Math.min(bet, stackOf(cur)) || MIN_BET;
   render();
-  requestAnimationFrame(function () { if (play.onResize) play.onResize(); mainBtn.focus(); });
   if (phase === 'submit') submit();
 }
-function start(info, done) {
+function newState(info) {
   var a = Cloud.current();
-  if (!a) return;
-  open({ id: info.id, opp: info.opp || '', role: info.role, game: info.game || 'crash', points: (info.points || []).map(Number), setup: info.setup || null,
-    log: [], user: a.id, started: Date.now() }, done);
+  return { id: info.id, opp: info.opp || '', role: info.role, game: info.game || 'crash', points: (info.points || []).map(Number), setup: info.setup || null,
+    log: [], user: a.id, started: Date.now(), live: !!info.live };
 }
+function start(info, done) { if (Cloud.current()) open(newState(info), done); }
 function resume(done) { var d = pending(); if (d) open(d, done); }
+/* Live-Duell anlegen: du wartest im Warteraum, bis jemand annimmt */
+async function invite(opp, game, done) {
+  var r = await Cloud.rpc('duel_invite', { opp: opp || null, gm: game });
+  open(newState({ id: r.id, opp: opp || '', role: 'a', game: r.game || game, points: r.points, setup: r.setup, live: true }), done);
+}
+/* Einladung annehmen: Live startet nach einem kurzen Countdown, ältere Duelle wie bisher */
+async function join(id, opp, done) {
+  var r = await Cloud.rpc('duel_join', { did: id });
+  open(newState({ id: id, opp: r.opponent || opp, role: 'b', game: r.game, points: r.points, setup: r.setup, live: r.mode === 'live' }), done);
+}
+
+/* ---------- Live: Stand senden und abholen ---------- */
+async function tick(first) {
+  if (!cur || !cur.live || ticking || !isOpen() || phase === 'done') return;
+  ticking = true;
+  try { L = await Cloud.rpc('duel_live', { did: cur.id, prog: phase === 'wait' ? null : myProg() }); }
+  catch (e) {
+    ticking = false;
+    if (/nicht gefunden/.test(e.message || '')) ended('Dieses Duell gibt es nicht mehr.');
+    return;
+  }
+  ticking = false;
+  if (!cur) return;
+  if (L.opponent && cur.opp !== L.opponent) { cur.opp = L.opponent; persist(); }
+  if (phase === 'sync') decide();
+  else if (phase === 'wait') {
+    if (L.status === 'live') beginCount(Number(L.start_in) || 0);
+    else if (L.status !== 'invited') ended(L.status === 'declined' ? (cur.opp || 'Der Gegner') + ' hat abgelehnt.' : 'Die Einladung ist abgelaufen.');
+    else renderWait();
+  } else if (L.status === 'done') { if (phase !== 'submit') liveResult(); }
+  else if (L.status === 'void') ended('Dieses Duell wurde vom Team annulliert.');
+  else if (L.status === 'expired') ended('Die Einladung ist abgelaufen.');
+  else if (phase === 'waitOpp') renderWaitOpp();
+  render();
+}
+function decide() {
+  if (L.status === 'invited') { if (cur.role === 'a') { phase = 'wait'; waitSince = Date.now(); renderWait(); } else ended('Die Einladung ist noch nicht angenommen.'); }
+  else if (L.status === 'live') {
+    if (L.my_score != null) { phase = 'waitOpp'; renderWaitOpp(); }
+    else if (Number(L.start_in) > 0.3) beginCount(Number(L.start_in));
+    else { resultEl.hidden = true; areaEl.hidden = false; resumePlay(); }
+  } else if (L.status === 'done') liveResult();
+  else ended(L.status === 'declined' ? 'Die Einladung wurde abgelehnt.' : L.status === 'void' ? 'Dieses Duell wurde vom Team annulliert.' : 'Die Einladung ist abgelaufen.');
+}
+/* Warteraum für den Einladenden */
+function renderWait() {
+  phase = 'wait'; api.msg('');
+  areaEl.hidden = true; resultEl.hidden = false; resultEl.className = 'dv-result dv-wait'; resultEl.innerHTML = '';
+  var secs = Math.round((Date.now() - (waitSince || Date.now())) / 1000);
+  resultEl.appendChild(el('div', { class: 'dv-res-h dv-spin', text: '⏳' }));
+  resultEl.appendChild(el('div', { class: 'dv-res-big dv-wait-t', text: cur.opp ? 'Warte auf ' + cur.opp : 'Warte auf einen Gegner' }));
+  resultEl.appendChild(el('p', { class: 'fine', text: cur.opp
+    ? cur.opp + ' bekommt deine Einladung jetzt angezeigt. Sobald angenommen ist, startet ihr beide gleichzeitig.'
+    : 'Deine Herausforderung steht in der Arena unter „Offene Herausforderungen“. Wer zuerst annimmt, spielt live gegen dich.' }));
+  resultEl.appendChild(el('p', { class: 'fine', text: 'Die Einladung gilt, solange dieses Fenster offen ist · ' + V.clock(secs * 1000) }));
+}
+/* 3, 2, 1, los: beide starten zur selben Zeit (der Server gibt den Startzeitpunkt vor) */
+function beginCount(secs) {
+  phase = 'count';
+  resultEl.hidden = true; areaEl.hidden = false; play.idle();
+  var end = performance.now() + Math.max(0, secs) * 1000;
+  V.Snd.unlock();
+  clearInterval(countTimer);
+  function step() {
+    var left = Math.ceil((end - performance.now()) / 1000);
+    countEl.hidden = false;
+    if (left > 0) { if (countEl.dataset.n !== String(left)) { countEl.dataset.n = String(left); countEl.innerHTML = ''; countEl.appendChild(el('b', { text: String(left) })); countEl.appendChild(el('span', { text: 'gegen ' + (cur.opp || '?') })); V.Snd.tick(); } return; }
+    clearInterval(countTimer);
+    countEl.innerHTML = ''; countEl.appendChild(el('b', { class: 'go', text: 'Los!' }));
+    V.Snd.big();
+    setTimeout(function () { countEl.hidden = true; countEl.dataset.n = ''; }, 700);
+    phase = 'bet'; api.msg('Ihr spielt gleichzeitig. Oben siehst du, wie ' + (cur.opp || 'dein Gegner') + ' steht.');
+    render(); mainBtn.focus();
+  }
+  countTimer = setInterval(step, 100); step();
+  render();
+}
+/* Du bist fertig, der Gegner spielt noch */
+function renderWaitOpp() {
+  phase = 'waitOpp';
+  var o = oppView(), n = gameOf(cur).rounds(cur), mine = L && L.my_score != null ? Number(L.my_score) : stackOf(cur);
+  areaEl.hidden = true; resultEl.hidden = false; resultEl.className = 'dv-result dv-wait'; resultEl.innerHTML = '';
+  resultEl.appendChild(el('div', { class: 'dv-res-h dv-spin', text: '⏳' }));
+  resultEl.appendChild(el('div', { class: 'dv-res-big', text: fmt(mine) }));
+  resultEl.appendChild(el('p', { class: 'fine', text: 'Du bist fertig. ' + (cur.opp || 'Dein Gegner') + (o && o.done ? ' ist auch fertig, gleich steht das Ergebnis fest.' : ' spielt noch Runde ' + Math.min(n, (o ? o.played : 0) + 1) + ' von ' + n + ' und hat gerade ' + fmt(o ? o.stack : START) + ' Chips.') }));
+  resultEl.appendChild(el('p', { class: 'fine', text: 'Du kannst das Fenster schließen, das Ergebnis kommt dann in der Arena.' }));
+}
+function ended(msg) {
+  clearInterval(liveTimer); clearInterval(countTimer); countEl.hidden = true;
+  forget();
+  phase = 'done';
+  areaEl.hidden = true; resultEl.hidden = false; resultEl.className = 'dv-result'; resultEl.innerHTML = '';
+  resultEl.appendChild(el('div', { class: 'dv-res-h', text: '🕊️' }));
+  resultEl.appendChild(el('p', { text: msg }));
+  render();
+}
 
 function onMain() {
   V.Snd.ensure();
@@ -247,7 +396,21 @@ function onMain() {
     render();
   } else if (phase === 'play') { var m = play.main(); if (m && m.fn && !m.disabled) m.fn(); }
   else if (phase === 'retry') submit();
-  else if (phase === 'done') close();
+  else if (phase === 'wait') cancelInvite();
+  else if (phase === 'done') {
+    if (canRematch()) rematch();
+    else close();
+  }
+}
+function cancelInvite() {
+  Cloud.rpc('duel_cancel', { did: cur.id }).catch(function () { /* verfällt sowieso nach 30 Sekunden */ });
+  forget(); phase = 'done'; close();
+}
+/* Revanche: dasselbe Spiel gegen denselben Gegner, er bekommt sofort eine Einladung */
+function rematch() {
+  var opp = cur.opp, game = cur.game, cb = onDone;
+  close(true);
+  invite(opp, game, cb).catch(function (e) { V.toast(e.message || String(e), 'bad'); if (cb) cb(); });
 }
 
 /* ---------- Ergebnis ---------- */
@@ -256,14 +419,43 @@ async function submit(quit) {
   try {
     var log = cur.log.map(function (e) { var c = Object.assign({}, e); delete c.f; return c; });
     var score = await Cloud.rpc('duel_submit', { did: cur.id, lg: quit ? [] : log, quit: !!quit });
+    if (cur.live) {
+      if (quit) { forget(); ended('Du hast aufgegeben. Das Duell zählt mit 0 Chips.'); return; }
+      phase = 'waitOpp'; L = L || {}; L.my_score = score; renderWaitOpp(); render();
+      ticking = false; tick();
+      return;
+    }
     forget();
     await showResult(Number(score), quit);
   } catch (e) {
     /* Ist das Duell auf dem Server schon gewertet (z. B. abgelaufen), gibt es nichts mehr zu senden */
-    if (/kein Ergebnis abgeben|nicht gefunden/.test(e.message || '')) { forget(); phase = 'done'; api.msg(e.message); render(); return; }
+    if (/kein Ergebnis abgeben|nicht gefunden/.test(e.message || '')) {
+      if (cur.live) { phase = 'sync'; ticking = false; tick(); return; }
+      forget(); phase = 'done'; api.msg(e.message); render(); return;
+    }
     phase = 'retry'; api.msg('Senden fehlgeschlagen: ' + (e.message || e) + ' Dein Ergebnis bleibt gespeichert.');
     render();
   }
+}
+/* Live-Ergebnis: beide sehen es im selben Moment */
+function liveResult() {
+  clearInterval(liveTimer); clearInterval(countTimer); countEl.hidden = true;
+  forget();
+  phase = 'done';
+  var mine = Number(L.my_score), theirs = Number(L.their_score), d = Number(L.my_delta) || 0;
+  var cls = mine > theirs ? 'win' : mine < theirs ? 'loss' : 'draw';
+  areaEl.hidden = true; resultEl.hidden = false; resultEl.innerHTML = ''; api.msg('');
+  resultEl.className = 'dv-result ' + cls;
+  resultEl.appendChild(el('div', { class: 'dv-res-h', text: cls === 'win' ? '🏆' : cls === 'loss' ? '💥' : '🤝' }));
+  resultEl.appendChild(el('div', { class: 'dv-res-big', text: cls === 'win' ? 'Sieg!' : cls === 'loss' ? 'Niederlage' : 'Unentschieden' }));
+  resultEl.appendChild(el('div', { class: 'dv-score' },
+    el('div', {}, el('span', { text: 'Du' }), el('b', { class: 'num', text: fmt(mine) })),
+    el('span', { class: 'dv-colon', text: ':' }),
+    el('div', {}, el('span', { text: cur.opp || L.opponent || 'Gegner' }), el('b', { class: 'num', text: fmt(theirs) }))));
+  var forfeit = (L.their_log && !L.their_log.length && theirs === 0) ? (cur.opp || 'Dein Gegner') + ' hat aufgegeben oder die Verbindung verloren. ' : '';
+  resultEl.appendChild(el('p', { class: 'fine', text: forfeit + 'Wertung ' + (d >= 0 ? '+' : '−') + Math.abs(d) + ' Punkte.' }));
+  if (cls === 'win') { V.Snd.big(); V.burst(resultEl, 40); } else if (cls === 'loss') V.Snd.lose(); else V.Snd.win();
+  render();
 }
 async function showResult(score, quit) {
   phase = 'done';
@@ -295,17 +487,26 @@ async function showResult(score, quit) {
   render();
 }
 
-function close() {
+function close(silent) {
   if (play && play.stop) play.stop();
+  clearInterval(liveTimer); clearInterval(countTimer);
+  if (countEl) countEl.hidden = true;
   dlg.hidden = true;
   var cb = onDone; onDone = null;
   if (phase === 'done') cur = null;
-  if (cb) cb();
+  if (cb && silent !== true) cb();
 }
-/* Zwischen den Runden darf man pausieren; mitten in einer Crash-Runde nicht */
+/* Live: Mitten im Duell gibt es nur Aufgeben. Ältere Duelle: zwischen den Runden pausieren. */
 function tryClose() {
   if (phase === 'done' || phase === 'retry') { close(); return; }
   if (phase === 'submit') return;
+  if (phase === 'wait') { cancelInvite(); return; }
+  if (phase === 'waitOpp' || phase === 'sync') { close(); return; }
+  if (cur.live) {
+    V.banner('Duell aufgeben?', 'Im Live-Duell gibt es keine Pause. Gibst du auf, zählt es für dich mit 0 Chips. Kurz die App wechseln ist okay, nach 2 Minuten ohne dich ist das Duell verloren.', {
+      kind: 'level', ms: 15000, actions: [{ label: 'Weiterspielen', gold: true, fn: function () {} }, { label: 'Aufgeben', fn: function () { if (play.stop) play.stop(); submit(true); } }] });
+    return;
+  }
   if (phase === 'play' && !play.pausable) { V.toast('Warte, bis die Runde vorbei ist.', 'bad'); return; }
   V.banner('Duell pausieren?', 'Du kannst innerhalb von 30 Minuten in der Arena weiterspielen. Danach zählt das Duell mit 0 Chips.', {
     kind: 'level', ms: 15000, actions: [{ label: 'Pausieren', gold: true, fn: close }, { label: 'Aufgeben', fn: function () { if (play.stop) play.stop(); submit(true); } }, { label: 'Weiterspielen', fn: function () {} }] });
@@ -553,6 +754,6 @@ PLAY.bj = (function () {
   };
 })();
 
-return { start: start, resume: resume, pending: pending, isOpen: isOpen, GAMES: GAMES, nets: nets, START: START, payout: payout,
+return { start: start, invite: invite, join: join, resume: resume, pending: pending, isOpen: isOpen, GAMES: GAMES, nets: nets, START: START, payout: payout,
   rounds: function (d) { return gameOf(d).rounds(d); } };
 })();

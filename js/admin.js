@@ -6,7 +6,7 @@ var Admin = (function () {
 var el = V.el, fmt = V.fmt, E = V.E;
 var MODES = { career: 'Karriere', empire: 'Imperium', sandbox: 'Sandbox' };
 var GAMES = { crash: '🚀 Crash', tower: '🐉 Dragon Tower', bj: '🂡 Blackjack' };
-var STATUS = { a_playing: 'läuft', open: 'wartet', b_playing: 'läuft', done: 'fertig', declined: 'abgelehnt', expired: 'verfallen', void: 'annulliert' };
+var STATUS = { invited: 'eingeladen', live: 'live', a_playing: 'läuft', open: 'wartet', b_playing: 'läuft', done: 'fertig', declined: 'abgelehnt', expired: 'verfallen', void: 'annulliert' };
 var ROLES = { owner: 'Owner', admin: 'Admin' };
 var ACTIONS = { chips: 'Chips gesetzt', rename_save: 'Spielstand umbenannt', delete_save: 'Spielstand gelöscht', hide: 'Aus Ranglisten genommen',
   show: 'Wieder in Ranglisten', reset_rating: 'Wertung zurückgesetzt', ban: 'Gesperrt', unban: 'Entsperrt', tp: 'Talentpunkte',
@@ -336,7 +336,7 @@ function duelList(host) {
   if (!duels.length) { host.appendChild(el('p', { class: 'fine', text: dq ? 'Keine Duelle von „' + dq + '“.' : 'Noch keine Duelle.' })); return; }
   var tb = el('tbody');
   duels.forEach(function (d) {
-    var canVoid = d.status === 'done' || d.status === 'open' || d.status === 'a_playing' || d.status === 'b_playing';
+    var canVoid = ['done', 'open', 'a_playing', 'b_playing', 'invited', 'live'].indexOf(d.status) >= 0;
     tb.appendChild(el('tr', { class: d.status === 'void' ? 'ad-void' : '' },
       el('td', { class: 'num', text: when(d.finished_at || d.created_at) }),
       el('td', { text: GAMES[d.game] || d.game }),
