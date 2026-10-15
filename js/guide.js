@@ -40,12 +40,16 @@ var TAB_FEAT = { quests: 'quests', talente: 'talente', meister: 'meister', arena
 
 function S() { return V.S; }
 function has(id) { var s = S(); return !s.onb || !!(s.feats && s.feats[id]) || !!(V.devTools && V.devTools.all()); }
-function tabOpen(tab) { return !TAB_FEAT[tab] || has(TAB_FEAT[tab]); }
+/* Hardcore: keine Quests, Truhen und Comps */
+var HARD_OFF = { quests: 1, sess: 1, comps: 1 };
+function off(id) { return V.isHard() && !!HARD_OFF[id]; }
+function tabOpen(tab) { return !TAB_FEAT[tab] || (has(TAB_FEAT[tab]) && !off(TAB_FEAT[tab])); }
 
 /* Was noch fehlt, im Spiel ausblenden */
 function apply() {
   var app = V.$('#app'); if (!app) return;
-  ['sess', 'host', 'comps', 'meister'].forEach(function (id) { app.classList.toggle('no-' + id, !has(id)); });
+  ['sess', 'host', 'comps', 'meister'].forEach(function (id) { app.classList.toggle('no-' + id, !has(id) || off(id)); });
+  app.classList.toggle('is-hard', V.isHard());
 }
 
 /* Nach jeder Runde und jedem Level: neu freigeschaltete Funktionen melden */
@@ -54,7 +58,7 @@ function check() {
   var s = S();
   if (!s.onb) return;
   var news = [];
-  FEATS.forEach(function (f) { if (!s.feats[f.id] && f.when(s)) { s.feats[f.id] = 1; news.push(f); } });
+  FEATS.forEach(function (f) { if (!s.feats[f.id] && f.when(s)) { s.feats[f.id] = 1; if (!off(f.id)) news.push(f); } });
   if (!news.length) return;
   apply();
   if (V.renderSideNav) V.renderSideNav();
@@ -103,6 +107,11 @@ var RULES = {
   crash: 'Die Rakete steigt und der Multiplikator mit ihr, bis sie an einem zufälligen Punkt abstürzt. Zahl vorher aus, dann bekommst du Einsatz mal Multiplikator. Mit Auto-Auszahlung passiert das automatisch.',
   hilo: 'Rate, ob die nächste Karte höher oder tiefer ist. Jede richtige Antwort erhöht den Gewinn, eine falsche kostet den Einsatz. Unwahrscheinliche Tipps zahlen mehr. Überspringen kostet nichts.',
   bj: 'Komm näher an 21 als der Dealer, ohne drüber zu gehen. Bildkarten zählen 10, Asse 1 oder 11. Ziehen, Halten, Verdoppeln, Teilen und Aufgeben. Ein Blackjack zahlt 3:2.',
+  limbo: 'Wähle ein Ziel, zum Beispiel 2×. Eine Zufallszahl steigt hoch. Erreicht sie dein Ziel, bekommst du Einsatz mal Ziel. Je höher das Ziel, desto kleiner die Chance.',
+  keno: 'Tipp 1 bis 8 Zahlen aus 40 an. Dann werden 10 Zahlen gezogen. Je mehr deiner Zahlen dabei sind, desto mehr gewinnst du.',
+  scratch: 'Kauf ein Los und rubbel die 9 Felder frei (antippen oder drüberwischen). Drei gleiche Symbole gewinnen, die Diamanten zahlen 100×.',
+  bacc: 'Setz auf Spieler, Bank oder Unentschieden. Beide Seiten bekommen zwei oder drei Karten, näher an 9 gewinnt. Gezählt wird nur die Einerstelle.',
+  fruit: 'Der klassische Automat: 3 Walzen, eine Linie. Drei gleiche gewinnen, Kirschen ganz links zahlen schon einzeln.',
   vault: 'Öffne Fächer im Tresor. Hinter manchen sitzt ein Alarm. Jedes sichere Fach erhöht den Multiplikator, ein Alarm kostet den Einsatz. Nach jedem Fach kannst du auszahlen.'
 };
 function topics() {
@@ -164,6 +173,15 @@ function tab(body) {
     d.addEventListener('toggle', function () { if (d.open) openTopic = t.id; });
     wrap.appendChild(d);
   });
+  /* Gastspiele und Happy Hour mit Plan */
+  var gd = el('details', { class: 'gd', open: openTopic === 'guests' },
+    el('summary', {}, el('span', { class: 'gd-ico', text: '✨' }), el('b', { text: 'Gastspiele und Happy Hour' })),
+    el('div', { class: 'gd-body' },
+      el('p', { text: 'Alle 6 Stunden kommen zwei Gastspiele ins Casino, für alle Spieler dieselben. Sie stehen vorne in der Spieleleiste und sind in jeder Stufe spielbar.' }),
+      el('p', { text: 'Dazu hat jedes Mal ein bekanntes Spiel Happy Hour: doppelte Erfahrung und Sitzungs-Truhen zählen doppelt. Die Gewinnchancen bleiben gleich.' }),
+      V.rotation.planBox()));
+  gd.addEventListener('toggle', function () { if (gd.open) openTopic = 'guests'; });
+  wrap.appendChild(gd);
   /* Die Spiele */
   var games = el('details', { class: 'gd', open: openTopic === 'games' },
     el('summary', {}, el('span', { class: 'gd-ico', text: '🎲' }), el('b', { text: 'Die Spiele' })));
@@ -172,7 +190,7 @@ function tab(body) {
   V.GAME_LIST.forEach(function (g) {
     var open = V.gameOpen(g.id);
     gl.appendChild(el('div', { class: 'gd-game' + (g.id === s.game ? ' cur' : '') + (open ? '' : ' later') },
-      el('b', {}, g.name, open ? null : el('span', { class: 'tag', text: 'ab ' + V.E.TIERS[g.tier].name })),
+      el('b', {}, g.name, g.guest ? el('span', { class: 'tag gold', text: open ? 'Gastspiel · jetzt' : 'Gastspiel' }) : open ? null : el('span', { class: 'tag', text: 'ab ' + V.E.TIERS[g.tier].name })),
       el('p', { text: RULES[g.id] })));
   });
   games.appendChild(gl);

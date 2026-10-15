@@ -94,7 +94,9 @@ var TALENTS = [
 /* Wie stark Umsatz für den Aufstieg zählt (Talente und Legenden-Rang), Comps-Bonus der Talente */
 function wagerMult() { return 1 + perk('rCap') + perk('legRush') + (V.legend ? V.legend.rankPerk('rush') : 0); }
 var T_BY = {}; TALENTS.forEach(function (t) { T_BY[t.id] = t; });
-function activeTalents(br) { return TALENTS.filter(function (t) { return t.br === br && (!t.empire || isEmpire()) && (!t.legend || V.isCareer()); }); }
+/* Hardcore: Talente, die Geld außerhalb der Spiele bringen, gibt es dort nicht. Legenden-Talente nur in der Karriere. */
+var NO_HARD = ['chestLuck', 'spinFast', 'chestTp', 'gCap', 'questSwap', 'comps', 'tCap', 'climb', 'daily', 'rescue', 'quest', 'mileBoost', 'lvlChips', 'bCap'];
+function activeTalents(br) { return TALENTS.filter(function (t) { return t.br === br && (!t.empire || isEmpire()) && (!t.legend || V.S.mode === 'career') && !(V.isHard() && NO_HARD.indexOf(t.id) >= 0); }); }
 function stars() { return V.S.stars || 0; }
 function tl(id) { return (V.S.talents && V.S.talents[id]) || 0; }
 function perk(id) { var t = T_BY[id], l = tl(id); return t && l ? t.vals[l - 1] : 0; }
@@ -137,7 +139,8 @@ function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + (d.getM
 /* Woche beginnt am Montag */
 function weekStart() { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
 function weekKey() { return 'W' + dayKey(weekStart()); }
-function openGames() { return V.GAME_LIST.map(function (g) { return g.id; }).filter(function (g) { return V.gameOpen(g); }); }
+/* Gastspiele wechseln alle 6 Stunden, für Quests zählen nur die festen Spiele */
+function openGames() { return V.GAME_LIST.filter(function (g) { return !g.guest; }).map(function (g) { return g.id; }).filter(function (g) { return V.gameOpen(g); }); }
 function qmult() { return 1 + perk('quest') + perk('bCap'); }
 
 /* Vorlagen: n = Ziel, diff = Belohnungsfaktor, ev = Fortschritt pro Ereignis, req = nötiges Spiel, cond = weitere Bedingung */
@@ -429,7 +432,7 @@ function onRound(e) {
   var Q = V.S.qstats, o = e.opt || {};
   if (e.staked > 0) {
     /* Talent Im Lauf: Siegesserie bringt mehr Erfahrung; Nervenkitzel: Extra-XP für große Treffer */
-    var xpm = ((V.GAME_BY[e.game] && V.GAME_BY[e.game].pace) || 1) * (V.S.winStreak >= 3 ? 1 + perk('streakXp') : 1);
+    var xpm = ((V.GAME_BY[e.game] && V.GAME_BY[e.game].pace) || 1) * (V.S.winStreak >= 3 ? 1 + perk('streakXp') : 1) * (V.rotation && V.rotation.isHappy(e.game) ? 2 : 1);
     addXp(roundXp(e.net) * xpm + (e.ret >= e.staked * 10 ? perk('bigXp') : 0));
     Q.rounds++;
   }
@@ -446,6 +449,7 @@ function onRound(e) {
   if (o.vaultMult >= 10) Q.vaultBig++;
   if (o.hiloSteps) Q.hiloBest = Math.max(Q.hiloBest || 0, o.hiloSteps);
   e.opt = o;
+  if (V.isHard()) return;
   progress(e);
   checkMiles();
 }
@@ -488,6 +492,7 @@ function migrate() {
 
 /* ================= Hinweis-Punkte ================= */
 function questClaimable() {
+  if (V.isHard()) return 0;
   ensureQuests();
   var n = 0;
   ['daily', 'weekly'].forEach(function (kind) {

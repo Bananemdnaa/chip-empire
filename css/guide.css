@@ -114,3 +114,7 @@ body.fx-low .ev-flash { opacity: .25 !important; }
 .dev-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .dev-row > span { font-size: 13px; color: var(--muted); }
 .dev-row .name-in { margin: 0; min-width: 0; width: 100%; }
+
+/* ---------- Hardcore ---------- */
+#app.is-hard #playerName::before { content: "☠"; margin-right: 5px; color: #FF6A88; }
+#app.is-hard .tier-badge { box-shadow: 0 0 0 2px #C4203F; }

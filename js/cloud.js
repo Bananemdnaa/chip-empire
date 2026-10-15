@@ -39,7 +39,7 @@ function errText(err) {
   if (/password should be at least|weak/i.test(m)) return 'Das Passwort ist zu kurz (mindestens 6 Zeichen).';
   if (/email logins are disabled|signups not allowed|provider is not enabled/i.test(m)) return 'Registrierung ist in Supabase noch nicht freigeschaltet (E-Mail-Login aus).';
   if (/email not confirmed/i.test(m)) return 'In Supabase ist „Confirm email“ noch an. Bitte ausschalten.';
-  if (/maximal 3/i.test(m)) return 'Du hast schon 3 Spielstände in deinem Konto.';
+  if (/maximal \d/i.test(m)) return 'Du hast schon ' + Store.MAX_SLOTS + ' Spielstände in deinem Konto.';
   if (/database error saving new user/i.test(m)) return 'Dieser Benutzername ist nicht erlaubt.';
   if (/user is banned|banned/i.test(m)) return 'Dieses Konto ist gesperrt.';
   if (/saves_mode_check|violates check constraint/i.test(m)) return 'Für den Imperium-Modus fehlt noch das Datenbank-Update (SQL in Supabase ausführen).';
@@ -99,9 +99,10 @@ async function signOut() {
 
 /* ---------- Spielstände ---------- */
 function columns(state) {
-  var s = Store.summary(state), empire = state && state.mode === 'empire';
+  var s = Store.summary(state), empire = state && state.mode === 'empire', hard = state && state.mode === 'hardcore';
   /* Im Imperium-Modus zählt der Imperiumswert für die Bestenliste */
-  return { balance: empire ? s.worth : s.balance, unlocked: s.unlocked, wagered: s.wagered, play_ms: Math.round(s.playMs) };
+  /* Hardcore: Rangliste nach dem höchsten je erreichten Kontostand */
+  return { balance: empire ? s.worth : hard ? Math.max(s.balance, Math.round((state && state.peak) || 0)) : s.balance, unlocked: s.unlocked, wagered: s.wagered, play_ms: Math.round(s.playMs) };
 }
 function rowToSlot(r) {
   var t = Date.parse(r.updated_at) || Date.now();

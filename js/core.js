@@ -67,7 +67,13 @@ var GAME_LIST = [
   { id: 'crash', name: 'Crash', tier: 2, edge: 0.011, cat: 'thrill' },
   { id: 'hilo', name: 'Hi-Lo-Leiter', short: 'Hi-Lo', tier: 2, edge: 0.04, cat: 'thrill' },
   { id: 'bj', name: 'Blackjack', tier: 3, edge: 0.005, cat: 'strat' },
-  { id: 'vault', name: 'Tresorknacker', short: 'Tresor', tier: 4, edge: 0.03, cat: 'thrill' }
+  { id: 'vault', name: 'Tresorknacker', short: 'Tresor', tier: 4, edge: 0.03, cat: 'thrill' },
+  /* Gastspiele (guest): nur spielbar, solange sie in der Rotation sind (siehe rotation.js), in jeder Stufe */
+  { id: 'limbo', name: 'Limbo', tier: 0, edge: 0.03, cat: 'thrill', guest: true },
+  { id: 'keno', name: 'Keno', tier: 0, edge: 0.05, cat: 'ritual', guest: true },
+  { id: 'scratch', name: 'Rubbellos', short: 'Los', tier: 0, edge: 0.05, cat: 'dream', guest: true },
+  { id: 'bacc', name: 'Baccarat', tier: 0, edge: 0.012, cat: 'strat', guest: true },
+  { id: 'fruit', name: 'Früchte-Slot', short: 'Früchte', tier: 0, edge: 0.042, cat: 'dream', guest: true }
 ];
 var GAME_TIER = {}, GAME_NAME = {}, GAME_BY = {};
 GAME_LIST.forEach(function (g) { GAME_TIER[g.id] = g.tier; GAME_NAME[g.id] = g.name; GAME_BY[g.id] = g; });
@@ -77,7 +83,7 @@ function allGames(fn) { var o = {}; GAME_LIST.forEach(function (g) { o[g.id] = f
 function fresh(mode) {
   var career = mode !== 'sandbox', start = career ? CAREER.start : 10000;
   return {
-    mode: mode === 'empire' ? 'empire' : career ? 'career' : 'sandbox',
+    mode: mode === 'empire' || mode === 'hardcore' ? mode : career ? 'career' : 'sandbox',
     balance: start, escrow: 0, wagered: 0, wagerBonus: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
     comps: 0, compsClaimed: 0, room: 0, unlocked: career ? 0 : 5, aff: [0, 0, 0, 0, 0, 0], tips: 0,
     hist: [], series: [start], gst: allGames(emptyG), sound: true, hint: true, game: 'slots', bets: allGames(function () { return 100; }), rchip: 100,
@@ -88,7 +94,7 @@ function fresh(mode) {
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
     qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, vaultBig: 0, hiloBest: 0, miles: {}, init: 0 },
     turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3, towerFloors: 9, vaultSize: 5,
-    fxLow: false, hostTalk: true, tipsOn: true, onb: 0, feats: {}, devAll: true,
+    fxLow: false, hostTalk: true, tipsOn: true, onb: 0, feats: {}, devAll: true, peak: start, limboT: 2, kenoPick: [],
     stars: 0, season: { key: '', net: 0, best: 0, rounds: 0 }, seasonPrev: { key: '', net: 0, best: 0, rounds: 0 }, seasonClaimed: '', trophies: 0
   };
 }
@@ -110,7 +116,7 @@ function load(id) {
       else if (a && typeof a === 'object') { if (b && typeof b === 'object') f[k] = Object.assign({}, a, b); }
     });
   }
-  f.mode = slot.mode === 'sandbox' || slot.mode === 'empire' ? slot.mode : 'career';
+  f.mode = slot.mode === 'sandbox' || slot.mode === 'empire' || slot.mode === 'hardcore' ? slot.mode : 'career';
   f.escrow = 0;
   if (f.aff.length !== 6) f.aff = [0, 0, 0, 0, 0, 0];
   f.aff = f.aff.map(function (x) { return isNum(x) ? clamp(x, 0, 100) : 0; });
@@ -178,23 +184,32 @@ function refund(n) { S.balance += n; S.escrow -= n; if (S.balance >= room().min)
 /* ---------- Karriere: Freischaltungen, Notgroschen, Tagesbonus ---------- */
 /* Karriere-Regeln gelten auch im Imperium-Modus */
 function isCareer() { return S.mode !== 'sandbox'; }
+/* Hardcore: Karriere-Regeln, aber Geld gibt es nur am Tisch. Kein Tagesbonus, keine Quests, Truhen, Comps oder Geschenke,
+   kein Aufstiegsbonus. Wer pleite ist, bekommt höchstens einmal am Tag einen kleinen Notgroschen. */
+function isHard() { return S.mode === 'hardcore'; }
 /* Dev-Konten (siehe dev.js) haben alle Spiele offen */
-function gameOpen(id) { return GAME_TIER.hasOwnProperty(id) && (!isCareer() || S.unlocked >= GAME_TIER[id] || !!(V.devTools && V.devTools.all())); }
+function gameOpen(id) {
+  if (!GAME_TIER.hasOwnProperty(id)) return false;
+  if (V.devTools && V.devTools.all()) return true;
+  if (GAME_BY[id].guest) return !!(V.rotation && V.rotation.isActive(id));
+  return !isCareer() || S.unlocked >= GAME_TIER[id];
+}
 function gamesAt(t) { return Object.keys(GAME_TIER).filter(function (g) { return GAME_TIER[g] === t; }); }
 function isBroke() { return S.balance + S.escrow < E.TIERS[0].min; }
-function bailoutAmt() { return E.TIERS[S.unlocked].min * CAREER.bailoutMult * (1 + perk('legBail')); }
+function bailoutAmt() { return isHard() ? E.TIERS[0].min * CAREER.bailoutMult : E.TIERS[S.unlocked].min * CAREER.bailoutMult * (1 + perk('legBail')); }
 function perk(id) { return V.meta ? V.meta.perk(id) : 0; }
-function cooldown() { return CAREER.bailoutCooldown - perk('rescue'); }
+function cooldown() { return isHard() ? 864e5 : CAREER.bailoutCooldown - perk('rescue'); }
+function cooldownText() { return isHard() ? 'einmal am Tag' : 'höchstens alle ' + Math.round(cooldown() / 60000) + ' Minuten'; }
 function bailoutWait() { return Math.max(0, S.bailoutAt + cooldown() - Date.now()); }
 function bailout() {
   if (!isCareer() || !isBroke() || bailoutWait() > 0) return;
   var amt = bailoutAmt();
   S.balance += amt; S.bailouts++; S.bailedOut += amt; S.bailoutAt = Date.now();
-  Snd.cash(); toast('Notgroschen: +' + fmt(amt) + ' Chips. Der nächste erst in ' + Math.round(cooldown() / 60000) + ' Minuten.', 'good');
+  Snd.cash(); toast('Notgroschen: +' + fmt(amt) + ' Chips. Der nächste ' + (isHard() ? 'erst morgen.' : 'erst in ' + Math.round(cooldown() / 60000) + ' Minuten.'), 'good');
   hud(); if (V.side) V.side.refresh(); save();
 }
 function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
-function dailyAvailable() { return isCareer() && S.dailyLast !== dayKey(Date.now()); }
+function dailyAvailable() { return isCareer() && !isHard() && S.dailyLast !== dayKey(Date.now()); }
 function dailyStreakNext() { return S.dailyLast === dayKey(Date.now() - 864e5) ? S.dailyStreak + 1 : 1; }
 function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1)) * (1 + perk('daily') + perk('legDaily') + perk('bCap') + (V.legend ? V.legend.rankPerk('daily') : 0))); }
 function claimDaily() {
@@ -220,7 +235,7 @@ function renderWalletBtn() {
     pulse = true;
   } else {
     var w = bailoutWait();
-    b.title = 'Notgroschen: nur wenn du pleite bist, höchstens alle ' + Math.round(cooldown() / 60000) + ' Minuten';
+    b.title = 'Notgroschen: nur wenn du pleite bist, ' + cooldownText();
     if (!isBroke()) { b.innerHTML = '🛟 <span class="hide-sm">Notgroschen </span>' + short(bailoutAmt()); b.disabled = true; }
     else if (w > 0) { b.textContent = '⏳ ' + clock(w); b.disabled = true; }
     else { b.innerHTML = '🛟 <span class="hide-sm">Notgroschen </span>+' + short(bailoutAmt()); pulse = true; }
@@ -429,7 +444,7 @@ function settle(game, staked, ret, opt) {
     var g = S.gst[game]; g.r++; g.w += staked; g.ret += ret;
     if (V.mastery) V.mastery.check(game, g.r);
     /* Jeder Legenden-Stern: +5 % Comps (bis 5 Sterne) */
-    S.comps += staked * GAME_BY[game].edge * room().comp * compMult() * (1 + perk('comps') + perk('tCap') + 0.05 * Math.min(5, S.stars));
+    if (!isHard()) S.comps += staked * GAME_BY[game].edge * room().comp * compMult() * (1 + perk('comps') + perk('tCap') + 0.05 * Math.min(5, S.stars));
     S.hist.push({ g: game, bet: staked, ret: ret, bal: before }); if (S.hist.length > 80) S.hist.shift();
     S.series.push(Math.round(S.balance + S.escrow)); if (S.series.length > 400) S.series.shift();
     addAff(0.2);
@@ -438,6 +453,8 @@ function settle(game, staked, ret, opt) {
   }
   if (net > 0) { S.winStreak++; S.lossStreak = 0; } else if (net < 0) { S.lossStreak++; S.winStreak = 0; }
   S.biggest = Math.max(S.biggest, net);
+  /* Höchster je erreichter Kontostand (Hardcore-Rangliste) */
+  S.peak = Math.max(S.peak || 0, Math.round(S.balance + S.escrow));
   var d;
   if (net > 0) { var x = ret / Math.max(1, staked || (opt.refBet || 1)); d = x >= 10 ? 32 : x >= 5 ? 24 : x >= 2 ? 13 : 6; }
   else d = -2;
@@ -459,7 +476,8 @@ function settle(game, staked, ret, opt) {
   if (V.track) V.track.round(game, staked, ret);
   if (V.legend) V.legend.round(staked, ret);
   if (staked > 0) allinResult(net);
-  if (V.session) V.session.round(staked, GAME_BY[game].pace || 1);
+  /* Happy Hour: Sitzungs-Truhen zählen in diesem Spiel doppelt */
+  if (V.session) V.session.round(staked, (GAME_BY[game].pace || 1) * (V.rotation && V.rotation.isHappy(game) ? 2 : 1));
   if (V.guide) V.guide.check();
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
@@ -468,12 +486,12 @@ function levelUp(t) {
   S.unlocked = t;
   var T = E.TIERS[t];
   /* Talent Ehrgeiz: höherer Aufstiegsbonus */
-  var bonus = Math.round(T.bonus * (1 + perk('climb')));
+  var bonus = isHard() ? 0 : Math.round(T.bonus * (1 + perk('climb')));
   S.balance += bonus;
   Snd.unlock();
   var hn = A.HOSTESSES[t].name;
   var newGames = isCareer() ? gamesAt(t).map(function (g) { return GAME_NAME[g]; }) : [];
-  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(bonus) + ' Chips · ' + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Gastgeberin ' + hn + ' erwartet dich', {
+  banner('Neue Stufe: ' + T.name, (bonus ? 'Bonus +' + fmt(bonus) + ' Chips · ' : '') + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Gastgeberin ' + hn + ' erwartet dich', {
     kind: 'level', ms: 9000, actions: [{ label: 'Raum betreten', gold: true, fn: function () { enterRoom(t, true); } }, { label: 'Später', fn: function () {} }]
   });
   burst($('#app'), 40);
@@ -520,7 +538,7 @@ function renderTier() {
   var T = room(), U = E.TIERS[S.unlocked];
   $('#app').setAttribute('data-tier', String(S.room));
   $('#tierName').textContent = T.name;
-  $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + ' · Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils';
+  $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + (isHard() ? ' · Hardcore' : ' · Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils');
   var badge = $('#tierBadge');
   if (badge) { badge.setAttribute('data-tier', String(S.unlocked)); badge.textContent = RANK[S.unlocked]; badge.title = 'Deine Stufe: ' + U.name; }
   if ($('#roomName')) $('#roomName').textContent = T.name;
@@ -728,7 +746,7 @@ return {
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
   resetState: function () { S = fresh(S.mode); if (S.mode !== 'sandbox') { S.onb = 1; S.feats = {}; } locked = 0; save(); },
   get slotId() { return slotId; }, get slotName() { return slotName; }, renameSlot: renameSlot,
-  GAME_LIST: GAME_LIST, GAME_BY: GAME_BY, RANK: RANK, isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
+  GAME_LIST: GAME_LIST, GAME_BY: GAME_BY, RANK: RANK, isCareer: isCareer, isHard: isHard, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
   bailout: bailout, bailoutAmt: bailoutAmt, claimDaily: claimDaily, dailyAvailable: dailyAvailable,
   renderWalletBtn: renderWalletBtn, walletAction: walletAction
 };

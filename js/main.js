@@ -9,6 +9,7 @@ var SIDE = SIDE_ALL;
 function sideItems() { return SIDE_ALL.filter(function (t) { return (!t.empire || V.S.mode === 'empire') && V.guide.tabOpen(t.id); }); }
 
 function lockedMsg(id) {
+  if (V.GAME_BY[id].guest) return V.GAME_NAME[id] + ' ist gerade kein Gastspiel. Die Gastspiele wechseln alle 6 Stunden.';
   return V.GAME_NAME[id] + ' wird in der ' + V.E.TIERS[V.GAME_TIER[id]].name + ' freigeschaltet.';
 }
 function showGame(id) {
@@ -23,6 +24,7 @@ function showGame(id) {
   $('#gameTitle').textContent = V.GAME_NAME[id];
   V.mastery.renderHead();
   V.track.strip();
+  V.rotation.strip();
   renderNav();
   V.games.forEach(function (g3) { if (g3.id === id && g3.onShow) g3.onShow(); });
   V.save();
@@ -37,8 +39,12 @@ function railBtn(item, selected, onclick) {
 function renderNav() {
   var box = $('#gameTabs');
   box.innerHTML = '';
-  GAMES.forEach(function (g) {
+  /* Gastspiele vorne und nur, solange sie laufen; das Happy-Hour-Spiel mit Flamme */
+  var order = GAMES.filter(function (g) { return V.GAME_BY[g.id].guest && V.gameOpen(g.id); }).concat(GAMES.filter(function (g) { return !V.GAME_BY[g.id].guest; }));
+  order.forEach(function (g) {
     var b = railBtn(g, g.id === V.S.game, function () { V.Snd.click(); showGame(g.id); });
+    if (V.GAME_BY[g.id].guest) { b.classList.add('guest'); b.title = 'Gastspiel, wechselt alle 6 Stunden'; }
+    if (V.rotation.isHappy(g.id)) { b.classList.add('happy'); b.title = 'Happy Hour: +100 % Erfahrung'; }
     if (!V.gameOpen(g.id)) {
       b.classList.add('locked'); b.title = lockedMsg(g.id); b.setAttribute('aria-disabled', 'true');
       b.appendChild(V.el('span', { class: 'lk', html: Icons.lock }));
@@ -203,7 +209,7 @@ async function startGame(id) {
   V.guide.init(); renderSideNav();
   V.hud();
   /* Geschenke an alle aus dem Admin-Panel: einmal pro Konto, landen im gerade geöffneten Spielstand */
-  if (Store.isAccount() && V.S.mode !== 'sandbox') {
+  if (Store.isAccount() && V.S.mode !== 'sandbox' && !V.isHard()) {
     Cloud.rpc('gift_claim').then(function (gifts) {
       if (!gifts || !gifts.length) return;
       var chips = 0, tp = 0, msg = '';
@@ -233,6 +239,7 @@ async function startGame(id) {
     var now = Date.now(), dt = now - last; last = now;
     V.renderWalletBtn();
     V.meta.tick();
+    V.rotation.tick();
     if (now % 5000 < 1000) renderBadges();
     if (!document.hidden && dt < 5000) {
       V.S.playMs += dt;

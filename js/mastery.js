@@ -22,7 +22,8 @@ var UNLOCKS = {
 /* Titel für den Diamant-Rang, damit jedes Spiel ein eigenes Ziel hat */
 var TITLES = {
   slots: 'Walzenkönig', wheel: 'Herr des Rades', dice: 'Würfelmagier', roulette: 'Croupier-Schreck', ducks: 'Entenflüsterer',
-  plinko: 'Nagelbrett-Profi', crash: 'Raketenpilot', tower: 'Drachenbändiger', bj: 'Kartenhai', hilo: 'Leiterläufer', vault: 'Meisterdieb'
+  plinko: 'Nagelbrett-Profi', crash: 'Raketenpilot', tower: 'Drachenbändiger', bj: 'Kartenhai', hilo: 'Leiterläufer', vault: 'Meisterdieb',
+  limbo: 'Limbo-König', keno: 'Zahlenseher', scratch: 'Rubbelkönig', bacc: 'Punto Banco', fruit: 'Obstbaron'
 };
 
 function rounds(g) { var x = V.S.gst[g]; return x ? x.r : 0; }

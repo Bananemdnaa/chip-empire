@@ -1,0 +1,97 @@
+/* Chip Empire – Gastspiele (Limbo, Keno, Rubbellos, Baccarat, Früchte-Slot), Rotation und Happy Hour */
+
+/* ---------- Gemeinsames Gerüst: Spielfläche links, Steuerung rechts (am Handy untereinander) ---------- */
+.gx-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; max-width: 1040px; margin: 0 auto; }
+.gx-board { display: grid; gap: 10px; min-width: 0; }
+.gx-side { display: grid; gap: 10px; align-content: start; }
+.gx-side .btn.big { width: 100%; min-width: 0; }
+.gx-kv { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 12px; border-radius: 10px; background: rgba(0,0,0,.25); border: 1px solid var(--line); font-size: 13px; }
+.gx-kv b { color: var(--gold-hi); font-size: 16px; }
+@media (max-width: 860px) { .gx-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Leiste: Gastspiel, Happy Hour ---------- */
+.rot-strip { max-width: 1040px; margin: -4px auto 10px; padding: 7px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; text-align: center; }
+.rot-strip.guest { color: #FFF3C9; border: 1px solid var(--gold); background: linear-gradient(90deg, rgba(212,171,82,.22), rgba(91,42,142,.25)); }
+.rot-strip.happy { color: #FFD1A8; border: 1px solid #FF9A3C; background: linear-gradient(90deg, rgba(255,154,60,.22), rgba(196,32,63,.2)); }
+.rail-btn.guest { border-color: rgba(242,214,142,.45); background: linear-gradient(180deg, rgba(212,171,82,.16), transparent); }
+.rail-btn.guest::after { content: "✨"; position: absolute; top: 2px; right: 4px; font-size: 11px; }
+.rail-btn.happy::after { content: "🔥"; position: absolute; top: 2px; right: 4px; font-size: 11px; }
+.rot-plan { display: grid; gap: 6px; }
+.rp-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.2); font-size: 13px; }
+.rp-row.now { border-color: var(--gold); }
+.rp-t { font: 600 12px var(--f-mono); color: var(--gold); }
+.rp-row small { color: var(--muted); }
+
+/* ---------- Limbo ---------- */
+.lb-stage { position: relative; display: grid; place-content: center; justify-items: center; gap: 6px; min-height: 260px; border-radius: 18px; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 100%, #2E1650, #0E0812 70%); box-shadow: 0 0 0 2px var(--gold-lo), inset 0 0 40px rgba(0,0,0,.6); }
+.lb-glow { position: absolute; inset: auto 10% -40% 10%; height: 70%; border-radius: 50%; background: radial-gradient(circle, rgba(185,138,255,.35), transparent 70%); pointer-events: none; }
+.lb-num { position: relative; font: 700 clamp(48px, 13vw, 84px) var(--f-mono); color: var(--ivory); text-shadow: 0 0 24px rgba(255,255,255,.25); line-height: 1; }
+.lb-num.win { color: #7DFFB0; text-shadow: 0 0 30px rgba(111,211,162,.6); }
+.lb-num.lose { color: #FF6A88; }
+.lb-sub { position: relative; color: var(--muted); font-size: 14px; }
+.lb-in { margin: 0; font: 700 22px var(--f-mono); text-align: center; }
+
+/* ---------- Keno ---------- */
+.kn-board { padding: 12px; border-radius: 18px; background: radial-gradient(ellipse at 50% 0%, #13553F, var(--felt-2, #0B3326)); box-shadow: 0 0 0 2px var(--gold-lo), inset 0 0 40px rgba(0,0,0,.5); }
+.kn-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.kn-cell { aspect-ratio: 1; min-height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.3); color: var(--ivory);
+  font: 700 14px var(--f-mono); cursor: pointer; transition: transform .15s, background .2s; }
+.kn-cell:hover:not(:disabled) { border-color: var(--gold-hi); }
+.kn-cell.pick { background: radial-gradient(circle at 35% 30%, #FFF0B8, var(--gold) 60%, var(--gold-lo)); color: #2A1608; border-color: var(--gold-hi); }
+.kn-cell.drawn { box-shadow: 0 0 0 3px #9FD8FF inset; }
+.kn-cell.hit { background: radial-gradient(circle at 35% 30%, #CFFFE5, #6FD3A2 60%, #2E9E6C); color: #0B2A1C; animation: knHit .4s ease-out; }
+@keyframes knHit { 40% { transform: scale(1.25); } }
+.kn-pays { display: grid; gap: 4px; }
+.kn-pay { display: flex; justify-content: space-between; padding: 5px 12px; border-radius: 8px; background: rgba(0,0,0,.22); font-size: 13px; }
+.kn-pay b { color: var(--gold-hi); }
+
+/* ---------- Rubbellos ---------- */
+.sc-ticket { max-width: 380px; width: 100%; margin: 0 auto; padding: 14px; border-radius: 18px; background: linear-gradient(160deg, #F6E3A7, #C9963B 60%, #8A6418);
+  box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.35); }
+.sc-head { text-align: center; font-family: var(--f-display); font-size: 22px; color: #3A1A08; margin-bottom: 10px; }
+.sc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; touch-action: none; }
+.sc-cell { aspect-ratio: 1; border-radius: 12px; border: 0; font-size: clamp(30px, 9vw, 44px); cursor: pointer; color: #1A0A10;
+  background: repeating-linear-gradient(135deg, #B9B9C2 0 6px, #A2A2AC 6px 12px); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); transition: background .2s; }
+.sc-cell.empty { background: rgba(58,26,8,.25); box-shadow: inset 0 0 0 2px rgba(58,26,8,.25); cursor: default; }
+.sc-cell.open { background: #FFF8E4; animation: scOpen .25s ease-out; cursor: default; }
+.sc-cell.win { background: radial-gradient(circle, #FFFBEA, #F2D68E); box-shadow: 0 0 0 3px #6FD3A2, 0 0 18px rgba(111,211,162,.6); }
+.sc-cell.dim { opacity: .55; }
+@keyframes scOpen { from { transform: scale(.85); } }
+.sc-pays { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.sc-pays b { letter-spacing: -2px; margin-right: 2px; }
+
+/* ---------- Baccarat ---------- */
+.bc-felt { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; border-radius: 18px;
+  background: radial-gradient(80% 70% at 50% 40%, #13553F, var(--felt-2, #0B3326)); box-shadow: inset 0 0 40px rgba(0,0,0,.5), 0 0 0 2px var(--gold-lo); }
+.bc-side { display: grid; justify-items: center; gap: 6px; }
+.bc-side .lbl { color: rgba(244,235,219,.7); }
+.bc-val { min-width: 2.2em; padding: 1px 10px; border-radius: 999px; background: rgba(0,0,0,.4); font: 600 16px var(--f-mono); text-align: center; }
+.bc-val:empty { visibility: hidden; }
+.bc-cards { display: flex; gap: 4px; min-height: 90px; flex-wrap: wrap; justify-content: center; }
+.bc-cards .pcard { width: 56px; height: 80px; }
+.bc-bets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.bc-bets .dcell { min-width: 0; padding-left: 2px; padding-right: 2px; }
+.bc-bets .dcell b { font-size: 13px; overflow-wrap: anywhere; }
+.bc-bets .dcell { border: 1px solid rgba(242,214,142,.4); background: rgba(19,85,63,.6); }
+.bc-bets .bc-B { background: rgba(142,14,43,.55); }
+.bc-bets .bc-T { background: rgba(91,42,142,.5); }
+.bc-h { min-width: 22px; text-align: center; }
+.bc-h.P { color: #9FD8FF; } .bc-h.B { color: #FF9AAE; } .bc-h.T { color: #B98AFF; }
+
+/* ---------- Früchte-Slot ---------- */
+.fr-machine { position: relative; padding: 14px 14px 18px; border-radius: 22px; background: linear-gradient(180deg, #C4203F, #6A0A1E);
+  box-shadow: 0 0 0 3px var(--gold), 0 14px 30px rgba(0,0,0,.5); }
+.fr-machine.won { animation: frWin .8s ease-out 2; }
+@keyframes frWin { 50% { box-shadow: 0 0 0 3px #FFF3C9, 0 0 40px rgba(242,214,142,.8); } }
+.fr-top { text-align: center; font: 700 15px var(--f-mono); letter-spacing: .1em; color: #FFF3C9; margin-bottom: 10px; }
+.fr-reels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fr-reel { display: grid; grid-template-rows: repeat(3, 1fr); align-items: center; justify-items: center; height: 210px; overflow: hidden; border-radius: 12px;
+  background: linear-gradient(180deg, #CFC3AA, #FFFDF8 30%, #FFFDF8 70%, #CFC3AA); box-shadow: inset 0 0 12px rgba(0,0,0,.35); }
+.fr-sym { font-size: clamp(30px, 9vw, 46px); line-height: 1; opacity: .45; }
+.fr-sym.mid { opacity: 1; }
+.fr-reel.spin .fr-sym { filter: blur(1.5px); }
+.fr-reel.stop { animation: frStop .25s ease-out; }
+@keyframes frStop { 40% { transform: translateY(6px); } }
+.fr-line { position: absolute; left: 10px; right: 10px; top: calc(50% + 12px); height: 3px; border-radius: 3px; background: rgba(242,214,142,.85); box-shadow: 0 0 10px rgba(242,214,142,.8); pointer-events: none; }
+@media (max-width: 520px) { .fr-reel { height: 170px; } }

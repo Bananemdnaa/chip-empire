@@ -26,7 +26,7 @@ function pickW(list) { var t = 0; list.forEach(function (x) { t += x[1]; }); var
 /* ---------- Eine Runde (aus V.settle) ---------- */
 /* w: wie viel die Runde zählt (eine Plinko-Kugel nur ein Drittel) */
 function round(staked, w) {
-  if (staked <= 0) return;
+  if (staked <= 0 || V.isHard()) return;
   X.rounds = Math.round((X.rounds + (w || 1)) * 1000) / 1000;
   if (X.rounds >= chestAt(X.chest)) openChest();
   store(); render();
@@ -50,7 +50,7 @@ function openChest() {
 function tick(dt) {
   if (!X) return;
   X.ms += dt;
-  if (!X.ready && X.spins < SPIN_MAX && X.ms >= spinEvery() * (X.spins + 1)) {
+  if (!V.isHard() && !X.ready && X.spins < SPIN_MAX && X.ms >= spinEvery() * (X.spins + 1)) {
     X.ready = true; V.Snd.unlock();
     V.toast('🎡 Dein Gratis-Dreh ist bereit!', 'good');
   }

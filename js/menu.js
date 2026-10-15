@@ -278,14 +278,14 @@ function vipCard(s) {
     el('div', { class: 'vip-name', text: s.name }),
     el('div', { class: 'vip-bal' }, chipImg(), fmt(sum.balance || 0)),
     tierBox,
-    el('div', { class: 'vip-meta' }, s.mode === 'empire' ? el('span', { text: '🏛️ Wert ' + V.short(sum.worth || sum.balance || 0) }) : null, el('span', { text: '⏱ ' + V.clock(sum.playMs || 0) }), el('span', { text: 'Zuletzt ' + when(s.updated) })),
+    el('div', { class: 'vip-meta' }, s.mode === 'empire' ? el('span', { text: '🏛️ Wert ' + V.short(sum.worth || sum.balance || 0) }) : null, s.mode === 'hardcore' ? el('span', { text: '☠ Rekord ' + V.short(Math.max(sum.peak || 0, sum.balance || 0)) }) : null, el('span', { text: '⏱ ' + V.clock(sum.playMs || 0) }), el('span', { text: 'Zuletzt ' + when(s.updated) })),
     actions);
 }
 
 function newForm() {
   var input = el('input', { class: 'name-in', type: 'text', maxlength: '20', placeholder: 'z.B. Mein Imperium', 'aria-label': 'Name des Spielstands', autocomplete: 'off' });
   var modes = el('div', { class: 'modes', role: 'radiogroup', 'aria-label': 'Spielmodus' });
-  var ICON = { career: 'stufen', empire: 'imperium', sandbox: 'slots' };
+  var ICON = { career: 'stufen', empire: 'imperium', hardcore: 'crash', sandbox: 'slots' };
   Object.keys(Store.MODES).forEach(function (k) {
     var M = Store.MODES[k];
     modes.appendChild(el('button', { class: 'mode', type: 'button', role: 'radio', 'aria-checked': String(newMode === k),
@@ -365,6 +365,7 @@ function playSection() {
 
 /* ---------- Ranglisten mit Treppchen ---------- */
 var BOARD_TEXT = {
+  hardcore: 'Pro Konto zählt der beste Hardcore-Spielstand, nach dem höchsten Kontostand, den er je erreicht hat.',
   career: 'Pro Konto zählt der beste Karriere-Spielstand: zuerst Legenden-Sterne, dann Chips.',
   season: 'Gewinn aus allen Karriere-Runden seit Montag, alle Spielstände eines Kontos zusammen. Jeden Montag beginnt eine neue Woche. Die Top 10 bekommen einmal pro Konto Talentpunkte, Platz 1 bis 3 am meisten.',
   empire: 'Pro Konto zählt der beste Imperium-Spielstand, nach Imperiumswert (Chips plus Geschäfte).',
@@ -375,14 +376,14 @@ function amtText(r) { return boardMode === 'season' ? (r.balance > 0 ? '+' : r.b
 function boardBox() {
   var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' });
   var seg = el('div', { class: 'qseg board-seg', role: 'tablist' });
-  [['season', 'Woche'], ['career', 'Karriere'], ['empire', 'Imperium'], ['duel', 'Duelle']].forEach(function (x) {
+  [['season', 'Woche'], ['career', 'Karriere'], ['empire', 'Imperium'], ['hardcore', 'Hardcore'], ['duel', 'Duelle']].forEach(function (x) {
     seg.appendChild(el('button', { type: 'button', role: 'tab', 'aria-selected': String(boardMode === x[0]), text: x[1],
       onclick: function () { if (boardMode === x[0]) return; boardMode = x[0]; board = null; boardErr = ''; V.Snd.click(); render(); loadBoard(); } }));
   });
   box.appendChild(seg);
   if (boardErr) { box.appendChild(el('p', { class: 'fine', text: boardErr })); return box; }
   if (!board) { box.appendChild(el('p', { class: 'fine', text: 'Lade …' })); return box; }
-  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : boardMode === 'season' ? 'Diese Woche hat noch niemand gespielt. Deine erste Runde bringt dich auf Platz 1.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
+  if (!board.length) { box.appendChild(el('p', { class: 'fine', text: boardMode === 'duel' ? 'Noch niemand hat ein Duell beendet. Fordere jemanden in der Arena heraus.' : boardMode === 'season' ? 'Diese Woche hat noch niemand gespielt. Deine erste Runde bringt dich auf Platz 1.' : 'Noch niemand hier. Leg einen ' + (boardMode === 'empire' ? 'Imperium' : boardMode === 'hardcore' ? 'Hardcore' : 'Karriere') + '-Spielstand mit Konto an und sei die Nummer 1.' })); return box; }
   var me = account(), myName = me ? me.username : null;
   var pod = el('div', { class: 'podium' });
   [1, 0, 2].forEach(function (i) {

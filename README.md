@@ -1,6 +1,6 @@
 # Chip Empire
 
-Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel, Roulette, Entenrennen, Plinko, Crash, Dragon Tower, Blackjack, Hi-Lo-Leiter und Tresorknacker. Steig durch die Lounges auf, sammle Comps und baue dein Chip-Imperium.
+Ein Browser-Casinospiel mit Spielgeld und 11 festen Spielen: Slots, Glücksrad, Würfel, Roulette, Entenrennen, Plinko, Crash, Dragon Tower, Blackjack, Hi-Lo-Leiter und Tresorknacker, dazu wechselnde Gastspiele (Limbo, Keno, Rubbellos, Baccarat, Früchte-Slot). Steig durch die Lounges auf, sammle Comps und baue dein Chip-Imperium.
 
 **Spielen:** https://bananemdnaa.github.io/chip-empire/
 
@@ -17,7 +17,9 @@ Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel
   - **Ereignisse**: Alle 2 bis 4 Stunden ein Ereignis mit Entscheidung (Steuerprüfung, Feuer, Streik, Rohrbruch, Highroller, Konkurrenz, Promi-Party, Start-up, Kritiker). Verluste sind mild: höchstens 5 % des Imperiumswerts, kein Geschäft geht verloren. Unbeantwortet gilt nach 24 Stunden die zweite Wahl.
   - **Expansion**: Las Vegas (1 Mrd.), Monaco (30 Mrd.), Macau (300 Mrd.), Dubai (3 Bio.), jeweils mit vier eigenen, viel größeren Geschäften. Die nächste Stadt gibt es, wenn das größte Geschäft der vorigen steht.
   - **Luxus**: Goldene Uhr bis Privatinsel und eine Kunstsammlung. Bringen Prestige für Titel (Geschäftsmann bis Imperator) und kleine Vorteile (langsamerer Verfall, größerer Tresor, mehr Einnahmen).
+- **Hardcore**: Karriere-Regeln, aber Geld gibt es nur am Tisch: keine Quests und Meilensteine, kein Tagesbonus, keine Sitzungs-Truhen und kein Gratis-Dreh, keine Comps, kein Aufstiegsbonus, keine Geschenke und keine Talente, die Chips bringen. Wer pleite ist, bekommt höchstens einmal am Tag einen kleinen Notgroschen (500 Chips). Eigene Rangliste nach dem höchsten je erreichten Kontostand.
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
+- **Gastspiele und Happy Hour**: Alle 6 Stunden (00, 06, 12, 18 Uhr UTC) kommen zwei Gastspiele aus dem Pool ins Casino, für alle Spieler dieselben und in jeder Stufe spielbar. Dazu hat ein festes Spiel Happy Hour: +100 % Erfahrung, Sitzungs-Truhen zählen doppelt (Gewinnchancen unverändert). Der Plan steht unter Hilfe → „Gastspiele und Happy Hour“. Auszahlungsquoten (nachgerechnet): Limbo 97 % bei jedem Ziel, Keno 94,9 bis 97 % je nach Anzahl Zahlen, Rubbellos 95 %, Baccarat Spieler 98,8 %, Bank 98,9 %, Remis 85,9 %, Früchte-Slot ≈ 95,8 %. Gastspiele zählen nicht für Quests.
 
 **Fortschritt (in allen Modi):**
 - **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business), dazu der Legenden-Ast in der Karriere, mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Tiefere Talente brauchen zusätzlich eine Zahl an Punkten im Ast (3 bis 10), am Ende jedes Asts sitzt ein Meister-Talent mit 10 Stufen. Zusammen über 110 Punkte zum Ausbauen. Die neuen Talente wirken nur auf Belohnungen außerhalb der Spiele (Truhen, Gratis-Dreh, Erfahrung, Aufstieg, Boni), Comps bleiben unter dem Hausvorteil, alle Spiele unter 100 % Auszahlung. Neu verteilen kostet Chips.
@@ -34,7 +36,7 @@ Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel
 - **Arena** (mit Konto, Taste `P`): Live-Duelle gegen Freunde, beliebige Spieler oder als offene Herausforderung. Wer herausfordert, wartet im Warteraum; der Gegner bekommt sofort eine Einladungskarte (im Spiel und im Menü, geprüft alle 5 Sekunden). Nach dem Annehmen starten beide nach einem Countdown gleichzeitig. Oben steht, in welcher Runde der Gegner ist und wer vorn liegt (seine Chips nur bis zu der Runde, die man selbst schon gespielt hat, damit man z. B. keine Absturzpunkte ablesen kann). Sind beide fertig, sehen beide sofort Sieg oder Niederlage, dazu Revanche. Wer die App länger als 2 Minuten verlässt, verliert mit 0 Chips. Drei Spiele: Crash (10 Runden, dieselben Absturzpunkte), Dragon Tower (10 Türme mit denselben Drachen) und Blackjack (8 Hände aus demselben Kartenschuh; Ziehen, Halten, Verdoppeln). Beide starten mit 1.000 Duell-Chips, der Kontostand spielt keine Rolle. Der Server rechnet jedes Ergebnis aus dem Protokoll nach. Siege bringen Elo-Punkte für die Duell-Rangliste. Spielerprofile öffnen sich per Klick auf einen Namen in den Bestenlisten.
 - **Freunde** (in der Arena): Spieler per Namensanfang suchen, Anfragen senden, annehmen, ablehnen oder zurückziehen. Neue Anfragen und angenommene Anfragen werden gemeldet, auch im Hauptmenü. Freunde, die gerade spielen, sind grün markiert.
 
-Das Hauptmenü hat fünf Bereiche: Spielen (Spielstände), Arena, Freunde, Ranglisten und Profil. Am Handy sitzt die Navigation unten. Bis zu 3 Spielstände pro Browser. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
+Das Hauptmenü hat fünf Bereiche: Spielen (Spielstände), Arena, Freunde, Ranglisten und Profil. Am Handy sitzt die Navigation unten. Bis zu 5 Spielstände pro Browser bzw. Konto. Alles läuft lokal im Browser, die Spielstände liegen im `localStorage`. Es gibt kein echtes Geld und keine Auszahlungen.
 
 ## Steuerung
 
@@ -83,6 +85,9 @@ py -3 -m http.server 8765
 | `js/tracker.js` | Gewinn und Verlust: Sitzungsbilanz, Rundenbeträge, letzte Runden |
 | `js/legend.js` | Legende (Prestige), Legenden-Ränge und Wochen-Saison |
 | `js/empire.js` | Imperium: Städte, Geschäfte, Zustand, Manager, Versicherung, Ereignisse, Luxus und Titel |
+| `js/rotation.js` | Gastspiele im 6-Stunden-Wechsel und Happy Hour |
+| `js/limbo.js`, `keno.js`, `scratch.js`, `baccarat.js`, `fruit.js` | Die Gastspiele |
+| `css/guests.css` | Gastspiele, Rotations-Leiste |
 | `js/dev.js` | Dev-Konten: alles offen, Reiter „🛠 Dev“ mit Testwerkzeugen |
 | `js/guide.js` | Neue Spieler: Funktionen nach und nach freischalten, Spielanleitung (Reiter „Hilfe“) |
 | `css/guide.css` | Freischalt-Karten, Spielanleitung, Einstellungen, Meister-Talente, Legenden-Ränge |
