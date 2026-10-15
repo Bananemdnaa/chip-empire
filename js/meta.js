@@ -124,59 +124,11 @@ function respec() {
   V.hud(); V.side.refresh(); V.save();
 }
 
-/* ================= Imperium (nur im Imperium-Modus) ================= */
-var BIZ = [
-  { id: 'kiosk', name: 'Zeitungskiosk', icon: '📰', cost: 1500, inc: 150, tier: 0, desc: 'Klein, aber verlässlich. Dein erstes Geschäft.' },
-  { id: 'cigar', name: 'Zigarrenbar', icon: '🥃', cost: 15000, inc: 1200, tier: 1, desc: 'Ledersessel, Whisky und gute Gespräche.' },
-  { id: 'lounge', name: 'Cocktail-Lounge', icon: '🍸', cost: 120000, inc: 9000, tier: 2, desc: 'Hier wird bis zum Morgen getanzt.' },
-  { id: 'hotel', name: 'Boutique-Hotel', icon: '🏨', cost: 900000, inc: 60000, tier: 3, desc: 'Zimmer mit Blick auf die Skyline.' },
-  { id: 'yacht', name: 'Casino-Yacht', icon: '🛥️', cost: 7500000, inc: 450000, tier: 4, desc: 'Spieltische auf hoher See.' },
-  { id: 'casino', name: 'Eigenes Casino', icon: '🎰', cost: 60000000, inc: 3000000, tier: 5, desc: 'Das Ziel: Jetzt gehört das Haus dir.' }
-];
-var MAX_BIZ = 10;
-function bizLv(id) { return (V.S.biz && V.S.biz[id]) || 0; }
-function bizIncome(b, lv) { return lv ? b.inc * Math.pow(1.6, lv - 1) : 0; }
-function upCost(b, lv) { return Math.round(b.cost * Math.pow(1.75, lv)); }
-function bizOpen(b) { return V.S.unlocked >= b.tier; }
-function perHour() {
-  if (!isEmpire()) return 0;
-  var s = 0; BIZ.forEach(function (b) { s += bizIncome(b, bizLv(b.id)); });
-  return s * (1 + perk('empire'));
-}
-function vaultHours() { return 8 + perk('vault'); }
-function vaultCap() { return Math.floor(perHour() * vaultHours()); }
-function vault() {
-  var S = V.S;
-  if (!S.bizAt || !isEmpire()) return 0;
-  var h = Math.min(Math.max(0, Date.now() - S.bizAt) / 36e5, vaultHours());
-  return Math.floor(perHour() * h);
-}
-function collect(quiet) {
-  var S = V.S, v = vault();
-  S.bizAt = Date.now();
-  if (v <= 0) return 0;
-  S.balance += v; S.bizEarned += v;
-  if (!quiet) { V.Snd.cash(); V.toast('Tresor geleert: +' + fmt(v) + ' Chips', 'good'); }
-  V.hud(); V.save();
-  return v;
-}
-function buy(id) {
-  var S = V.S, b = null;
-  BIZ.forEach(function (x) { if (x.id === id) b = x; });
-  var lv = bizLv(id);
-  if (!b || !isEmpire() || lv >= MAX_BIZ || !bizOpen(b)) return;
-  var c = upCost(b, lv);
-  if (S.balance < c) { V.toast('Dafür fehlen dir ' + fmt(c - S.balance) + ' Chips.', 'bad'); return; }
-  collect(true);
-  S.balance -= c; S.biz[id] = lv + 1; S.bizSpent += c;
-  if (!S.bizAt) S.bizAt = Date.now();
-  V.Snd.unlock();
-  if (lv === 0) V.banner(b.icon + ' ' + b.name, 'Gehört jetzt dir · +' + fmt(bizIncome(b, 1) * (1 + perk('empire'))) + ' Chips pro Stunde', { kind: 'win', ms: 2600 });
-  else V.toast(b.name + ' auf Stufe ' + (lv + 1) + ' ausgebaut.', 'good');
-  if (id === 'casino' && lv === 0) V.burst(V.$('#app'), 60);
-  V.hud(); V.side.refresh(); V.save();
-}
-function worth() { return Math.round(V.S.balance + V.S.bizSpent); }
+/* ================= Imperium (nur im Imperium-Modus, siehe empire.js) ================= */
+function perHour() { return V.empire ? V.empire.perHour() : 0; }
+function vaultCap() { return V.empire ? V.empire.vaultCap() : 0; }
+function vault() { return V.empire ? V.empire.vault() : 0; }
+function worth() { return V.empire ? V.empire.worth() : Math.round(V.S.balance + V.S.bizSpent); }
 
 /* ================= Quests ================= */
 function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -547,7 +499,7 @@ function questClaimable() {
 }
 function badges() {
   var cap = vaultCap();
-  return { quests: questClaimable() > 0, talente: pointsFree() > 0, imperium: isEmpire() && cap > 0 && vault() >= cap * 0.5 };
+  return { quests: questClaimable() > 0, talente: pointsFree() > 0, imperium: !!(V.empire && V.empire.badge()) };
 }
 
 /* ================= Ansichten im Fenster ================= */
@@ -625,39 +577,7 @@ function renderTalente(body) {
 }
 
 /* ---- Imperium ---- */
-function renderImperium(body) {
-  var S = V.S, ph = perHour(), cap = vaultCap(), v = vault();
-  body.appendChild(el('div', { class: 'emp-head' },
-    el('div', { class: 'emp-kpi' }, el('span', { class: 'lbl', text: 'Einnahmen' }), el('b', { class: 'num', text: fmt(ph) + ' / Std.' })),
-    el('div', { class: 'emp-kpi' }, el('span', { class: 'lbl', text: 'Imperiumswert' }), el('b', { class: 'num', text: fmt(worth()) })),
-    el('div', { class: 'vault' + (cap && v >= cap ? ' full' : '') },
-      el('div', { class: 'vault-h' }, el('span', { class: 'lbl', text: 'Tresor (füllt sich auch offline)' }), el('b', { id: 'vaultAmt', class: 'num', text: fmt(v) + ' / ' + fmt(cap) })),
-      el('div', { id: 'vaultBar' }, bar(cap ? v / cap : 0)),
-      el('button', { id: 'vaultBtn', class: 'btn gold sm', type: 'button', disabled: v <= 0, text: 'Tresor leeren', onclick: function () { collect(); V.side.refresh(); } }))));
-  if (!ph) body.appendChild(el('p', { class: 'side-intro', text: 'Kauf dein erstes Geschäft. Es verdient Chips pro Stunde, auch wenn du nicht spielst. Hol sie regelmäßig aus dem Tresor, bevor er voll ist (' + vaultHours() + ' Std.). Ziel: das eigene Casino.' }));
-  var list = el('div', { class: 'biz-list' });
-  BIZ.forEach(function (b) {
-    var lv = bizLv(b.id), open = bizOpen(b), c = upCost(b, lv), mult = 1 + perk('empire');
-    var cur = bizIncome(b, lv) * mult, nxt = bizIncome(b, lv + 1) * mult;
-    var btn;
-    if (!open) btn = el('button', { class: 'btn ghost sm', type: 'button', disabled: true, text: 'Ab ' + E.TIERS[b.tier].name });
-    else if (lv >= MAX_BIZ) btn = el('button', { class: 'btn ghost sm', type: 'button', disabled: true, text: 'Voll ausgebaut' });
-    else btn = el('button', { class: 'btn ' + (S.balance >= c ? 'gold' : 'ghost') + ' sm', type: 'button', disabled: S.balance < c,
-      text: (lv ? 'Ausbauen' : 'Kaufen') + ' · ' + V.short(c), onclick: function () { buy(b.id); } });
-    var pips = el('span', { class: 'pips' });
-    for (var k = 0; k < MAX_BIZ; k++) pips.appendChild(el('i', { class: k < lv ? 'on' : '' }));
-    list.appendChild(el('article', { class: 'biz' + (lv ? ' owned' : '') + (open ? '' : ' locked') },
-      el('div', { class: 'biz-ico', text: b.icon }),
-      el('div', { class: 'biz-info' },
-        el('div', { class: 'biz-h' }, el('b', { text: b.name }), pips),
-        el('div', { class: 'fine', text: b.desc }),
-        el('div', { class: 'biz-k' }, lv ? el('span', { text: 'Stufe ' + lv + ' · ' + fmt(cur) + '/Std.' }) : null,
-          lv < MAX_BIZ ? el('span', { class: 'up', text: (lv ? 'danach ' : 'bringt ') + fmt(nxt) + '/Std.' }) : null)),
-      btn));
-  });
-  body.appendChild(list);
-  body.appendChild(el('p', { class: 'fine', text: 'Geschäfte kann man nicht verkaufen. Der Imperiumswert zählt deine Chips plus alles, was du investiert hast, und entscheidet über die Imperium-Bestenliste.' }));
-}
+function renderImperium(body) { V.empire.render(body); }
 
 /* ---- Quests ---- */
 var questView = 'daily';
@@ -724,16 +644,8 @@ function renderQuests(body) {
   if (questView === 'miles') renderMiles(body); else renderQuestList(body, questView);
 }
 
-/* Laufende Anzeige im Fenster (Tresor) ohne komplettes Neuzeichnen */
-function tick() {
-  var a = document.getElementById('vaultAmt');
-  if (a) {
-    var cap = vaultCap(), v = vault();
-    a.textContent = fmt(v) + ' / ' + fmt(cap);
-    var i = document.querySelector('#vaultBar i'); if (i) i.style.width = (cap ? Math.min(1, v / cap) * 100 : 0).toFixed(1) + '%';
-    var btn = document.getElementById('vaultBtn'); if (btn) btn.disabled = v <= 0;
-  }
-}
+/* Laufende Anzeige im Fenster (Tresor) und fällige Imperium-Ereignisse */
+function tick() { if (V.empire) V.empire.tick(); }
 
 return {
   perk: perk, onRound: onRound, notify: notify, claimAll: claimAll, migrate: migrate, event: function (e) { progress(e); }, addXp: addXp, xpFor: xpFor, badges: badges, tick: tick, ensureQuests: ensureQuests,

@@ -12,7 +12,11 @@ Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel
 - **Sitzung**: Nach 10, 25, 50 und 100 Runden in einer Sitzung öffnet sich eine Truhe mit Zufallsbelohnung, alle 10 Minuten Spielzeit gibt es einen Gratis-Dreh (höchstens 6 pro Sitzung). Einsätze lassen sich frei eintippen (auch „10k“ oder „1,5 Mio“), All-in setzt alle Chips.
 - **Blitze und Bonus-Runden**: Roulette hat Blitz-Zahlen (50:1 bis 500:1, normale Einzelzahl 29:1), Würfel eine Blitz-Summe (×2 bis ×5). Seltene Ereignisse: Goldener Dreh in Slots (Gewinne ×2), Doppel-Rakete in Crash, Goldkugel in Plinko (höchstens eine alle 20 Sekunden), Goldfelder im Dragon Tower. Eine Plinko-Kugel zählt für Erfahrung und Sitzungs-Truhen nur ein Drittel, weil man viele auf einmal fallen lassen kann. Die Grundquoten sind so angepasst, dass die Auszahlungsquoten gleich bleiben.
 - **Wochen-Saison**: Eigene Bestenliste mit dem Gewinn aus allen Karriere-Runden seit Montag, alle Spielstände eines Kontos zusammengezählt. Die Top 10 der Vorwoche bekommen beim nächsten Spielstart einmal pro Konto Talentpunkte (Platz 1: 5, Platz 2: 3, Platz 3: 2, sonst 1).
-- **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert.
+- **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert (Chips plus alles, was in Geschäfte, Städte und Luxus geflossen ist).
+  - **Betrieb**: Geschäfte verlieren 2 % Zustand pro Stunde (auch offline) und bringen dann weniger, bis auf 40 %. Renovieren kostet die fehlenden Prozent mal 2 Stunden Einnahmen. Ein Manager pro Stadt hält alles wie neu (6 % der Stadt-Einnahmen), die Versicherung (4 % aller Einnahmen) fängt Brände ab.
+  - **Ereignisse**: Alle 2 bis 4 Stunden ein Ereignis mit Entscheidung (Steuerprüfung, Feuer, Streik, Rohrbruch, Highroller, Konkurrenz, Promi-Party, Start-up, Kritiker). Verluste sind mild: höchstens 5 % des Imperiumswerts, kein Geschäft geht verloren. Unbeantwortet gilt nach 24 Stunden die zweite Wahl.
+  - **Expansion**: Las Vegas (1 Mrd.), Monaco (30 Mrd.), Macau (300 Mrd.), Dubai (3 Bio.), jeweils mit vier eigenen, viel größeren Geschäften. Die nächste Stadt gibt es, wenn das größte Geschäft der vorigen steht.
+  - **Luxus**: Goldene Uhr bis Privatinsel und eine Kunstsammlung. Bringen Prestige für Titel (Geschäftsmann bis Imperator) und kleine Vorteile (langsamerer Verfall, größerer Tresor, mehr Einnahmen).
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
 
 **Fortschritt (in allen Modi):**
@@ -78,6 +82,7 @@ py -3 -m http.server 8765
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `hilo.js`, `vault.js` | Die elf Spiele |
 | `js/tracker.js` | Gewinn und Verlust: Sitzungsbilanz, Rundenbeträge, letzte Runden |
 | `js/legend.js` | Legende (Prestige), Legenden-Ränge und Wochen-Saison |
+| `js/empire.js` | Imperium: Städte, Geschäfte, Zustand, Manager, Versicherung, Ereignisse, Luxus und Titel |
 | `js/dev.js` | Dev-Konten: alles offen, Reiter „🛠 Dev“ mit Testwerkzeugen |
 | `js/guide.js` | Neue Spieler: Funktionen nach und nach freischalten, Spielanleitung (Reiter „Hilfe“) |
 | `css/guide.css` | Freischalt-Karten, Spielanleitung, Einstellungen, Meister-Talente, Legenden-Ränge |

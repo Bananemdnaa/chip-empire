@@ -184,3 +184,60 @@
   .side > .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .side > .tabs .tab { white-space: nowrap; flex: none; }
 }
+
+/* ---------- Imperium: Titel, Ereignisse, Städte, Betrieb, Luxus ---------- */
+.emp-head { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.emp-head .vault { grid-column: 1 / -1; }
+.emp-kpi b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emp-title b { font-family: var(--f-display); font-weight: 400; font-size: 19px; }
+.emp-title small { color: var(--muted); font-size: 11.5px; }
+.emp-evt { display: grid; gap: 8px; margin-bottom: 14px; padding: 14px; border-radius: 16px; border: 2px solid var(--gold-hi);
+  background: linear-gradient(180deg, rgba(212,171,82,.16), rgba(0,0,0,.3)); box-shadow: 0 0 24px rgba(242,214,142,.15); animation: pop .3s ease-out; }
+.ee-h { display: flex; align-items: center; gap: 12px; }
+.ee-ico { font-size: 34px; line-height: 1; }
+.ee-h b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 21px; color: var(--gold-hi); }
+.emp-evt p { margin: 0; font-size: 14px; line-height: 1.45; }
+.ee-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.ee-opt { display: grid; gap: 2px; justify-items: start; text-align: left; padding: 10px 14px; min-height: 52px; }
+.ee-opt small { font-size: 12px; font-weight: 500; opacity: .85; }
+.emp-cities { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 12px 0; padding-bottom: 2px; }
+.emp-city { flex: none; display: grid; justify-items: center; gap: 1px; min-width: 82px; padding: 8px 10px; border-radius: 14px; border: 1px solid var(--line);
+  background: rgba(0,0,0,.25); color: var(--ivory); cursor: pointer; font: inherit; }
+.emp-city > span { font-size: 22px; line-height: 1.1; }
+.emp-city b { font-size: 12.5px; white-space: nowrap; }
+.emp-city small { font: 600 11px var(--f-mono); color: var(--gold); }
+.emp-city.on { border-color: var(--gold-hi); background: linear-gradient(180deg, rgba(212,171,82,.2), rgba(0,0,0,.25)); }
+.emp-city.buy { border-style: dashed; }
+.emp-expand { display: grid; justify-items: center; gap: 8px; padding: 22px 16px; text-align: center; border-radius: 16px; border: 1px dashed var(--gold-lo); background: rgba(0,0,0,.2); }
+.ex-ico { font-size: 46px; line-height: 1; }
+.emp-expand b { font-family: var(--f-display); font-weight: 400; font-size: 22px; color: var(--gold-hi); }
+.emp-expand .fine { margin: 0; max-width: 420px; }
+.warn-t { color: #FF9AAE !important; }
+.biz-cond { display: grid; grid-template-columns: auto minmax(40px, 1fr) auto; align-items: center; gap: 8px; font: 600 11.5px var(--f-mono); }
+.biz-cond .mbar { margin: 0; }
+.biz-cond.ok .mbar i { background: #6FD3A2; } .biz-cond.mid .mbar i { background: #F2C25E; } .biz-cond.bad .mbar i { background: #FF6A88; }
+.biz-cond.bad span { color: #FF9AAE; }
+.mbar.ok i { background: #6FD3A2; } .mbar.mid i { background: #F2C25E; } .mbar.bad i { background: #FF6A88; }
+.emp-ops { display: grid; gap: 8px; margin: 12px 0; }
+.emp-ops h4 { margin: 0; }
+.emp-ops .fine { margin: 0; }
+.eo-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.22); }
+.eo-row .mbar { margin-top: 6px; }
+.eo-mod { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; font-size: 13px; background: rgba(0,0,0,.22); border: 1px solid var(--line); }
+.eo-mod.pos { border-color: rgba(111,211,162,.4); } .eo-mod.neg { border-color: rgba(255,106,136,.4); }
+.eo-mod small { color: var(--muted); font-family: var(--f-mono); white-space: nowrap; }
+.eo-log { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 13px; }
+.eo-log > span { font-size: 20px; }
+.eo-log b { display: block; }
+.eo-log small { color: var(--muted); line-height: 1.35; }
+.emp-titles { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.et { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); color: var(--muted); }
+.et.on { color: var(--ivory); border-color: var(--gold-lo); }
+.et.cur { color: #2A1608; background: var(--gold-hi); border-color: var(--gold-hi); font-weight: 700; }
+@media (max-width: 720px) {
+  .emp-head { grid-template-columns: 1fr 1fr; }
+  .emp-title { grid-column: 1 / -1; }
+  .eo-row { grid-template-columns: 1fr; }
+  .eo-row .btn { justify-self: stretch; }
+  .ee-opts { grid-template-columns: 1fr; }
+}

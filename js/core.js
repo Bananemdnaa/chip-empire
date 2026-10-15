@@ -38,6 +38,8 @@ function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 /* Gewichtete Auswahl aus [[Wert, Gewicht], …] mit dem Spiel-Zufall */
 function pickW(list) { var t = 0; list.forEach(function (x) { t += x[1]; }); var r = E.rand() * t; for (var i = 0; i < list.length; i++) { r -= list[i][1]; if (r < 0) return list[i][0]; } return list[list.length - 1][0]; }
 function short(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(n % 1e12 ? 1 : 0).replace('.', ',') + ' Bio';
+  if (n >= 1e9) return (n / 1e9).toFixed(n % 1e9 ? 1 : 0).replace('.', ',') + ' Mrd';
   if (n >= 1e6) return (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' Mio';
   if (n >= 1e3) return (n / 1e3).toFixed(n % 1e3 ? 1 : 0).replace('.', ',') + 'k';
   return String(n);
@@ -82,7 +84,7 @@ function fresh(mode) {
     rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
     playMs: 0, dopa: 0, winStreak: 0, lossStreak: 0, realityShown: 0, sideTab: 'quests',
     bailoutAt: 0, bailouts: 0, bailedOut: 0, dailyLast: '', dailyStreak: 0, dailyTotal: 0,
-    xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0,
+    xp: 0, level: 1, bonusTp: 0, talents: {}, biz: {}, bizAt: 0, bizSpent: 0, bizEarned: 0, emp: {},
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
     qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, vaultBig: 0, hiloBest: 0, miles: {}, init: 0 },
     turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3, towerFloors: 9, vaultSize: 5,

@@ -144,7 +144,10 @@ function topics() {
       'Mit einem kostenlosen Konto spielst du Duelle gegen andere: beide mit 1.000 Duell-Chips und demselben Zufall. Siege bringen Wertungspunkte.',
       'Im Hauptmenü unter „Freunde“ suchst du Spieler und schickst Anfragen.'] },
     s.mode === 'empire' ? { id: 'empire', icon: '🏢', title: 'Imperium', text: [
-      'Kauf Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Leere ihn, bevor er voll ist.'] } : null
+      'Kauf Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Leere ihn, bevor er voll ist.',
+      'Geschäfte nutzen sich ab (2 % pro Stunde) und bringen dann weniger. Renovieren, einen Manager einstellen oder versichern geht unter „Betrieb“.',
+      'Alle 2 bis 4 Stunden passiert etwas: Steuerprüfung, Feuer, Streik, ein Highroller. Du entscheidest, was du tust. Verluste sind klein, höchstens 5 % deines Imperiums.',
+      'Steht dein eigenes Casino, kannst du nach Las Vegas expandieren, danach Monaco, Macau und Dubai. Unter „Luxus“ kaufst du Uhr, Villa, Jacht und mehr für Prestige und Titel.'] } : null
   ];
   return list.filter(Boolean);
 }
