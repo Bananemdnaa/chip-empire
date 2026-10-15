@@ -95,3 +95,22 @@
 @keyframes frStop { 40% { transform: translateY(6px); } }
 .fr-line { position: absolute; left: 10px; right: 10px; top: calc(50% + 12px); height: 3px; border-radius: 3px; background: rgba(242,214,142,.85); box-shadow: 0 0 10px rgba(242,214,142,.8); pointer-events: none; }
 @media (max-width: 520px) { .fr-reel { height: 170px; } }
+
+/* ---------- Feinschliff PC und Handy ---------- */
+/* Früchte-Slot: Gewinnlinie als goldener Rahmen um die mittlere Reihe statt eines Strichs durch die Symbole */
+.fr-line { display: none; }
+.fr-reel { position: relative; }
+.fr-reel::after { content: ""; position: absolute; left: 0; right: 0; top: 33.3%; bottom: 33.3%; pointer-events: none;
+  border-top: 2px solid rgba(212,171,82,.9); border-bottom: 2px solid rgba(212,171,82,.9); background: rgba(242,214,142,.08); }
+.fr-machine.won .fr-reel::after { background: rgba(111,211,162,.18); border-color: #6FD3A2; }
+@media (min-width: 861px) {
+  /* Rubbellos: kompakter, damit das ganze Los ohne Scrollen sichtbar ist */
+  .sc-ticket { max-width: 330px; }
+  .sc-cell { font-size: 38px; }
+  /* Baccarat: größere Karten und mehr Tisch */
+  .bc-felt { min-height: 210px; align-items: center; }
+  .bc-cards .pcard { width: 70px; height: 100px; }
+  .bc-cards .pcard .cmid { font-size: 34px; }
+  /* Keno: Raster nicht breiter als nötig */
+  .kn-grid { max-width: 520px; margin: 0 auto; }
+}
