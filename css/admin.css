@@ -47,6 +47,7 @@
 .ad-card.banned-p { border-color: rgba(255,106,136,.5); background: rgba(90,10,30,.25); }
 .ad-ban { display: grid; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,106,136,.4); background: rgba(196,32,63,.1); }
 .ad-ban .fine { margin: 0; }
+.ad-ban.ad-plain { border-color: var(--gold-lo); background: rgba(212,171,82,.06); }
 .ad-tp { display: inline-flex; align-items: center; gap: 4px; }
 .ad-tp .btn { padding: 4px 10px; }
 /* Nachricht */

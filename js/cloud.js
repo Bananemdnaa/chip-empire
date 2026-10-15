@@ -77,6 +77,20 @@ async function deleteAccount(pw) {
   try { localStorage.removeItem('chip-empire-friends-' + a.id); localStorage.removeItem('chip-empire-duel'); } catch (e) { /* */ }
   user = null; token = null;
 }
+/* Benutzername ändern: Der Server ändert Profil und Login-Adresse, danach die Sitzung auffrischen,
+   damit der neue Name auch hier ankommt */
+async function changeName(name) {
+  var u = cleanName(name);
+  if (!NAME_RE.test(u)) throw new Error('Benutzername: 3 bis 16 Zeichen, nur a–z, 0–9, _ und -.');
+  if (Store.badName(u)) throw new Error('Dieser Benutzername ist nicht erlaubt.');
+  await rpc('change_username', { new_name: u });
+  try {
+    var r = await sb.auth.refreshSession();
+    if (r.data && r.data.session) { user = r.data.session.user; token = r.data.session.access_token; }
+  } catch (e) { /* beim nächsten Login ist der neue Name sowieso da */ }
+  if (user) user.user_metadata = Object.assign({}, user.user_metadata, { username: u });
+  return u;
+}
 async function signOut() {
   await flush();
   try { await sb.auth.signOut(); } catch (e) { /* trotzdem lokal abmelden */ }
@@ -217,7 +231,7 @@ async function rpc(name, args) {
 
 return {
   rpc: rpc, announcement: announcement, annSeen: annSeen, annMarkSeen: annMarkSeen,
-  available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut, deleteAccount: deleteAccount,
+  available: available, init: init, current: current, signUp: signUp, signIn: signIn, signOut: signOut, changeName: changeName, deleteAccount: deleteAccount,
   syncAll: syncAll, createSave: createSave, deleteSave: deleteSave, flush: flush, flushOnLeave: flushOnLeave, leaderboard: leaderboard, seasonBoard: seasonBoard,
   onConflict: function (cb) { conflictCb = cb; }, hasFailed: function () { return failed; }, NAME_RE: NAME_RE
 };

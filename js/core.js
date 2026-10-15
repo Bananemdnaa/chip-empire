@@ -57,7 +57,8 @@ var GAME_LIST = [
   { id: 'slots', name: 'Slots', tier: 0, edge: 0.021, cat: 'dream' },
   { id: 'wheel', name: 'Glücksrad', tier: 0, edge: 0.05, cat: 'ritual' },
   { id: 'dice', name: 'Würfel', tier: 0, edge: 0.04, cat: 'ritual' },
-  { id: 'plinko', name: 'Plinko', tier: 0, edge: 0.01, cat: 'thrill' },
+  /* pace: Anteil einer Runde für Erfahrung und Sitzungs-Truhen (Plinko-Kugeln fallen viel schneller als andere Runden) */
+  { id: 'plinko', name: 'Plinko', tier: 0, edge: 0.01, cat: 'thrill', pace: 1 / 3 },
   { id: 'roulette', name: 'Roulette', tier: 1, edge: 1 / 37, cat: 'ritual' },
   { id: 'ducks', name: 'Entenrennen', short: 'Enten', tier: 1, edge: 0.034, cat: 'ritual' },
   { id: 'tower', name: 'Dragon Tower', short: 'Tower', tier: 1, edge: 0.03, cat: 'thrill' },
@@ -75,7 +76,7 @@ function fresh(mode) {
   var career = mode !== 'sandbox', start = career ? CAREER.start : 10000;
   return {
     mode: mode === 'empire' ? 'empire' : career ? 'career' : 'sandbox',
-    balance: start, escrow: 0, wagered: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
+    balance: start, escrow: 0, wagered: 0, wagerBonus: 0, returned: 0, rounds: 0, reloads: 0, reloaded: 0,
     comps: 0, compsClaimed: 0, room: 0, unlocked: career ? 0 : 5, aff: [0, 0, 0, 0, 0, 0], tips: 0,
     hist: [], series: [start], gst: allGames(emptyG), sound: true, hint: true, game: 'slots', bets: allGames(function () { return 100; }), rchip: 100,
     rhist: [], chist: [], biggest: 0, bestMult: 0, free: { n: 0, bet: 0, won: 0 },
@@ -85,6 +86,7 @@ function fresh(mode) {
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
     qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, vaultBig: 0, hiloBest: 0, miles: {}, init: 0 },
     turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3, towerFloors: 9, vaultSize: 5,
+    fxLow: false, hostTalk: true, tipsOn: true, onb: 0, feats: {},
     stars: 0, season: { key: '', net: 0, best: 0, rounds: 0 }, seasonPrev: { key: '', net: 0, best: 0, rounds: 0 }, seasonClaimed: '', trophies: 0
   };
 }
@@ -114,13 +116,26 @@ function load(id) {
   f.series = f.series.filter(isNum).slice(-400); if (!f.series.length) f.series = [f.balance];
   f.rhist = f.rhist.filter(function (n) { return isNum(n) && n >= 0 && n <= 36; }).slice(-120);
   f.chist = f.chist.filter(isNum).slice(-30);
-  f.unlocked = f.mode === 'sandbox' ? 5 : clamp(Math.max(f.unlocked, E.tierFor(f.wagered)), 0, 5);
+  f.unlocked = f.mode === 'sandbox' ? 5 : clamp(Math.max(f.unlocked, E.tierFor(f.wagered + f.wagerBonus)), 0, 5);
   f.room = clamp(f.room, 0, f.unlocked);
   if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
   if (!GAME_TIER.hasOwnProperty(f.game)) f.game = 'slots';
-  if (['imperium', 'talente', 'quests', 'arena', 'stufen', 'meister', 'profil', 'stats', 'haus'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
+  if (['imperium', 'talente', 'quests', 'arena', 'stufen', 'meister', 'profil', 'stats', 'haus', 'hilfe'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
+  /* Ganz neue Karriere oder Imperium: Funktionen kommen nach und nach dazu (siehe guide.js).
+     Ältere Spielstände haben onb = 0 und sehen alles wie bisher. */
+  if (!d && f.mode !== 'sandbox') { f.onb = 1; f.feats = {}; }
   S = f;
   if (!d) save();
+  return true;
+}
+/* Spielstand umbenennen (auch mit Konto: der Name geht beim nächsten Hochladen mit) */
+function renameSlot(name) {
+  var n = String(name || '').trim().replace(/\s+/g, ' ').slice(0, 20);
+  if (!n || !slotId) return false;
+  if (Store.badName(n)) { toast('Dieser Name ist nicht erlaubt.', 'bad'); return false; }
+  Store.patch(slotId, { name: n });
+  slotName = n;
+  save();
   return true;
 }
 /* Einsätze laufender Runden sind gebunden: Wer mitten in der Runde neu lädt, bekommt sie nicht zurück.
@@ -152,6 +167,8 @@ Cloud.onConflict(function () {
   blockSaving('Dieser Spielstand wurde auf einem anderen Gerät weitergespielt. Lade neu, um den aktuellen Stand zu holen.');
 });
 function room() { return E.TIERS[S.room]; }
+/* Umsatz für den Aufstieg: echter Umsatz plus Bonus aus Talenten */
+function climbed() { return S.wagered + (S.wagerBonus || 0); }
 function debit(n, commit) { S.balance -= n; S.escrow += n; if (commit) lock(n); allinCheck(n); }
 function lock(n) { locked += n; save(); }
 function refund(n) { S.balance += n; S.escrow -= n; if (S.balance >= room().min) allinRound = false; }
@@ -176,7 +193,7 @@ function bailout() {
 function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
 function dailyAvailable() { return isCareer() && S.dailyLast !== dayKey(Date.now()); }
 function dailyStreakNext() { return S.dailyLast === dayKey(Date.now() - 864e5) ? S.dailyStreak + 1 : 1; }
-function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1)) * (1 + perk('daily') + perk('legDaily'))); }
+function dailyAmt(streak) { return Math.round(E.TIERS[S.unlocked].min * CAREER.dailyMult * (1 + 0.25 * (Math.min(streak, 7) - 1)) * (1 + perk('daily') + perk('legDaily') + perk('bCap') + (V.legend ? V.legend.rankPerk('daily') : 0))); }
 function claimDaily() {
   if (!dailyAvailable()) return;
   var streak = dailyStreakNext(), amt = dailyAmt(streak);
@@ -284,7 +301,7 @@ function banner(title, sub, opts) {
 }
 function hideBanner() { var b = $('#banner'); if (b) b.hidden = true; }
 function burst(host, n, colors) {
-  if (!host) return;
+  if (!host || S.fxLow) return;
   colors = colors || ['#F2D68E', '#D4AB52', '#C4203F', '#F4EBDB'];
   for (var i = 0; i < n; i++) {
     var s = el('span', { class: 'conf' });
@@ -334,10 +351,12 @@ var LINES = {
 var affTitles = [[0, 'Fremde'], [20, 'Bekannte'], [40, 'Stammgast'], [65, 'Favorit'], [90, 'Vertraute']];
 function affTitle(v) { var t = affTitles[0][1]; affTitles.forEach(function (a) { if (v >= a[0]) t = a[1]; }); return t; }
 function compMult() { return 1 + 0.25 * (S.aff[S.room] / 100); }
-function tipCost() { return room().min * 10; }
+function tipCost() { return Math.round(room().min * 10 * (1 - perk('tipCharm'))); }
 var lastSay = 0;
 function say(kind, force) {
   var now = Date.now();
+  /* Einstellung „Gastgeberin redet“ aus: nur noch Begrüßung und Plaudern auf Knopfdruck */
+  if (!S.hostTalk && kind !== 'greet' && !(kind === 'chat' && force)) return;
   if (!force && now - lastSay < 2200) return;
   lastSay = now;
   var txt;
@@ -376,7 +395,7 @@ function addAff(v) { S.aff[S.room] = clamp(S.aff[S.room] + v * (1 - S.aff[S.room
 function tip() {
   var c = tipCost();
   if (S.balance < c) { toast('Zu wenig Chips für Trinkgeld.', 'bad'); return; }
-  S.balance -= c; S.tips++; addAff(7);
+  S.balance -= c; S.tips++; addAff(7 * (1 + perk('tipCharm')));
   Snd.chip(); say('tip', true); renderAff(); hud();
   if (V.meta) { V.meta.event({ tip: true }); if (V.side) V.side.refresh(); }
   save();
@@ -402,10 +421,12 @@ function settle(game, staked, ret, opt) {
   S.returned += ret;
   if (staked > 0) {
     S.wagered += staked; S.rounds++;
+    /* Talente und Legenden-Rang: Umsatz zählt für den Aufstieg mehr (als Bonus, die echte Bilanz bleibt) */
+    if (V.meta) S.wagerBonus += staked * (V.meta.wagerMult() - 1);
     var g = S.gst[game]; g.r++; g.w += staked; g.ret += ret;
     if (V.mastery) V.mastery.check(game, g.r);
     /* Jeder Legenden-Stern: +5 % Comps (bis 5 Sterne) */
-    S.comps += staked * GAME_BY[game].edge * room().comp * compMult() * (1 + perk('comps') + 0.05 * Math.min(5, S.stars));
+    S.comps += staked * GAME_BY[game].edge * room().comp * compMult() * (1 + perk('comps') + perk('tCap') + 0.05 * Math.min(5, S.stars));
     S.hist.push({ g: game, bet: staked, ret: ret, bal: before }); if (S.hist.length > 80) S.hist.shift();
     S.series.push(Math.round(S.balance + S.escrow)); if (S.series.length > 400) S.series.shift();
     addAff(0.2);
@@ -419,7 +440,7 @@ function settle(game, staked, ret, opt) {
   else d = -2;
   if (opt.near) d += 9;
   S.dopa = clamp(S.dopa * 0.94 + d, 0, 100);
-  var t = E.tierFor(S.wagered);
+  var t = E.tierFor(climbed());
   if (t > S.unlocked) levelUp(t);
   else {
     var ratio = ret / Math.max(1, staked || (opt.refBet || 1));
@@ -435,18 +456,21 @@ function settle(game, staked, ret, opt) {
   if (V.track) V.track.round(game, staked, ret);
   if (V.legend) V.legend.round(staked, ret);
   if (staked > 0) allinResult(net);
-  if (V.session) V.session.round(staked);
+  if (V.session) V.session.round(staked, GAME_BY[game].pace || 1);
+  if (V.guide) V.guide.check();
   hud(); renderAff(); renderDopa(); if (V.side) V.side.refresh(); save();
   maybeReality();
 }
 function levelUp(t) {
   S.unlocked = t;
   var T = E.TIERS[t];
-  S.balance += T.bonus;
+  /* Talent Ehrgeiz: höherer Aufstiegsbonus */
+  var bonus = Math.round(T.bonus * (1 + perk('climb')));
+  S.balance += bonus;
   Snd.unlock();
   var hn = A.HOSTESSES[t].name;
   var newGames = isCareer() ? gamesAt(t).map(function (g) { return GAME_NAME[g]; }) : [];
-  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(T.bonus) + ' Chips · ' + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Gastgeberin ' + hn + ' erwartet dich', {
+  banner('Neue Stufe: ' + T.name, 'Bonus +' + fmt(bonus) + ' Chips · ' + (newGames.length ? 'Neu freigeschaltet: ' + newGames.join(', ') + ' · ' : '') + 'Gastgeberin ' + hn + ' erwartet dich', {
     kind: 'level', ms: 9000, actions: [{ label: 'Raum betreten', gold: true, fn: function () { enterRoom(t, true); } }, { label: 'Später', fn: function () {} }]
   });
   burst($('#app'), 40);
@@ -511,9 +535,9 @@ function renderTier() {
   }
   var nxt = E.TIERS[S.unlocked + 1];
   if (nxt) {
-    var base = U.wager, p = clamp((S.wagered - base) / (nxt.wager - base), 0, 1);
+    var base = U.wager, p = clamp((climbed() - base) / (nxt.wager - base), 0, 1);
     $('#progBar').style.width = (p * 100).toFixed(1) + '%';
-    $('#progTxt').textContent = short(Math.floor(S.wagered)) + ' / ' + short(nxt.wager) + ' Umsatz → ' + nxt.name;
+    $('#progTxt').textContent = short(Math.floor(climbed())) + ' / ' + short(nxt.wager) + ' Umsatz → ' + nxt.name;
   } else {
     $('#progBar').style.width = '100%';
     $('#progTxt').textContent = isCareer() ? 'Höchste Stufe erreicht' : 'Sandbox · alle Räume offen';
@@ -694,13 +718,13 @@ function tabs(container, items, current, onPick) {
 
 return {
   E: E, A: A, $: $, $$: $$, el: el, fmt: fmt, fmtX: fmtX, clamp: clamp, sleep: sleep, frame: frame, payout: payout, pick: pick, pickW: pickW, short: short, clock: clock,
-  get S() { return S; }, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
+  get S() { return S; }, climbed: climbed, load: load, save: save, room: room, debit: debit, lock: lock, refund: refund, Snd: Snd,
   toast: toast, banner: banner, burst: burst, say: say, renderHost: renderHost, renderAff: renderAff, tip: tip, addAff: addAff,
   renderDopa: renderDopa, settle: settle, hud: hud, renderTier: renderTier, enterRoom: enterRoom, reload: reload, claimComps: claimComps,
   needChips: needChips, fx: fx, parseAmount: parseAmount, snapBet: snapBet, kbd: kbd, ladder: ladder, chipList: chipList, clampBets: clampBets, betControl: betControl, tabs: tabs,
   busyFns: busyFns, isBusy: isBusy, games: [], side: null, LINES: LINES, affTitle: affTitle, compMult: compMult, maybeReality: maybeReality,
-  resetState: function () { S = fresh(S.mode); locked = 0; save(); },
-  get slotId() { return slotId; }, get slotName() { return slotName; },
+  resetState: function () { S = fresh(S.mode); if (S.mode !== 'sandbox') { S.onb = 1; S.feats = {}; } locked = 0; save(); },
+  get slotId() { return slotId; }, get slotName() { return slotName; }, renameSlot: renameSlot,
   GAME_LIST: GAME_LIST, GAME_BY: GAME_BY, RANK: RANK, isCareer: isCareer, gameOpen: gameOpen, gamesAt: gamesAt, GAME_TIER: GAME_TIER, GAME_NAME: GAME_NAME, CAREER: CAREER,
   bailout: bailout, bailoutAmt: bailoutAmt, claimDaily: claimDaily, dailyAvailable: dailyAvailable,
   renderWalletBtn: renderWalletBtn, walletAction: walletAction

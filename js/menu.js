@@ -86,7 +86,7 @@ function background() {
 /* ---------- Navigation ---------- */
 function go(id) {
   if (section === id && view === 'slots') return;
-  section = id; view = 'slots'; status = ''; deleteOpen = false;
+  section = id; view = 'slots'; status = ''; deleteOpen = false; renameOpen = false;
   try { localStorage.setItem(SECTION_KEY, id); } catch (e) { /* */ }
   V.Snd.click();
   render();
@@ -173,7 +173,38 @@ function profileSection() {
     el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Abmelden', disabled: busy, onclick: function () {
       run('Melde ab …', async function () { await Cloud.signOut(); Store.useAccount(null); section = 'play'; board = null; loadBoard(); checkAdmin(); });
     } }))));
+  body.appendChild(renameBox(a));
   body.appendChild(deleteBox(a));
+}
+/* Benutzername ändern: einmal pro Woche, danach gilt der neue Name auch zum Einloggen */
+var renameOpen = false;
+function renameBox(a) {
+  var box = el('section', { class: 'panel wide' }, el('h2', { text: 'Benutzername ändern' }));
+  if (!renameOpen) {
+    box.appendChild(el('p', { class: 'fine', text: 'Dein Name in Ranglisten, Duellen und bei Freunden. Freunde, Duelle und Spielstände bleiben erhalten. Ändern geht einmal pro Woche.' }));
+    box.appendChild(el('div', { class: 'slot-act' }, el('button', { class: 'btn ghost', type: 'button', text: 'Namen ändern …', onclick: function () { renameOpen = true; renderBody(); } })));
+    return box;
+  }
+  var name = el('input', { class: 'name-in', type: 'text', maxlength: '16', placeholder: 'Neuer Benutzername', 'aria-label': 'Neuer Benutzername', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
+  var btn = el('button', { class: 'btn gold', type: 'button', text: 'Speichern', disabled: true, onclick: save });
+  function save() {
+    var nn = name.value.trim().toLowerCase();
+    if (!Cloud.NAME_RE.test(nn) || nn === a.username) return;
+    run('Ändere deinen Namen …', async function () {
+      var got = await Cloud.changeName(nn);
+      renameOpen = false;
+      V.toast('Du heißt jetzt ' + got + '. Ab sofort loggst du dich mit diesem Namen ein.', 'good');
+    });
+  }
+  function check() { var nn = name.value.trim().toLowerCase(); btn.disabled = busy || !Cloud.NAME_RE.test(nn) || nn === a.username; }
+  name.addEventListener('input', check);
+  name.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !btn.disabled) save(); if (e.key === 'Escape') { renameOpen = false; renderBody(); } });
+  setTimeout(function () { name.focus(); }, 0);
+  box.appendChild(el('p', { class: 'fine', text: 'Aktuell: ' + a.username + '. 3 bis 16 Zeichen, nur a–z, 0–9, _ und -. Dein Passwort bleibt gleich, eingeloggt wird danach mit dem neuen Namen.' }));
+  box.appendChild(name);
+  box.appendChild(el('div', { class: 'slot-act' }, btn,
+    el('button', { class: 'btn ghost', type: 'button', text: 'Abbrechen', onclick: function () { renameOpen = false; renderBody(); } })));
+  return box;
 }
 /* Konto löschen: Benutzername abtippen und Passwort eingeben, erst dann wird der Knopf scharf */
 var deleteOpen = false;
@@ -339,7 +370,7 @@ var BOARD_TEXT = {
   empire: 'Pro Konto zählt der beste Imperium-Spielstand, nach Imperiumswert (Chips plus Geschäfte).',
   duel: 'Elo-Wertung aus allen Duellen. Der Kontostand spielt keine Rolle.'
 };
-function starTag(r) { return r.stars > 0 ? '★' + (r.stars > 1 ? r.stars : '') + ' ' : ''; }
+function starTag(r) { return r.stars > 0 ? V.legend.tag(r.stars) + ' ' : ''; }
 function amtText(r) { return boardMode === 'season' ? (r.balance > 0 ? '+' : r.balance < 0 ? '−' : '±') + fmt(Math.abs(r.balance)) : fmt(r.balance); }
 function boardBox() {
   var box = el('section', { class: 'board', 'aria-label': 'Bestenliste' });

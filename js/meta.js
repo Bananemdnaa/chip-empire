@@ -14,8 +14,8 @@ function xpFor(level) { return Math.round(100 * Math.pow(level, 1.6)); }
 function xpForOld(level) { return Math.round(60 * Math.pow(level, 1.4)); }
 function addXp(n) {
   var S = V.S;
-  /* Jeder Legenden-Stern: +10 % Erfahrung (bis 10 Sterne) */
-  n = Math.round(n * (1 + perk('xp') + perk('legXp') + 0.1 * Math.min(10, stars())));
+  /* Jeder Legenden-Stern: +10 % Erfahrung (bis 20 Sterne) */
+  n = Math.round(n * (1 + perk('xp') + perk('legXp') + perk('legCap') + 0.1 * Math.min(20, stars())));
   if (n <= 0) return;
   S.xp += n;
   var ups = 0;
@@ -23,7 +23,11 @@ function addXp(n) {
   if (ups) {
     progress({ levelUp: ups }, ['weekly']);
     V.Snd.unlock();
-    notify({ kind: 'level', icon: '⭐', text: 'Level ' + S.level + ' erreicht · +' + ups + ' Talentpunkt' + (ups > 1 ? 'e' : '') });
+    /* Talent Beförderung: Chips für jedes neue Level */
+    var lc = perk('lvlChips') ? ups * perk('lvlChips') * tierMin() : 0;
+    if (lc) S.balance += lc;
+    notify({ kind: 'level', icon: '⭐', text: 'Level ' + S.level + ' erreicht · +' + ups + ' Talentpunkt' + (ups > 1 ? 'e' : '') + (lc ? ' · +' + fmt(lc) + ' Chips' : '') });
+    if (V.guide) V.guide.check();
   }
 }
 /* Pro Runde: mehr XP in höheren Räumen, Gewinne zählen 50 % mehr */
@@ -39,33 +43,56 @@ var BRANCHES = [
   { id: 'le', name: 'Legende', icon: '★', color: '#B98AFF', desc: 'Nur mit Legenden-Sternen.' }
 ];
 /* Reihenfolge im Ast = Lernreihenfolge; früh freigeschaltete Spiele zuerst.
-   Alle Boni sind so bemessen, dass jedes Spiel unter 100 % Auszahlung bleibt. */
+   pts: so viele Punkte müssen schon in diesem Ast stecken (tiefer forschen schaltet stärkere Talente frei).
+   cap: Meister-Talent am Ende jedes Asts mit 10 Stufen.
+   Alle Boni sind so bemessen, dass jedes Spiel unter 100 % Auszahlung bleibt: Die neuen Talente geben
+   nur Belohnungen außerhalb der Spiele (Truhen, Erfahrung, Boni, Aufstieg), Comps bleiben unter dem Hausvorteil. */
+function steps10(per) { var a = []; for (var i = 1; i <= 10; i++) a.push(Math.round(per * i * 1000) / 1000); return a; }
 var TALENTS = [
   { id: 'slotLuck', br: 'gl', icon: '🍒', name: 'Glückssträhne', game: 'slots', vals: [0.005, 0.01, 0.015], txt: function (v) { return 'Slot-Gewinne +' + pct(v); } },
   { id: 'wheelLuck', br: 'gl', icon: '🎡', name: 'Glücksfee', game: 'wheel', vals: [0.05], txt: function () { return 'Glücksrad: Das 2×-Feld zahlt 2,05×'; } },
   { id: 'slotFree', br: 'gl', icon: '🎁', name: 'Bonusjäger', game: 'slots', vals: [1, 2], txt: function (v) { return '+' + v + ' Freispiel' + (v > 1 ? 'e' : '') + ' pro Slot-Bonus'; } },
   { id: 'plinkoSmooth', br: 'gl', icon: '🔻', name: 'Glatte Nägel', game: 'plinko', vals: [0.01], txt: function () { return 'Plinko: Fächer ab 2× zahlen 1 % mehr'; } },
+  { id: 'chestLuck', br: 'gl', icon: '💰', name: 'Schatzsucher', pts: 4, vals: [0.15, 0.3, 0.5], txt: function (v) { return 'Sitzungs-Truhen: +' + pct(v) + ' Chips'; } },
+  { id: 'spinFast', br: 'gl', icon: '⏱️', name: 'Dauergast', pts: 6, vals: [1, 2, 3], txt: function (v) { return 'Gratis-Dreh schon alle ' + (10 - v) + ' statt 10 Minuten'; } },
+  { id: 'chestTp', br: 'gl', icon: '🍀', name: 'Glücksbringer', pts: 8, vals: [0.03, 0.06], txt: function (v) { return 'Sitzungs-Truhen: Talentpunkt-Chance +' + Math.round(v * 100) + ' Prozentpunkte'; } },
+  { id: 'gCap', br: 'gl', icon: '🌈', name: 'Glückskind', pts: 10, cap: true, vals: steps10(0.05), txt: function (v) { return 'Gratis-Dreh und Sitzungs-Truhen: +' + pct(v) + ' Chips'; } },
   { id: 'diceDouble', br: 'ta', icon: '🎲', name: 'Glückswürfel', game: 'dice', vals: [0.2], txt: function () { return 'Würfel: Pasch zahlt 5,9× statt 5,7×'; } },
   { id: 'partage', br: 'ta', icon: '🎯', name: 'La Partage', game: 'roulette', vals: [1], txt: function () { return 'Roulette: Bei Zero bekommst du die Hälfte deiner einfachen Chancen zurück'; } },
   { id: 'comps', br: 'ta', icon: '🥂', name: 'Stammkunde', vals: [0.1, 0.2, 0.3], txt: function (v) { return 'Comps +' + pct(v); } },
   { id: 'bjPay', br: 'ta', icon: '🂡', name: 'Naturtalent', game: 'bj', vals: [0.1], txt: function () { return 'Blackjack zahlt 1,6-fach statt 1,5-fach'; } },
   { id: 'hiloRead', br: 'ta', icon: '🂠', name: 'Kartenzähler', game: 'hilo', vals: [0.005, 0.01], txt: function (v) { return 'Hi-Lo-Leiter: jede Sprosse zahlt +' + pct(v); } },
+  { id: 'tipCharm', br: 'ta', icon: '🌹', name: 'Charmeur', pts: 4, vals: [0.25, 0.5], txt: function (v) { return 'Trinkgeld kostet ' + pct(v) + ' weniger, die Beziehung wächst ' + pct(v) + ' schneller'; } },
+  { id: 'questSwap', br: 'ta', icon: '🔄', name: 'Planer', pts: 6, vals: [1, 2], txt: function (v) { return '+' + v + ' Quest-Tausch pro Tag und pro Woche'; } },
+  { id: 'tCap', br: 'ta', icon: '🎩', name: 'Hausfreund', pts: 10, cap: true, vals: steps10(0.02), txt: function (v) { return 'Comps +' + pct(v); } },
   { id: 'duckPro', br: 'ri', icon: '🦆', name: 'Wettprofi', game: 'ducks', vals: [0.03], txt: function () { return 'Entenrennen: Enten ab Quote 8× zahlen 3 % mehr'; } },
   { id: 'crashSafe', br: 'ri', icon: '🪂', name: 'Fallschirm', game: 'crash', vals: [0.5], txt: function () { return 'Crash: Bei einem Sofort-Crash (1,00×) bekommst du die Hälfte deines Einsatzes zurück'; } },
   { id: 'towerScale', br: 'ri', icon: '🐉', name: 'Drachenschuppen', game: 'tower', vals: [0.005, 0.01], txt: function (v) { return 'Dragon Tower: Multiplikatoren +' + pct(v); } },
   { id: 'vaultLuck', br: 'ri', icon: '🔓', name: 'Meisterdieb', game: 'vault', vals: [0.005, 0.01], txt: function (v) { return 'Tresorknacker: Multiplikatoren +' + pct(v); } },
+  { id: 'streakXp', br: 'ri', icon: '🔥', name: 'Im Lauf', pts: 3, vals: [0.5, 1], txt: function (v) { return 'Ab 3 Siegen in Folge +' + pct(v) + ' Erfahrung pro Runde'; } },
+  { id: 'climb', br: 'ri', icon: '🧗', name: 'Ehrgeiz', pts: 5, vals: [0.5, 1], txt: function (v) { return 'Aufstiegsbonus der Räume +' + pct(v); } },
+  { id: 'bigXp', br: 'ri', icon: '⚡', name: 'Nervenkitzel', pts: 7, vals: [60, 150], txt: function (v) { return '+' + v + ' XP für jeden Gewinn ab dem 10-Fachen'; } },
+  { id: 'rCap', br: 'ri', icon: '🚀', name: 'Überflieger', pts: 10, cap: true, vals: steps10(0.03), txt: function (v) { return 'Umsatz zählt für den Aufstieg +' + pct(v); } },
   { id: 'daily', br: 'bu', icon: '☀️', name: 'Frühaufsteher', vals: [0.25, 0.5], txt: function (v) { return 'Tagesbonus +' + pct(v); } },
   { id: 'rescue', br: 'bu', icon: '🛟', name: 'Rettungsring', vals: [180000, 300000], txt: function (v) { return 'Notgroschen schon nach ' + Math.round((V.CAREER.bailoutCooldown - v) / 60000) + ' Minuten'; } },
   { id: 'quest', br: 'bu', icon: '📜', name: 'Quest-Profi', vals: [0.1, 0.2], txt: function (v) { return 'Quest-Belohnungen +' + pct(v); } },
   { id: 'xp', br: 'bu', icon: '📚', name: 'Schnelllerner', vals: [0.15, 0.3], txt: function (v) { return 'Erfahrung +' + pct(v); } },
   { id: 'empire', br: 'bu', icon: '🏛️', name: 'Investor', empire: true, vals: [0.1, 0.2, 0.35], txt: function (v) { return 'Imperium-Einnahmen +' + pct(v); } },
   { id: 'vault', br: 'bu', icon: '🔐', name: 'Großer Tresor', empire: true, vals: [4, 8], txt: function (v) { return 'Tresor fasst ' + (8 + v) + ' statt 8 Stunden'; } },
+  { id: 'mileBoost', br: 'bu', icon: '🏅', name: 'Sammler', pts: 5, vals: [0.25, 0.5], txt: function (v) { return 'Meilenstein-Belohnungen +' + pct(v); } },
+  { id: 'lvlChips', br: 'bu', icon: '🎖️', name: 'Beförderung', pts: 7, vals: [20, 40], txt: function (v) { return 'Jedes neue Level bringt das ' + v + '-Fache des Mindesteinsatzes deiner Stufe'; } },
+  { id: 'bCap', br: 'bu', icon: '🏦', name: 'Tycoon', pts: 10, cap: true, vals: steps10(0.03), txt: function (v) { return 'Tagesbonus und Quest-Belohnungen +' + pct(v); } },
   /* Legenden-Ast: nur Karriere, jedes Talent braucht eine Mindestzahl an Sternen */
   { id: 'legStart', br: 'le', icon: '👑', name: 'Erbe', legend: 1, vals: [9000, 49000, 199000], txt: function (v) { return 'Als neue Legende startest du mit ' + fmt(1000 + v) + ' statt 1.000 Chips'; } },
   { id: 'legDaily', br: 'le', icon: '🌅', name: 'Goldene Tage', legend: 1, vals: [0.5, 1], txt: function (v) { return 'Tagesbonus +' + pct(v); } },
   { id: 'legXp', br: 'le', icon: '🧠', name: 'Ewiges Gedächtnis', legend: 2, vals: [0.25, 0.5], txt: function (v) { return 'Erfahrung +' + pct(v); } },
-  { id: 'legBail', br: 'le', icon: '🪂', name: 'Rettungsschirm', legend: 3, vals: [1, 2], txt: function (v) { return 'Notgroschen ' + (v + 1) + '-mal so groß'; } }
+  { id: 'legBail', br: 'le', icon: '🪂', name: 'Rettungsschirm', legend: 3, vals: [1, 2], txt: function (v) { return 'Notgroschen ' + (v + 1) + '-mal so groß'; } },
+  { id: 'legTp', br: 'le', icon: '📯', name: 'Vermächtnis', legend: 3, vals: [1, 2], txt: function (v) { return 'Jeder neue Stern bringt ' + v + ' Talentpunkt' + (v > 1 ? 'e' : '') + ' extra'; } },
+  { id: 'legRush', br: 'le', icon: '🛤️', name: 'Abkürzung', legend: 3, vals: [0.1, 0.2, 0.3], txt: function (v) { return 'Umsatz zählt für den Aufstieg +' + pct(v); } },
+  { id: 'legCap', br: 'le', icon: '🌟', name: 'Ewiger Ruhm', legend: 5, cap: true, vals: steps10(0.04), txt: function (v) { return 'Erfahrung +' + pct(v); } }
 ];
+/* Wie stark Umsatz für den Aufstieg zählt (Talente und Legenden-Rang), Comps-Bonus der Talente */
+function wagerMult() { return 1 + perk('rCap') + perk('legRush') + (V.legend ? V.legend.rankPerk('rush') : 0); }
 var T_BY = {}; TALENTS.forEach(function (t) { T_BY[t.id] = t; });
 function activeTalents(br) { return TALENTS.filter(function (t) { return t.br === br && (!t.empire || isEmpire()) && (!t.legend || V.isCareer()); }); }
 function stars() { return V.S.stars || 0; }
@@ -77,11 +104,14 @@ function pointsFree() { return Math.max(0, pointsTotal() - pointsSpent()); }
 function respecCost() { return tierMin() * 200; }
 /* Vorgänger im Ast: muss mindestens Stufe 1 haben */
 function parentOf(t) { var list = activeTalents(t.br), i = list.indexOf(t); return i > 0 ? list[i - 1] : null; }
-function unlockedNode(t) { var p = parentOf(t); return (!t.legend || stars() >= t.legend) && (!p || tl(p.id) > 0); }
+function branchSpent(br) { var n = 0; activeTalents(br).forEach(function (t) { n += tl(t.id); }); return n; }
+function unlockedNode(t) { var p = parentOf(t); return (!t.legend || stars() >= t.legend) && (!p || tl(p.id) > 0) && (!t.pts || branchSpent(t.br) >= t.pts); }
 function learn(id) {
   var S = V.S, t = T_BY[id], l = tl(id);
   if (!t || l >= t.vals.length || pointsFree() < 1 || !unlockedNode(t)) return;
   S.talents[id] = l + 1;
+  /* Planer wirkt sofort: die neuen Tausche gibt es schon für die laufenden Quests */
+  if (id === 'questSwap') ['daily', 'weekly'].forEach(function (k) { if (S.quests[k]) S.quests[k].swaps = (S.quests[k].swaps || 0) + 1; });
   V.Snd.unlock(); V.toast(t.icon + ' ' + t.name + ' Stufe ' + (l + 1) + ': ' + t.txt(t.vals[l]), 'good');
   V.hud(); V.side.refresh(); V.save();
 }
@@ -156,7 +186,7 @@ function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + (d.getM
 function weekStart() { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
 function weekKey() { return 'W' + dayKey(weekStart()); }
 function openGames() { return V.GAME_LIST.map(function (g) { return g.id; }).filter(function (g) { return V.gameOpen(g); }); }
-function qmult() { return 1 + perk('quest'); }
+function qmult() { return 1 + perk('quest') + perk('bCap'); }
 
 /* Vorlagen: n = Ziel, diff = Belohnungsfaktor, ev = Fortschritt pro Ereignis, req = nötiges Spiel, cond = weitere Bedingung */
 function R(e) { return e.staked > 0; }
@@ -278,7 +308,7 @@ function ensureQuests() {
     var pool = K.tpl.filter(allowed);
     var list = [];
     while (list.length < 3 && pool.length) list.push(makeQuest(pool.splice(Math.floor(r() * pool.length), 1)[0], r, K));
-    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1, scale: tierMin(), v: 2 };
+    S.quests[kind] = { key: key, list: list, chest: false, swaps: 1 + perk('questSwap'), scale: tierMin(), v: 2 };
   });
 }
 /* Quests zu entfernten Spielen (z. B. Video-Poker) werden still gegen passende neue getauscht */
@@ -356,7 +386,7 @@ function claimChest(kind, sum) {
   V.hud(); V.side.refresh(); V.save();
 }
 function mileStep(m) { return (V.S.qstats.miles[m.id] || 0); }
-function mileReward(m, k) { return { chips: Math.round(tierMin() * 25 * (k + 1) * qmult()), xp: Math.round(80 * (k + 1) * qmult()) }; }
+function mileReward(m, k) { var f = qmult() + perk('mileBoost'); return { chips: Math.round(tierMin() * 25 * (k + 1) * f), xp: Math.round(80 * (k + 1) * f) }; }
 function claimMile(id, sum) {
   var S = V.S, m = null;
   MILES.forEach(function (x) { if (x.id === id) m = x; });
@@ -445,7 +475,12 @@ function progress(e, kinds) {
 /* ================= Rundenauswertung ================= */
 function onRound(e) {
   var Q = V.S.qstats, o = e.opt || {};
-  if (e.staked > 0) { addXp(roundXp(e.net)); Q.rounds++; }
+  if (e.staked > 0) {
+    /* Talent Im Lauf: Siegesserie bringt mehr Erfahrung; Nervenkitzel: Extra-XP für große Treffer */
+    var xpm = ((V.GAME_BY[e.game] && V.GAME_BY[e.game].pace) || 1) * (V.S.winStreak >= 3 ? 1 + perk('streakXp') : 1);
+    addXp(roundXp(e.net) * xpm + (e.ret >= e.staked * 10 ? perk('bigXp') : 0));
+    Q.rounds++;
+  }
   if (e.net > 0 && e.staked > 0) Q.wins++;
   if (o.natural) Q.naturals++;
   if (o.straight) Q.straights++;
@@ -549,9 +584,11 @@ function renderTalente(body) {
       if (i > 0) path.appendChild(el('span', { class: 'tlink' + (open ? ' lit' : '') }));
       var ring = el('span', { class: 'tpips' });
       for (var k = 0; k < max; k++) ring.appendChild(el('i', { class: k < l ? 'on' : '' }));
-      path.appendChild(el('button', { class: 'tnode ' + state + (selTalent === t.id ? ' sel' : ''), type: 'button', 'aria-label': t.name + ', Stufe ' + l + ' von ' + max,
+      var needPts = t.pts && spent < t.pts;
+      path.appendChild(el('button', { class: 'tnode ' + state + (t.cap ? ' cap' : '') + (selTalent === t.id ? ' sel' : ''), type: 'button', 'aria-label': t.name + ', Stufe ' + l + ' von ' + max,
         onclick: function () { selTalent = t.id; V.Snd.click(); V.side.refresh(); var d = document.querySelector('.tdetail'); if (d && window.matchMedia('(max-width: 980px)').matches) d.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } },
-        el('span', { class: 'tn-ico', text: state === 'locked' ? '🔒' : t.icon }), el('span', { class: 'tn-name', text: t.name }), ring));
+        el('span', { class: 'tn-ico', text: state === 'locked' ? '🔒' : t.icon }), el('span', { class: 'tn-name', text: t.name }), ring,
+        needPts ? el('span', { class: 'tn-req', text: spent + ' / ' + t.pts + ' im Ast' }) : null));
     });
     col.appendChild(path);
     tree.appendChild(col);
@@ -560,12 +597,18 @@ function renderTalente(body) {
   /* Detail des gewählten Talents */
   var t = T_BY[selTalent], l = tl(t.id), max = t.vals.length, open = unlockedNode(t), p = parentOf(t);
   var lines = [];
-  for (var k = 0; k < max; k++) lines.push(el('li', { class: k < l ? 'on' : k === l ? 'next' : '' }, el('b', { text: 'Stufe ' + (k + 1) }), ' ' + t.txt(t.vals[k])));
-  var reason = l >= max ? 'Voll ausgebaut' : t.legend && stars() < t.legend ? 'Ab ★' + t.legend + ': Werde Legende unter „Stufen“' : !open ? 'Erst „' + p.name + '“ lernen' : !free ? 'Kein Talentpunkt frei' : '';
-  var detail = el('div', { class: 'tdetail' },
+  /* Meister-Talente: nur aktuelle, nächste und letzte Stufe, sonst wird die Liste zu lang */
+  for (var k = 0; k < max; k++) if (!t.cap || k === l - 1 || k === l || k === max - 1) lines.push(el('li', { class: k < l ? 'on' : k === l ? 'next' : '' }, el('b', { text: 'Stufe ' + (k + 1) }), ' ' + t.txt(t.vals[k])));
+  var brName = ''; BRANCHES.forEach(function (b) { if (b.id === t.br) brName = b.name; });
+  var reason = l >= max ? 'Voll ausgebaut' : t.legend && stars() < t.legend ? 'Ab ★' + t.legend + ': Werde Legende unter „Stufen“'
+    : p && tl(p.id) < 1 ? 'Erst „' + p.name + '“ lernen'
+    : t.pts && branchSpent(t.br) < t.pts ? 'Braucht ' + t.pts + ' Punkte im Ast ' + brName + ' (du hast ' + branchSpent(t.br) + ')'
+    : !free ? 'Kein Talentpunkt frei' : '';
+  var detail = el('div', { class: 'tdetail' + (t.cap ? ' cap' : '') },
     el('div', { class: 'td-ico', text: t.icon }),
     el('div', { class: 'td-info' },
       el('b', { text: t.name }),
+      t.cap ? el('span', { class: 'tag gold', text: 'Meister-Talent · 10 Stufen' }) : null,
       el('ul', { class: 'td-levels' }, lines),
       t.game && !V.gameOpen(t.game) ? el('p', { class: 'fine', text: 'Wirkt, sobald ' + GN[t.game] + ' freigeschaltet ist.' }) : null),
     el('div', { class: 'td-act' },
@@ -694,7 +737,7 @@ function tick() {
 
 return {
   perk: perk, onRound: onRound, notify: notify, claimAll: claimAll, migrate: migrate, event: function (e) { progress(e); }, addXp: addXp, xpFor: xpFor, badges: badges, tick: tick, ensureQuests: ensureQuests,
-  pointsFree: pointsFree, worth: worth, perHour: perHour, isEmpire: isEmpire,
+  pointsFree: pointsFree, worth: worth, perHour: perHour, isEmpire: isEmpire, wagerMult: wagerMult, TALENTS: TALENTS, BRANCHES: BRANCHES,
   tabs: { talente: renderTalente, imperium: renderImperium, quests: renderQuests }
 };
 })();

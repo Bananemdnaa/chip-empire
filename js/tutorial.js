@@ -7,7 +7,7 @@ var FLAG = 'chip-empire-tutorial-';
 
 /* Ziel: mehrere Selektoren, der erste sichtbare gewinnt. Ohne sichtbares Ziel erscheint der Schritt in der Mitte. */
 function steps() {
-  var career = V.isCareer(), next = V.E.TIERS[1];
+  var career = V.isCareer(), next = V.E.TIERS[1], onb = !!V.S.onb;
   var list = [
     { title: 'Willkommen im Chip Empire!', text: 'Eine kurze Tour durch das Wichtigste. Du kannst sie jederzeit überspringen und später in den Einstellungen erneut starten.' },
     { sel: ['#balBtn'], title: 'Deine Chips', text: 'Das ist dein Kontostand. Darunter siehst du, wie viel du in dieser Sitzung gewonnen oder verloren hast. Antippen zeigt die genaue Bilanz.' },
@@ -17,8 +17,10 @@ function steps() {
     { sel: ['#g-' + V.S.game + ' .betctl:has(button.betval)', '#g-' + V.S.game + ' .betctl'], title: 'Dein Einsatz', text: 'Mit + und − änderst du den Einsatz. Tipp auf den Betrag, um eine eigene Summe einzutippen (auch „10k“). All-in setzt alles, was du hast.' },
     { sel: ['#g-' + V.S.game + ' .spin-btn', '#g-' + V.S.game + ' .btn.gold.big'], title: 'Los geht’s', text: 'Mit diesem Knopf (oder der Leertaste am Computer) startest du eine Runde.' },
     career ? { sel: ['.hud-player'], title: 'Aufsteigen', text: 'Jeder Einsatz zählt als Umsatz. Bei ' + V.fmt(next.wager) + ' Umsatz steigst du in die ' + next.name + ' auf: höhere Einsätze, ein Aufstiegsbonus und neue Spiele wie Roulette und Dragon Tower.' } : null,
-    { sel: ['#sessBar'], title: 'Kleine Belohnungen', text: 'Nach 10, 25 und 50 Runden wartet eine Truhe, und alle 10 Minuten Spielzeit gibt es einen Gratis-Dreh.' },
-    { sel: ['#sideNav [data-side="quests"]', '#gameTabs .rail-more'], title: 'Quests und Talente', text: 'Tägliche und wöchentliche Quests bringen Chips und Erfahrung. Mit jedem Level bekommst du einen Talentpunkt für den Talentbaum.' },
+    onb ? null : { sel: ['#sessBar'], title: 'Kleine Belohnungen', text: 'Nach 10, 25 und 50 Runden wartet eine Truhe, und alle 10 Minuten Spielzeit gibt es einen Gratis-Dreh.' },
+    onb ? null : { sel: ['#sideNav [data-side="quests"]', '#gameTabs .rail-more'], title: 'Quests und Talente', text: 'Tägliche und wöchentliche Quests bringen Chips und Erfahrung. Mit jedem Level bekommst du einen Talentpunkt für den Talentbaum.' },
+    onb ? { title: 'Eins nach dem anderen', text: 'Quests, Talente, Truhen, deine Gastgeberin und mehr kommen nach und nach dazu, während du spielst. Jedes Mal erklären wir dir kurz, was es kann.' } : null,
+    { sel: ['#helpBtn'], title: 'Wie geht das?', text: 'Das Fragezeichen neben dem Spielnamen erklärt die Regeln. Unter „Mehr“ → „Hilfe“ steht die ganze Spielanleitung.' },
     career ? { sel: ['#reload'], title: 'Tagesbonus und Notgroschen', text: 'Einmal am Tag holst du hier deinen Tagesbonus ab. Bist du pleite, gibt es hier alle 10 Minuten einen Notgroschen.' } : null,
     { title: 'Viel Glück!', text: 'Das war’s. Es ist alles Spielgeld, also probier ruhig alles aus.' }
   ];
@@ -58,14 +60,14 @@ function show() {
   var st = list[idx], tip = ov.querySelector('.tut-tip'), target = find(st.sel);
   if (target && target.scrollIntoView) target.scrollIntoView({ block: 'nearest' });
   tip.innerHTML = '';
-  tip.appendChild(el('span', { class: 'tut-step', text: (idx + 1) + ' / ' + list.length }));
+  if (list.length > 1) tip.appendChild(el('span', { class: 'tut-step', text: (idx + 1) + ' / ' + list.length }));
   tip.appendChild(el('b', { text: st.title }));
   tip.appendChild(el('p', { text: st.text }));
   var last = idx === list.length - 1;
   tip.appendChild(el('div', { class: 'tut-acts' },
     last ? null : el('button', { class: 'btn ghost sm', type: 'button', text: 'Überspringen', onclick: end }),
     idx > 0 ? el('button', { class: 'btn ghost sm', type: 'button', text: 'Zurück', onclick: function () { go(-1); } }) : null,
-    el('button', { class: 'btn gold sm', type: 'button', text: last ? 'Spielen' : 'Weiter', onclick: function () { go(1); } })));
+    el('button', { class: 'btn gold sm', type: 'button', text: last ? (list.length === 1 ? 'Verstanden' : 'Spielen') : 'Weiter', onclick: function () { go(1); } })));
   /* nach dem Scrollen messen */
   place(); setTimeout(place, 60);
   var b = tip.querySelector('.btn.gold'); if (b) b.focus();
@@ -84,11 +86,17 @@ function onKey(e) {
   else if (e.key === 'ArrowLeft') { e.stopPropagation(); e.preventDefault(); go(-1); }
   else { e.stopPropagation(); }
 }
-function start() {
+/* Einzelne Stelle hervorheben (z. B. eine neu freigeschaltete Funktion) */
+function spot(sel, title, text) {
+  if (ov) return;
+  open([{ sel: [sel], title: title, text: text }]);
+}
+function start() { if (!ov) open(steps()); }
+function open(steps) {
   if (ov) return;
   var b = $('#banner'); if (b) b.hidden = true;
   if (V.closeSide) V.closeSide();
-  list = steps(); idx = 0;
+  list = steps; idx = 0;
   ov = el('div', { class: 'tut', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Einführung' }, el('div', { class: 'tut-hole' }), el('div', { class: 'tut-tip' }));
   document.body.appendChild(ov);
   window.addEventListener('keydown', onKey, true);
@@ -111,5 +119,5 @@ function maybeStart(id) {
   if (on) setTimeout(start, 1200);
 }
 
-V.tutorial = { start: start, want: want, maybeStart: maybeStart };
+V.tutorial = { start: start, spot: spot, want: want, maybeStart: maybeStart };
 })();

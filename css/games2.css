@@ -109,6 +109,8 @@
 .pk-wrap { position: relative; padding: 12px 10px 10px; border-radius: 18px; background: radial-gradient(ellipse at 50% 0%, #2B1A3A, #0E0812 70%); box-shadow: 0 0 0 2px var(--gold-lo), inset 0 0 40px rgba(0,0,0,.6); }
 .plinko-board { display: block; width: 100%; height: auto; max-height: calc(100dvh - 330px); }
 .plinko-board .peg { fill: #F4EBDB; filter: drop-shadow(0 0 3px rgba(255,255,255,.6)); }
+.plinko-board .peg.hit { animation: pegHit .32s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes pegHit { 0% { fill: #FFF3C9; transform: scale(1.7); filter: drop-shadow(0 0 7px #FFD36A); } 100% { transform: scale(1); } }
 .pk-ball { fill: #F2D68E; stroke: #8A6418; stroke-width: 1.5; filter: drop-shadow(0 0 6px rgba(242,214,142,.9)); }
 .pk-b rect { stroke: rgba(0,0,0,.35); stroke-width: 1; }
 .pk-b text { font: 700 11px var(--f-mono); fill: #1A0A10; }

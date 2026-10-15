@@ -310,9 +310,13 @@ function fillProfile(body, P) {
   body.innerHTML = '';
   var a = account(), best = null;
   (P.saves || []).forEach(function (s) { if (s.mode !== 'sandbox' && (!best || (s.level || 0) > (best.level || 0))) best = s; });
+  /* Höchster Legenden-Rang über alle Karriere-Spielstände */
+  var st = 0; (P.saves || []).forEach(function (s) { if (s.mode === 'career') st = Math.max(st, s.stars || 0); });
+  var LR = V.legend.rankOf(st);
   body.appendChild(el('div', { class: 'prof-head' },
     el('span', { class: 'avatar big', text: P.username.charAt(0) }),
     el('div', {}, el('b', { class: 'prof-name', text: P.username }),
+      LR ? el('span', { class: 'lg-chip', 'data-rank': LR.id, text: LR.icon + ' ' + LR.name + ' · ' + st + ' Stern' + (st > 1 ? 'e' : '') }) : null,
       el('div', { class: 'fine', text: 'Dabei seit ' + new Date(P.joined).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) + (best && best.level ? ' · Level ' + best.level + ' · ' + tierName(best.unlocked) : '') }))));
   body.appendChild(el('div', { class: 'big-kv' },
     el('div', {}, el('span', { text: 'Duell-Wertung' }), el('b', { class: 'num', text: fmt(P.rating) })),
@@ -344,7 +348,7 @@ function fillProfile(body, P) {
     P.saves.forEach(function (s) {
       body.appendChild(el('div', { class: 'duel-row' },
         el('span', { class: 'rank-em', text: V.RANK[s.mode === 'sandbox' ? 5 : Math.min(5, s.unlocked || 0)] }),
-        el('div', { class: 'dr-info' }, el('b', {}, s.name + ' ', el('span', { class: 'tag', text: MODES[s.mode] || s.mode })),
+        el('div', { class: 'dr-info' }, el('b', {}, (s.stars ? V.legend.tag(s.stars) + ' ' : '') + s.name + ' ', el('span', { class: 'tag', text: MODES[s.mode] || s.mode })),
           el('span', { class: 'fine', text: [s.mode === 'sandbox' ? '' : tierName(s.unlocked), s.level ? 'Level ' + s.level : '', s.biggest ? 'größter Gewinn ' + V.short(s.biggest) : '', '⏱ ' + V.clock(s.play_ms || 0)].filter(Boolean).join(' · ') })),
         el('b', { class: 'num prof-bal', text: V.short(s.balance) })));
     });

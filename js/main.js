@@ -6,7 +6,7 @@ var GAMES = V.GAME_LIST.map(function (g) { return { id: g.id, label: g.name, sho
 /* In der Leiste nur das Wichtigste; Statistik, Profil und Einstellungen sind Reiter im selben Fenster */
 var SIDE_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }];
 var SIDE = SIDE_ALL;
-function sideItems() { return SIDE_ALL.filter(function (t) { return !t.empire || V.S.mode === 'empire'; }); }
+function sideItems() { return SIDE_ALL.filter(function (t) { return (!t.empire || V.S.mode === 'empire') && V.guide.tabOpen(t.id); }); }
 
 function lockedMsg(id) {
   return V.GAME_NAME[id] + ' wird in der ' + V.E.TIERS[V.GAME_TIER[id]].name + ' freigeschaltet.';
@@ -45,7 +45,7 @@ function renderNav() {
     }
     box.appendChild(b);
   });
-  var more = railBtn({ id: 'more', label: 'Mehr' }, false, function () { V.Snd.click(); openSide(V.S.sideTab); });
+  var more = railBtn({ id: 'more', label: 'Mehr' }, false, function () { V.Snd.click(); openSide(V.guide.tabOpen(V.S.sideTab) ? V.S.sideTab : 'stufen'); });
   more.classList.add('rail-more'); more.removeAttribute('role'); more.removeAttribute('aria-selected');
   box.appendChild(more);
   renderBadges();
@@ -121,6 +121,7 @@ function onKeyDown(e) {
 
 var lastFocus = null;
 function openSide(tab) {
+  if (!V.guide.tabOpen(tab)) { V.toast('Das schaltest du bald frei. Spiel einfach weiter!', 'warn'); return; }
   V.S.sideTab = tab;
   V.side.refresh();
   lastFocus = document.activeElement;
@@ -152,6 +153,9 @@ async function toMenu() {
   Store.setActive(null);
   location.reload();
 }
+/* Einstellungen, die das Aussehen ändern */
+function applyPrefs() { document.body.classList.toggle('fx-low', !!V.S.fxLow); }
+V.applyPrefs = applyPrefs; V.renderSideNav = renderSideNav;
 V.showGame = showGame; V.renderNav = renderNav; V.renderBadges = renderBadges; V.openSide = openSide; V.closeSide = closeSide; V.syncSound = syncSound; V.hardReset = hardReset;
 
 async function startGame(id) {
@@ -182,17 +186,20 @@ async function startGame(id) {
   $('#reload').addEventListener('click', V.walletAction);
   $('#claimComp').addEventListener('click', V.claimComps);
   $('#mastery').addEventListener('click', function () { V.Snd.click(); openSide('meister'); });
+  $('#helpBtn').addEventListener('click', function () { V.Snd.click(); V.guide.gameHelp(); });
   $('#tipBtn').addEventListener('click', V.tip);
   $('#chatBtn').addEventListener('click', function () { V.say('chat', true); });
   $('#menuBtn').addEventListener('click', toMenu);
   $('#roomBtn').addEventListener('click', function () { V.Snd.click(); openSide('stufen'); });
   $('#sndBtn').addEventListener('click', function () { V.S.sound = !V.S.sound; syncSound(); V.save(); if (V.S.sound) V.Snd.click(); });
+  applyPrefs(); V.guide.apply();
   V.renderHost(); V.hud(); V.renderDopa(); syncSound();
   showGame(V.S.game);
   V.tutorial.maybeStart(V.slotId);
   V.say('greet', true);
   V.meta.migrate();
   V.meta.ensureQuests();
+  V.guide.init(); renderSideNav();
   V.hud();
   /* Geschenke an alle aus dem Admin-Panel: einmal pro Konto, landen im gerade geöffneten Spielstand */
   if (Store.isAccount() && V.S.mode !== 'sandbox') {

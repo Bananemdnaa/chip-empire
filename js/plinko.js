@@ -16,7 +16,7 @@ function riskOpen(k) { return !!RISK[k] && (!RISK[k].key || V.mastery.has('plink
 function curRisk() { var k = V.S.plinkoRisk; return riskOpen(k) ? k : 'mid'; }
 function mults(risk) { var h = RISK[risk].m; return h.concat(h.slice(0, -1).reverse()); }
 
-var root, svg, ballsG, buckets = [], bet, dropBtn, riskBtns = {}, msgEl, histEl;
+var root, svg, ballsG, buckets = [], pegs = [], bet, dropBtn, riskBtns = {}, msgEl, histEl;
 var inFlight = 0, hist = [];
 
 function node(tag, attrs) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
@@ -26,7 +26,10 @@ function bucketY() { return TOP + ROWS * DY + 18; }
 function build() {
   root = V.$('#g-plinko');
   svg = node('svg', { viewBox: '0 0 600 ' + (bucketY() + 34), class: 'plinko-board', 'aria-hidden': 'true' });
-  for (var r = 0; r < ROWS; r++) for (var j = 0; j < r + 3; j++) svg.appendChild(node('circle', { cx: pegX(r, j), cy: TOP + r * DY, r: 4.2, class: 'peg' }));
+  for (var r = 0; r < ROWS; r++) {
+    pegs.push([]);
+    for (var j = 0; j < r + 3; j++) { var pg = node('circle', { cx: pegX(r, j), cy: TOP + r * DY, r: 4.2, class: 'peg' }); pegs[r].push(pg); svg.appendChild(pg); }
+  }
   /* Fächer direkt im Brett, damit sie immer unter der letzten Nagelreihe sitzen */
   for (var k = 0; k <= ROWS; k++) {
     var x = CX + (k - ROWS / 2) * SP;
@@ -51,7 +54,7 @@ function build() {
   histEl = el('div', { class: 'fw-hist', 'aria-label': 'Letzte Fächer' });
   root.appendChild(el('div', { class: 'pk-layout' }, board,
     el('div', { class: 'pk-side' }, el('span', { class: 'lbl', text: 'Risiko' }), risk, bet.el, dropBtn, histEl, msgEl)));
-  root.appendChild(el('p', { class: 'fine', text: 'Du kannst mehrere Kugeln nacheinander fallen lassen. Höheres Risiko: größere Ränder, aber mehr Fächer unter 1×. Auszahlungsquote bei allen Stufen etwa 99 %, beim Risiko Extrem (ab Meisterschaft Gold) etwa 98 %.' }));
+  root.appendChild(el('p', { class: 'fine', text: 'Du kannst mehrere Kugeln nacheinander fallen lassen. Höheres Risiko: größere Ränder, aber mehr Fächer unter 1×. Auszahlungsquote bei allen Stufen etwa 99 %, beim Risiko Extrem (ab Meisterschaft Gold) etwa 98 %. Die Goldkugel kommt höchstens alle 20 Sekunden. Weil Plinko so schnell geht, zählt eine Kugel für Erfahrung und Sitzungs-Truhen nur zu einem Drittel.' }));
   V.busyFns.push(function () { return inFlight > 0; });
   setRisk(V.S.plinkoRisk || 'mid', true);
 }
@@ -79,7 +82,20 @@ function setRisk(key, quiet) {
   if (!quiet) { V.Snd.click(); V.save(); }
 }
 
-/* Ein Ball: Weg vorher würfeln, dann Punkt für Punkt mit kleinen Hüpfern animieren */
+/* Goldkugel: im Schnitt jede 80. Kugel zahlt doppelt (das mittlere Fach zahlt dafür etwas weniger).
+   Höchstens eine alle 20 Sekunden und nie zwei gleichzeitig: Wer viele Kugeln auf einmal fallen lässt,
+   bekommt so nicht öfter eine als jemand, der ruhig spielt. */
+var GOLD_P = 1 / 80, GOLD_GAP = 20000, lastGold = 0, goldFlying = false;
+function rollGold() {
+  if (goldFlying || Date.now() - lastGold < GOLD_GAP || E.rand() >= GOLD_P) return false;
+  lastGold = Date.now(); goldFlying = true;
+  return true;
+}
+
+/* Ein Ball: Weg vorher würfeln, dann von Nagel zu Nagel springen lassen.
+   Die Kugel setzt oben auf jedem Nagel auf, leicht zu der Seite, nach der sie abprallt,
+   springt in einem kleinen Bogen weiter und wird mit jeder Reihe schneller. */
+var BR = 8;
 function drop() {
   var S = V.S, b0 = S.bets.plinko, risk = curRisk();
   if (S.balance < b0) { V.needChips(); return; }
@@ -87,30 +103,36 @@ function drop() {
   V.Snd.ensure();
   V.debit(b0, true);
   inFlight++; bet.disable(true); V.hud();
-  var rights = 0, pts = [[CX, 8]];
+  var gold = rollGold(), r0 = gold ? 10 : BR, touch = r0 + 4.2;
+  var rights = 0, segs = [], prev = [CX + (E.rand() - 0.5) * 4, 4];
   for (var r = 0; r < ROWS; r++) {
-    pts.push([CX + (rights - r / 2) * SP, TOP + r * DY - 10]);
-    if (E.rand() < 0.5) rights++;
+    var right = E.rand() < 0.5, px = CX + (rights - r / 2) * SP;
+    var cur = [px + (right ? 1 : -1) * (2 + E.rand() * 2.5), TOP + r * DY - touch];
+    segs.push({ a: prev, b: cur, peg: pegs[r][rights + 1], h: r === 0 ? 0 : 4 + E.rand() * 6, d: r === 0 ? 200 : Math.max(76, 126 - r * 4.5) });
+    prev = cur;
+    if (right) rights++;
   }
-  pts.push([CX + (rights - ROWS / 2) * SP, bucketY() - 4]);
-  /* Goldkugel: etwa jede 80. Kugel zahlt doppelt (das mittlere Fach zahlt dafür etwas weniger) */
-  var gold = E.rand() < 1 / 80;
-  var ball = node('circle', { r: gold ? 10 : 8, class: 'pk-ball' + (gold ? ' gold' : ''), cx: CX, cy: 8 });
+  segs.push({ a: prev, b: [CX + (rights - ROWS / 2) * SP + (E.rand() - 0.5) * 6, bucketY() + 4], h: 5, d: 120 });
+  var ball = node('circle', { r: r0, class: 'pk-ball' + (gold ? ' gold' : ''), cx: segs[0].a[0], cy: segs[0].a[1] });
   if (gold) V.event('gold', '✨ GOLDKUGEL ✨', 'Diese Kugel zahlt doppelt');
   ballsG.appendChild(ball);
-  var seg = 0, t0 = performance.now(), D = 95;
+  var seg = 0, t0 = performance.now();
   (function step(now) {
-    var k = Math.min(1, (now - t0) / D), a = pts[seg], b = pts[seg + 1];
-    var x = a[0] + (b[0] - a[0]) * k, y = a[1] + (b[1] - a[1]) * k * k - Math.sin(Math.PI * k) * 6;
+    var g = segs[seg], k = Math.min(1, (now - t0) / g.d);
+    /* waagerecht gleichmäßig, senkrecht erst ein kurzer Hüpfer nach oben, dann immer schneller fallen */
+    var x = g.a[0] + (g.b[0] - g.a[0]) * k, y = g.a[1] + (g.b[1] - g.a[1]) * k * k - g.h * 4 * k * (1 - k) * (1 - k);
     ball.setAttribute('cx', x.toFixed(1)); ball.setAttribute('cy', y.toFixed(1));
     if (k >= 1) {
+      if (g.peg) pegHit(g.peg);
       seg++; t0 = now;
-      if (seg < pts.length - 1) { if (seg > 1) V.Snd.tick(); }
-      else return land(ball, rights, b0, risk, gold);
+      if (seg < segs.length) { if (seg > 1) V.Snd.tick(); }
+      else { if (gold) goldFlying = false; return land(ball, rights, b0, risk, gold); }
     }
     V.frame(step);
   })(t0);
 }
+/* Getroffener Nagel leuchtet kurz auf */
+function pegHit(p) { p.setAttribute('class', 'peg'); void p.getBBox(); p.setAttribute('class', 'peg hit'); }
 
 function land(ball, k, b0, risk, gold) {
   /* Talent Glatte Nägel: Fächer ab 2× zahlen etwas mehr */

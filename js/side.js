@@ -7,7 +7,7 @@ var tabsEl, body, confirmReset = false;
 var GNAME = V.GAME_NAME;
 function edge(g) { return V.GAME_BY[g] ? V.GAME_BY[g].edge : 0; }
 function catOf(g) { return V.GAME_BY[g] ? V.GAME_BY[g].cat : ''; }
-var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'meister', label: 'Meisterschaft' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'haus', label: 'Einstellungen' }];
+var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'meister', label: 'Meisterschaft' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'hilfe', label: 'Hilfe' }, { id: 'haus', label: 'Einstellungen' }];
 
 function build() {
   var host = V.$('#side');
@@ -20,8 +20,10 @@ function build() {
 function refresh() {
   if (!body) return;
   var S = V.S;
-  var TABS = TABS_ALL.filter(function (t) { return !t.empire || S.mode === 'empire'; });
+  /* Neue Spieler: Reiter erscheinen erst mit der Funktion (siehe guide.js) */
+  var TABS = TABS_ALL.filter(function (t) { return (!t.empire || S.mode === 'empire') && V.guide.tabOpen(t.id); });
   if (S.sideTab === 'imperium' && S.mode !== 'empire') S.sideTab = 'quests';
+  if (!V.guide.tabOpen(S.sideTab)) S.sideTab = 'stufen';
   V.tabs(tabsEl, TABS, S.sideTab, function (id) { S.sideTab = id; confirmReset = false; V.Snd.click(); V.save(); refresh(); });
   body.innerHTML = '';
   if (V.meta.tabs[S.sideTab]) V.meta.tabs[S.sideTab](body);
@@ -30,6 +32,7 @@ function refresh() {
   else if (S.sideTab === 'meister') V.mastery.tab(body);
   else if (S.sideTab === 'profil') profil();
   else if (S.sideTab === 'stats') stats();
+  else if (S.sideTab === 'hilfe') V.guide.tab(body);
   else haus();
 }
 
@@ -50,7 +53,7 @@ function stufen() {
         T.bonus ? el('span', { text: 'Aufstiegsbonus ' + short(T.bonus) }) : null,
         V.isCareer() && V.gamesAt(i).length ? el('span', { class: 'unlock', text: 'Schaltet frei: ' + V.gamesAt(i).map(function (g) { return GNAME[g]; }).join(', ') }) : null,
         el('span', { text: 'Beziehung: ' + V.affTitle(S.aff[i]) })));
-    var btn = el('button', { class: 'btn ' + (here ? 'ghost' : 'gold') + ' sm', type: 'button', text: here ? 'Aktueller Raum' : locked ? 'Noch ' + short(Math.max(0, T.wager - S.wagered)) + ' Umsatz' : 'Betreten',
+    var btn = el('button', { class: 'btn ' + (here ? 'ghost' : 'gold') + ' sm', type: 'button', text: here ? 'Aktueller Raum' : locked ? 'Noch ' + short(Math.max(0, T.wager - V.climbed())) + ' Umsatz' : 'Betreten',
       disabled: here || locked, onclick: function () { V.enterRoom(i); refresh(); } });
     info.appendChild(btn);
     card.appendChild(pic); card.appendChild(info);
@@ -162,17 +165,52 @@ function stats() {
   body.appendChild(el('p', { class: 'fine', text: 'Kurzfristig schwankt deine Quote stark. Je mehr du spielst, desto näher rückt sie an den theoretischen Wert.' }));
 }
 
-/* Einstellungen: Ton und Spielstand zurücksetzen */
+/* Einstellungen: Name, Ton, Effekte, Gastgeberin, Hilfe, Spielstand zurücksetzen */
+var renaming = false;
+function toggle(on, title, sub, flip) {
+  return el('button', { class: 'tut-toggle', type: 'button', role: 'switch', 'aria-checked': String(!!on), onclick: function () { flip(); V.Snd.click(); V.save(); refresh(); } },
+    el('span', { class: 'sw' }), el('span', {}, el('b', { text: title }), el('small', { text: sub })));
+}
 function haus() {
   var S = V.S;
-  var snd = el('button', { class: 'btn ghost sm', type: 'button', 'aria-pressed': String(S.sound), text: S.sound ? 'Ton an' : 'Ton aus', onclick: function () { S.sound = !S.sound; V.save(); refresh(); V.syncSound(); } });
+  /* Name des Spielstands, steht oben im Spiel und in den Ranglisten neben deinem Kontonamen */
+  var nameBox = el('section', { class: 'set-box' }, el('h4', { text: 'Spielstand' }));
+  if (!renaming) {
+    nameBox.appendChild(el('div', { class: 'set-row' }, el('span', {}, el('b', { text: V.slotName }), el('small', { class: 'fine', text: ' · ' + (Store.MODES[S.mode] || Store.MODES.career).name })),
+      el('button', { class: 'btn ghost sm', type: 'button', text: 'Umbenennen', onclick: function () { renaming = true; refresh(); } })));
+  } else {
+    var inp = el('input', { class: 'name-in sm', type: 'text', maxlength: '20', value: V.slotName, 'aria-label': 'Neuer Name des Spielstands', autocomplete: 'off' });
+    var ok = function () {
+      if (!V.renameSlot(inp.value)) { inp.focus(); return; }
+      renaming = false; V.$('#playerName').textContent = V.slotName; document.title = V.slotName + ' · Chip Empire';
+      V.toast('Spielstand heißt jetzt „' + V.slotName + '“.', 'good'); refresh();
+    };
+    inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') ok(); if (e.key === 'Escape') { renaming = false; refresh(); } });
+    nameBox.appendChild(el('div', { class: 'set-row' }, inp,
+      el('button', { class: 'btn gold sm', type: 'button', text: 'Speichern', onclick: ok }),
+      el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { renaming = false; refresh(); } })));
+    setTimeout(function () { inp.focus(); inp.select(); }, 0);
+  }
+  if (Store.isAccount()) nameBox.appendChild(el('p', { class: 'fine', text: 'Deinen Benutzernamen änderst du im Hauptmenü unter „Profil“.' }));
+  body.appendChild(nameBox);
+
+  body.appendChild(el('section', { class: 'set-box' }, el('h4', { text: 'Spielgefühl' }),
+    toggle(S.sound, 'Ton', 'Klänge bei Gewinnen, Karten und Kugeln.', function () { S.sound = !S.sound; V.syncSound(); }),
+    toggle(!S.fxLow, 'Große Effekte', 'Konfetti, Wackeln und Lichtblitze. Aus spart Akku und ist ruhiger fürs Auge.', function () { S.fxLow = !S.fxLow; V.applyPrefs(); }),
+    toggle(S.hostTalk, 'Gastgeberin redet', 'Sprüche nach Gewinnen und Verlusten. Aus: nur noch, wenn du auf „Plaudern“ tippst.', function () { S.hostTalk = !S.hostTalk; }),
+    S.onb ? toggle(S.tipsOn, 'Tipps zu neuen Funktionen', 'Kurze Erklärung, sobald du etwas Neues freischaltest.', function () { S.tipsOn = !S.tipsOn; }) : null));
+
+  body.appendChild(el('section', { class: 'set-box' }, el('h4', { text: 'Hilfe' }),
+    el('div', { class: 'rrow' },
+      el('button', { class: 'btn gold sm', type: 'button', text: '📖 Spielanleitung', onclick: function () { V.openSide('hilfe'); } }),
+      el('button', { class: 'btn ghost sm', type: 'button', text: 'Einführung erneut zeigen', onclick: function () { V.tutorial.start(); } }))));
+
   var reset;
   if (!confirmReset) reset = el('button', { class: 'btn ghost sm', type: 'button', text: 'Diesen Spielstand zurücksetzen', onclick: function () { confirmReset = true; refresh(); } });
   else reset = el('span', { class: 'confirm' }, el('span', { text: 'Wirklich von vorn beginnen?' }),
     el('button', { class: 'btn crimson sm', type: 'button', text: 'Ja, zurücksetzen', onclick: function () { V.hardReset(); } }),
     el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { confirmReset = false; refresh(); } }));
-  var tut = el('button', { class: 'btn ghost sm', type: 'button', text: 'Einführung erneut zeigen', onclick: function () { V.tutorial.start(); } });
-  body.appendChild(el('div', { class: 'rrow' }, snd, tut, reset));
+  body.appendChild(el('section', { class: 'set-box' }, el('h4', { text: 'Neu anfangen' }), el('div', { class: 'rrow' }, reset)));
   body.appendChild(el('p', { class: 'fine', text: 'Alles hier ist Spielgeld ohne Wert. Wenn echtes Glücksspiel für dich oder jemanden in deiner Nähe zum Problem wird: Die Telefonberatung zur Glücksspielsucht des BIÖG (früher BZgA) ist kostenlos und anonym: 0800 1 37 27 00.' }));
 }
 

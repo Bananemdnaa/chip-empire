@@ -11,9 +11,10 @@ var ROLES = { owner: 'Owner', admin: 'Admin' };
 var ACTIONS = { chips: 'Chips gesetzt', rename_save: 'Spielstand umbenannt', delete_save: 'Spielstand gelöscht', hide: 'Aus Ranglisten genommen',
   show: 'Wieder in Ranglisten', reset_rating: 'Wertung zurückgesetzt', ban: 'Gesperrt', unban: 'Entsperrt', tp: 'Talentpunkte',
   admin_on: 'Admin-Rechte gegeben', admin_off: 'Admin-Rechte entzogen', announce: 'Nachricht an alle', announce_clear: 'Nachricht entfernt',
-  note: 'Notiz', void_duel: 'Duell annulliert', gift: 'Geschenk erstellt', gift_stop: 'Geschenk beendet' };
+  note: 'Notiz', void_duel: 'Duell annulliert', gift: 'Geschenk erstellt', gift_stop: 'Geschenk beendet',
+  rename_user: 'Spieler umbenannt', stars: 'Legenden-Sterne gesetzt', gift_player: 'Geschenk an Spieler' };
 var role = null, view = 'overview', q = '', dq = '', players = null, stats = null, online = null, log = null, duels = null, gifts = null, ann = undefined, err = '', busy = false;
-var timer = 0, seq = 0, confirm = null, rerender = null, renaming = null, banFor = null, noteFor = null;
+var timer = 0, seq = 0, confirm = null, rerender = null, renaming = null, banFor = null, noteFor = null, userRename = null, giftFor = null, liveTimer = 0;
 
 function when(t) { var d = new Date(t); return !t || isNaN(d) ? '–' : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }
 function tierName(u) { return E.TIERS[Math.max(0, Math.min(5, u || 0))].name; }
@@ -82,8 +83,19 @@ function loading(host, what, have) {
 }
 
 /* ---------- Übersicht ---------- */
+/* Online-Liste aktualisiert sich alle 30 Sekunden, solange die Übersicht offen ist */
+function live() {
+  clearInterval(liveTimer);
+  liveTimer = setInterval(function () {
+    var a = document.querySelector('.ad-online');
+    if (!a || !a.isConnected || view !== 'overview') { clearInterval(liveTimer); return; }
+    if (document.hidden || busy) return;
+    Cloud.rpc('admin_online').then(function (o) { online = o || []; redraw(); }).catch(function () { /* nächster Versuch */ });
+  }, 30000);
+}
 function overview(host) {
   if (loading(host, 'overview', stats)) return;
+  live();
   var S = stats, modes = S.modes || {};
   function tile(label, val, sub) { return el('div', { class: 'ad-tile' }, el('span', { text: label }), el('b', { class: 'num', text: val }), sub ? el('small', { text: sub }) : null); }
   host.appendChild(el('div', { class: 'ad-tiles' },
@@ -97,14 +109,14 @@ function overview(host) {
     tile('Gesperrt / ausgeblendet', fmt(S.banned) + ' / ' + fmt(S.hidden))));
   /* Wer gerade spielt: Name, Spielstand, Spiel, Kontostand */
   if (online) {
-    var on = el('section', { class: 'ad-box ad-online' }, el('h4', { text: 'Gerade online (' + online.length + ')' }));
+    var on = el('section', { class: 'ad-box ad-online' }, el('h4', {}, 'Gerade online (' + online.length + ') ', el('small', { class: 'fine', text: '· aktualisiert sich alle 30 s' })));
     if (!online.length) on.appendChild(el('p', { class: 'fine', text: 'Gerade spielt niemand.' }));
     online.forEach(function (o) {
       var secs = Math.max(0, Math.round((Date.now() - Date.parse(o.seen)) / 1000));
       on.appendChild(el('div', { class: 'ad-line' },
         el('span', {}, el('i', { class: 'ad-dot' }), ' ',
-          el('button', { class: 'linkbtn', type: 'button', text: (o.stars > 0 ? '★' + (o.stars > 1 ? o.stars : '') + ' ' : '') + o.username, onclick: function () { q = o.username; players = null; view = 'players'; redraw(); } })),
-        el('span', { class: 'fine', text: o.save_name + ' · ' + (MODES[o.mode] || o.mode) + (o.game && V.GAME_NAME[o.game] ? ' · ' + V.GAME_NAME[o.game] : '') }),
+          el('button', { class: 'linkbtn', type: 'button', text: (o.stars > 0 ? V.legend.tag(o.stars) + ' ' : '') + o.username, onclick: function () { q = o.username; players = null; view = 'players'; redraw(); } })),
+        el('span', { class: 'fine', text: o.save_name + ' · ' + (MODES[o.mode] || o.mode) + (o.mode === 'sandbox' ? '' : ' · ' + tierName(o.unlocked)) + (o.game && V.GAME_NAME[o.game] ? ' · ' + V.GAME_NAME[o.game] : '') }),
         el('span', { class: 'fine num', text: fmt(o.balance) + ' · vor ' + (secs < 60 ? secs + ' s' : Math.round(secs / 60) + ' min') })));
     });
     host.appendChild(on);
@@ -181,6 +193,8 @@ function playerCard(p) {
         ? el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Entsperren', onclick: function () { rpcAct('admin_unban', { name: name }, name + ' ist entsperrt.'); } })
         : el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Sperren …', 'aria-expanded': String(banFor === name), onclick: function () { banFor = banFor === name ? null : name; confirm = null; redraw(); } }),
       el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: p.note ? 'Notiz bearbeiten' : 'Notiz', onclick: function () { noteFor = noteFor === name ? null : name; redraw(); } }),
+      el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: '🎁 Geschenk', 'aria-expanded': String(giftFor === name), onclick: function () { giftFor = giftFor === name ? null : name; userRename = null; redraw(); } }),
+      el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Namen ändern', 'aria-expanded': String(userRename === name), onclick: function () { userRename = userRename === name ? null : name; giftFor = null; redraw(); } }),
       /* Admin-Rechte vergibt und entzieht nur der Owner */
       owner() && !p.me && p.role !== 'owner'
         ? (p.role
@@ -188,6 +202,8 @@ function playerCard(p) {
           : sure('admin:' + name, 'Zum Admin machen', 'Wirklich Admin-Rechte geben?', function () { rpcAct('admin_set_admin', { name: name, make: true }, name + ' ist jetzt Admin.'); }))
         : null));
     if (banFor === name) card.appendChild(banBox(name));
+    if (giftFor === name) card.appendChild(giftBox(name));
+    if (userRename === name) card.appendChild(userRenameBox(p));
   }
   if (noteFor === name) card.appendChild(noteBox(p));
   else if (p.note) card.appendChild(el('div', { class: 'ad-note' }, el('span', { class: 'fine', text: '📝 ' + (p.note_by ? p.note_by + ': ' : '') }), el('span', { text: p.note })));
@@ -210,6 +226,46 @@ function banBox(name) {
       el('button', { class: 'btn crimson sm', type: 'button', disabled: busy, text: 'Dauerhaft', onclick: function () { ban(null, 'dauerhaft'); } }),
       el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { banFor = null; redraw(); } })));
 }
+/* Geschenk nur für diesen Spieler: kommt beim nächsten Spielstart an (30 Tage gültig) */
+function giftBox(name) {
+  var chips = el('input', { class: 'name-in sm', type: 'number', min: '0', step: '1', value: '10000', inputmode: 'numeric', 'aria-label': 'Chips' });
+  var tp = el('input', { class: 'name-in sm', type: 'number', min: '0', max: '10', step: '1', value: '0', inputmode: 'numeric', 'aria-label': 'Talentpunkte' });
+  var msg = el('input', { class: 'name-in sm', type: 'text', maxlength: '200', placeholder: 'Nachricht (optional)', 'aria-label': 'Nachricht' });
+  function send() {
+    var c = Math.round(Number(chips.value) || 0), t = Math.round(Number(tp.value) || 0);
+    if (c <= 0 && t <= 0) { V.toast('Ein Geschenk braucht Chips oder Talentpunkte.', 'bad'); return; }
+    if (document.activeElement) document.activeElement.blur();
+    giftFor = null;
+    rpcAct('admin_gift_player', { name: name, chips: c, tp: t, msg: msg.value.trim() || null }, 'Geschenk für ' + name + ' liegt bereit. Es kommt beim nächsten Spielstart an.');
+  }
+  function field(label, input) { return el('label', { class: 'ad-field' }, el('span', { text: label }), input); }
+  return el('div', { class: 'ad-ban ad-keep ad-plain' },
+    el('span', { class: 'fine', text: 'Nur für ' + name + ': landet im nächsten Karriere- oder Imperium-Spielstand, den ' + name + ' startet (30 Tage gültig).' }),
+    el('div', { class: 'ad-form' }, field('Chips', chips), field('Talentpunkte (0–10)', tp), field('Nachricht', msg)),
+    el('div', { class: 'rrow' },
+      el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: '🎁 Verschicken', onclick: send }),
+      el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { giftFor = null; redraw(); } })));
+}
+/* Benutzernamen ändern, z. B. bei einem unpassenden Namen. Der Spieler loggt sich danach mit dem neuen Namen ein. */
+function userRenameBox(p) {
+  var inp = el('input', { class: 'name-in sm', type: 'text', maxlength: '16', value: p.username, 'aria-label': 'Neuer Benutzername', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
+  function save() {
+    var nn = inp.value.trim().toLowerCase();
+    if (!Cloud.NAME_RE.test(nn)) { V.toast('3 bis 16 Zeichen, nur a–z, 0–9, _ und -.', 'bad'); inp.focus(); return; }
+    if (nn === p.username) { userRename = null; redraw(); return; }
+    inp.blur(); userRename = null;
+    if (q === p.username) { q = nn; players = null; }
+    rpcAct('admin_rename_user', { name: p.username, new_name: nn }, p.username + ' heißt jetzt ' + nn + '.');
+  }
+  inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') save(); if (e.key === 'Escape') { e.stopPropagation(); userRename = null; inp.blur(); redraw(); } });
+  setTimeout(function () { inp.focus(); inp.select(); }, 0);
+  return el('div', { class: 'ad-ban ad-keep ad-plain' },
+    el('span', { class: 'fine', text: 'Der Spieler loggt sich danach mit dem neuen Namen ein, das Passwort bleibt gleich. Sag am besten Bescheid.' + (p.renamed ? ' Zuletzt geändert: ' + when(p.renamed) + '.' : '') }),
+    inp,
+    el('div', { class: 'rrow' },
+      el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Umbenennen', onclick: save }),
+      el('button', { class: 'btn ghost sm', type: 'button', text: 'Abbrechen', onclick: function () { userRename = null; redraw(); } })));
+}
 function noteBox(p) {
   var ta = el('textarea', { class: 'name-in ad-ta', maxlength: '500', rows: '2', placeholder: 'Private Notiz, nur für Admins sichtbar', 'aria-label': 'Notiz zu ' + p.username });
   ta.value = p.note || '';
@@ -224,7 +280,7 @@ function noteBox(p) {
 }
 
 function saveRow(p, s, edit) {
-  var meta = [MODES[s.mode] || s.mode, s.mode === 'sandbox' ? '' : tierName(s.unlocked), s.level ? 'Level ' + s.level : '', s.tp ? s.tp + ' Bonus-Talentpunkte' : '',
+  var meta = [MODES[s.mode] || s.mode, s.mode === 'sandbox' ? '' : tierName(s.unlocked), s.stars ? V.legend.tag(s.stars) + ' ' + V.legend.rankOf(s.stars).name : '', s.level ? 'Level ' + s.level : '', s.tp ? s.tp + ' Bonus-Talentpunkte' : '',
     'Umsatz ' + V.short(s.wagered || 0), '⏱ ' + V.clock(s.play_ms || 0), 'gespeichert ' + when(s.updated_at)].filter(Boolean).join(' · ');
   var info = el('div', { class: 'dr-info' }, el('b', {}, s.name + ' ', Store.badName(s.name) ? el('span', { class: 'tag bad', text: 'Name unzulässig' }) : null,
     el('span', { class: 'num ad-chips', text: fmt(s.chips || 0) + ' Chips' })), el('span', { class: 'fine', text: meta }));
@@ -254,6 +310,7 @@ function saveRow(p, s, edit) {
     rpcAct('admin_set_chips', { sid: s.id, amount: v }, s.name + ' von ' + p.username + ': jetzt ' + fmt(v) + ' Chips.');
   }
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter') setTo(input.value); });
+  function stars(n) { rpcAct('admin_set_stars', { sid: s.id, n: n }, s.name + ': jetzt ' + n + ' Legenden-Stern' + (n === 1 ? '' : 'e') + '.'); }
   function tp(n) { rpcAct('admin_add_tp', { sid: s.id, n: n }, s.name + ': ' + (n > 0 ? '+' : '') + n + ' Talentpunkt' + (Math.abs(n) === 1 ? '' : 'e') + '.'); }
   return el('div', { class: 'ad-save' }, info,
     el('div', { class: 'ad-set' },
@@ -263,6 +320,10 @@ function saveRow(p, s, edit) {
         el('button', { class: 'btn ghost sm', type: 'button', disabled: busy || !s.tp, text: '−', 'aria-label': 'Einen Talentpunkt abziehen', onclick: function () { tp(-1); } }),
         el('span', { class: 'fine', text: 'TP' }),
         el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: '+', 'aria-label': 'Einen Talentpunkt schenken', onclick: function () { tp(1); } })),
+      s.mode === 'career' ? el('span', { class: 'ad-tp', title: 'Legenden-Sterne' },
+        el('button', { class: 'btn ghost sm', type: 'button', disabled: busy || !s.stars, text: '−', 'aria-label': 'Einen Legenden-Stern abziehen', onclick: function () { stars(s.stars - 1); } }),
+        el('span', { class: 'fine', text: '★ ' + (s.stars || 0) }),
+        el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: '+', 'aria-label': 'Einen Legenden-Stern geben', onclick: function () { stars((s.stars || 0) + 1); } })) : null,
       el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Umbenennen', onclick: function () { renaming = s.id; confirm = null; redraw(); } }),
       sure('del:' + s.id, 'Löschen', 'Wirklich löschen?', function () { rpcAct('admin_delete_save', { sid: s.id }, 'Spielstand „' + s.name + '“ von ' + p.username + ' gelöscht.'); })));
 }
@@ -313,7 +374,7 @@ function giftView(host) {
   if (!gifts.length) { list.appendChild(el('p', { class: 'fine', text: 'Noch keine.' })); return; }
   gifts.forEach(function (g) {
     list.appendChild(el('div', { class: 'ad-line' },
-      el('span', {}, el('b', { text: [g.chips ? fmt(g.chips) + ' Chips' : '', g.tp ? g.tp + ' TP' : ''].filter(Boolean).join(' + ') }), g.message ? ' · ' + g.message : ''),
+      el('span', {}, el('b', { text: [g.chips ? fmt(g.chips) + ' Chips' : '', g.tp ? g.tp + ' TP' : ''].filter(Boolean).join(' + ') }), g.target ? ' → ' + g.target : ' · an alle', g.message ? ' · ' + g.message : ''),
       el('span', { class: 'fine', text: fmt(g.claims) + '× abgeholt · ' + (g.active ? 'gültig bis ' + when(g.expires_at) : 'beendet') + ' · von ' + (g.created_by || '?') }),
       g.active ? sure('gift:' + g.id, 'Beenden', 'Wirklich beenden?', function () { rpcAct('admin_gift_stop', { gid: g.id }, 'Geschenk beendet.'); }) : null));
   });

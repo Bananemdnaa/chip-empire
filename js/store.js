@@ -70,7 +70,7 @@ function summary(st) {
   st = st || {};
   return {
     balance: Math.round((st.balance || 0) + (st.escrow || 0)), room: st.room || 0, unlocked: st.unlocked || 0,
-    playMs: st.playMs || 0, wagered: Math.round(st.wagered || 0),
+    playMs: st.playMs || 0, wagered: Math.round((st.wagered || 0) + (st.wagerBonus || 0)),
     worth: Math.round((st.balance || 0) + (st.escrow || 0) + (st.bizSpent || 0))
   };
 }

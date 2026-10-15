@@ -7,15 +7,18 @@ Ein Browser-Casinospiel mit Spielgeld und 11 Spielen: Slots, Glücksrad, Würfel
 ## Spielmodi
 
 - **Karriere**: Start mit 1.000 Chips, kein Gratis-Nachschub. Spiele werden mit den Stufen freigeschaltet (Lobby: Slots, Glücksrad, Würfel, Plinko · Bronze: Roulette, Entenrennen, Dragon Tower · Silver: Crash, Hi-Lo-Leiter · Gold: Blackjack · Platinum: Tresorknacker). Wer pleite ist, bekommt alle 10 Minuten einen Notgroschen, dazu gibt es einen Tagesbonus mit Serie. Comps sind ein Anteil des Hausvorteils (10 bis 35 % je Raum), damit bleibt jedes Spiel auf Dauer ein Minus.
-- **Legende** (nur Karriere): Im Black Room ab 25 Mio. Chips (jeder weitere Stern 25 Mio. mehr) kannst du zur Legende aufsteigen. Chips, Räume, Umsatz und Comps gehen zurück auf Anfang, Level, Talente, Quests und Statistik bleiben. Pro Stern gibt es 2 Talentpunkte, dauerhaft +10 % XP und +5 % Comps sowie den Legenden-Ast im Talentbaum. Die Karriere-Bestenliste sortiert zuerst nach Sternen. In Karriere- und Imperium-Rangliste zählt pro Konto nur der beste Spielstand.
+- **Legende** (nur Karriere): Im Black Room ab 25 Mio. Chips (jeder weitere Stern 25 Mio. mehr) kannst du zur Legende aufsteigen. Chips, Räume, Umsatz und Comps gehen zurück auf Anfang, Level, Talente, Quests und Statistik bleiben. Pro Stern gibt es Talentpunkte (Stern 1–2: 2, Stern 3–4: 3, Stern 5–6: 4, danach 5), dauerhaft +10 % XP (bis 20 Sterne) und +5 % Comps (bis 5 Sterne) sowie den Legenden-Ast im Talentbaum. Die Karriere-Bestenliste sortiert zuerst nach Sternen. In Karriere- und Imperium-Rangliste zählt pro Konto nur der beste Spielstand.
+- **Legenden-Ränge**: ★ Legende (1 Stern), ✦ Großmeister (2), ❖ Elite (3), ✶ Mythos (5), ☀ Unsterblich (8), ♛ Ewig (12). Höhere Ränge geben dauerhaft schnelleren Aufstieg (Umsatz zählt bis +75 %), größere Sitzungs-Truhen (bis +75 %), Startchips nach jedem Stern (bis 1 Mio.) und mehr Tagesbonus (bis +100 %). Rang-Symbol und Farbe stehen im Spiel, in den Ranglisten und im Profil. Die Auszahlungsquoten der Spiele ändern sich dadurch nicht.
 - **Sitzung**: Nach 10, 25, 50 und 100 Runden in einer Sitzung öffnet sich eine Truhe mit Zufallsbelohnung, alle 10 Minuten Spielzeit gibt es einen Gratis-Dreh (höchstens 6 pro Sitzung). Einsätze lassen sich frei eintippen (auch „10k“ oder „1,5 Mio“), All-in setzt alle Chips.
-- **Blitze und Bonus-Runden**: Roulette hat Blitz-Zahlen (50:1 bis 500:1, normale Einzelzahl 29:1), Würfel eine Blitz-Summe (×2 bis ×5). Seltene Ereignisse: Goldener Dreh in Slots (Gewinne ×2), Doppel-Rakete in Crash, Goldkugel in Plinko, Goldfelder im Dragon Tower. Die Grundquoten sind so angepasst, dass die Auszahlungsquoten gleich bleiben.
+- **Blitze und Bonus-Runden**: Roulette hat Blitz-Zahlen (50:1 bis 500:1, normale Einzelzahl 29:1), Würfel eine Blitz-Summe (×2 bis ×5). Seltene Ereignisse: Goldener Dreh in Slots (Gewinne ×2), Doppel-Rakete in Crash, Goldkugel in Plinko (höchstens eine alle 20 Sekunden), Goldfelder im Dragon Tower. Eine Plinko-Kugel zählt für Erfahrung und Sitzungs-Truhen nur ein Drittel, weil man viele auf einmal fallen lassen kann. Die Grundquoten sind so angepasst, dass die Auszahlungsquoten gleich bleiben.
 - **Wochen-Saison**: Eigene Bestenliste mit dem Gewinn aus allen Karriere-Runden seit Montag, alle Spielstände eines Kontos zusammengezählt. Die Top 10 der Vorwoche bekommen beim nächsten Spielstart einmal pro Konto Talentpunkte (Platz 1: 5, Platz 2: 3, Platz 3: 2, sonst 1).
 - **Imperium**: Karriere-Regeln plus Geschäfte vom Kiosk bis zum eigenen Casino. Sie verdienen Chips pro Stunde, auch offline, gesammelt im Tresor. Eigene Bestenliste nach Imperiumswert.
 - **Sandbox**: Alle Räume und Spiele offen, unbegrenzt Nachschub.
 
 **Fortschritt (in allen Modi):**
-- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business), dazu der Legenden-Ast in der Karriere, mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Alle Boni halten jedes Spiel unter 100 % Auszahlung. Neu verteilen kostet Chips.
+- **Talentbaum**: Jede Runde gibt Erfahrung, jedes Level einen Talentpunkt. Vier Äste (Glück, Taktik, Risiko, Business), dazu der Legenden-Ast in der Karriere, mit Talenten für alle Spiele, jedes Talent braucht das vorherige im Ast. Tiefere Talente brauchen zusätzlich eine Zahl an Punkten im Ast (3 bis 10), am Ende jedes Asts sitzt ein Meister-Talent mit 10 Stufen. Zusammen über 110 Punkte zum Ausbauen. Die neuen Talente wirken nur auf Belohnungen außerhalb der Spiele (Truhen, Gratis-Dreh, Erfahrung, Aufstieg, Boni), Comps bleiben unter dem Hausvorteil, alle Spiele unter 100 % Auszahlung. Neu verteilen kostet Chips.
+- **Neue Spieler**: In einer neu angelegten Karriere (oder einem Imperium) kommen Sitzungs-Truhen, Gastgeberin, Quests, Comps, Talentbaum, Meisterschaft, Statistik und Arena nach und nach dazu, jeweils mit einer kurzen Erklärung und „Zeig mal“. Ältere Spielstände, die Sandbox und Legenden sehen alles wie bisher. Die Spielanleitung steht im Reiter „Hilfe“, das „?“ neben dem Spielnamen öffnet die Regeln der Spiele.
+- **Einstellungen**: Spielstand umbenennen, Ton, große Effekte (Konfetti, Wackeln) aus, Sprüche der Gastgeberin aus, Tipps zu neuen Funktionen. Den Benutzernamen des Kontos ändert man im Hauptmenü unter „Profil“ (einmal pro Woche).
 - **Meisterschaft**: Jedes Spiel hat eigene Ränge nach gespielten Runden: Bronze 50, Silber 200, Gold 600, Platin 1.500, Diamant 4.000 (Diamant bringt einen Titel). Das Abzeichen steht neben dem Spieltitel, die Übersicht im Reiter „Meisterschaft“. Ränge bleiben auch als Legende, in der Sandbox sind alle Varianten sofort offen. Freigeschaltete Varianten:
   - Dragon Tower, Silber: Himmelsturm mit 12 Etagen
   - Tresorknacker, Silber: 6×6 Fächer · Platin: 7×7 Fächer
@@ -37,6 +40,7 @@ Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel ze
 ## Online-Konten (Supabase)
 
 Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenlisten (Karriere, Imperium, Duelle), Freunde und Duelle. Im Profil lässt sich das Konto samt allen Online-Daten löschen.
+Admins können zusätzlich Spieler umbenennen, einzelnen Spielern Geschenke schicken, Legenden-Sterne setzen, und die Online-Liste aktualisiert sich alle 30 Sekunden.
 Das Datenbank-Schema liegt in `supabase/migrations/`. Jede Datei wird einmal (in Reihenfolge) im SQL-Editor von Supabase ausgeführt.
 Neue Migrationen vor dem Push des passenden Codes ausführen. Sie ergänzen nur, damit Spieler mit noch offenem altem Tab weiterspielen können. Das Spiel prüft alle 5 Minuten, ob eine neue Version online ist, und bietet dann das Neuladen an.
 In Supabase muss unter Authentication der E-Mail-Login an und „Confirm email“ aus sein.
@@ -72,7 +76,9 @@ py -3 -m http.server 8765
 | `js/mastery.js` | Meisterschaft pro Spiel: Ränge, Freischaltungen, Abzeichen, Übersicht |
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `hilo.js`, `vault.js` | Die elf Spiele |
 | `js/tracker.js` | Gewinn und Verlust: Sitzungsbilanz, Rundenbeträge, letzte Runden |
-| `js/legend.js` | Legende (Prestige) und Wochen-Saison |
+| `js/legend.js` | Legende (Prestige), Legenden-Ränge und Wochen-Saison |
+| `js/guide.js` | Neue Spieler: Funktionen nach und nach freischalten, Spielanleitung (Reiter „Hilfe“) |
+| `css/guide.css` | Freischalt-Karten, Spielanleitung, Einstellungen, Meister-Talente, Legenden-Ränge |
 | `js/chipbets.js` | Gemeinsamer Chip-Tisch für Spiele mit mehreren Wettfeldern |
 | `css/games2.css` | Glücksrad, Würfel, Entenrennen, Plinko, Dragon Tower |
 | `css/games3.css` | Tresorknacker, Hi-Lo-Leiter, Dragon-Tower-Goldfelder, Meisterschaft |
