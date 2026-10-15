@@ -31,7 +31,7 @@ function rank(g) { return rankOf(rounds(g)); }
 function unlocks(g) { return UNLOCKS[g] || []; }
 function find(g, key) { var u = unlocks(g); for (var i = 0; i < u.length; i++) if (u[i].key === key) return u[i]; return null; }
 /* Im Sandbox-Modus ist alles offen, wie die Räume auch */
-function has(g, key) { var u = find(g, key); return !!u && (!V.isCareer() || rank(g) >= u.rank); }
+function has(g, key) { var u = find(g, key); return !!u && (!V.isCareer() || rank(g) >= u.rank || V.devTools.all()); }
 function need(g, key) { var u = find(g, key); return u ? Math.max(0, RANKS[u.rank - 1].at - rounds(g)) : 0; }
 function lockText(g, key) {
   var u = find(g, key); if (!u) return '';

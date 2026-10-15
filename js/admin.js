@@ -12,7 +12,7 @@ var ACTIONS = { chips: 'Chips gesetzt', rename_save: 'Spielstand umbenannt', del
   show: 'Wieder in Ranglisten', reset_rating: 'Wertung zurückgesetzt', ban: 'Gesperrt', unban: 'Entsperrt', tp: 'Talentpunkte',
   admin_on: 'Admin-Rechte gegeben', admin_off: 'Admin-Rechte entzogen', announce: 'Nachricht an alle', announce_clear: 'Nachricht entfernt',
   note: 'Notiz', void_duel: 'Duell annulliert', gift: 'Geschenk erstellt', gift_stop: 'Geschenk beendet',
-  rename_user: 'Spieler umbenannt', stars: 'Legenden-Sterne gesetzt', gift_player: 'Geschenk an Spieler' };
+  rename_user: 'Spieler umbenannt', stars: 'Legenden-Sterne gesetzt', gift_player: 'Geschenk an Spieler', dev_on: 'Zum Dev-Konto gemacht', dev_off: 'Dev-Konto aufgehoben' };
 var role = null, view = 'overview', q = '', dq = '', players = null, stats = null, online = null, log = null, duels = null, gifts = null, ann = undefined, err = '', busy = false;
 var timer = 0, seq = 0, confirm = null, rerender = null, renaming = null, banFor = null, noteFor = null, userRename = null, giftFor = null, liveTimer = 0;
 
@@ -176,7 +176,7 @@ function playerCard(p) {
         p.me ? el('span', { class: 'tag', text: 'Du' }) : null,
         roleTag(p.role),
         banned ? el('span', { class: 'tag bad', text: 'Gesperrt bis ' + when(p.banned_until) }) : null,
-        p.hidden ? el('span', { class: 'tag warn', text: 'Ausgeblendet' }) : null,
+        p.dev ? el('span', { class: 'tag dev', text: '🛠 Dev' }) : p.hidden ? el('span', { class: 'tag warn', text: 'Ausgeblendet' }) : null,
         Store.badName(name) ? el('span', { class: 'tag bad', text: 'Name unzulässig' }) : null),
       el('span', { class: 'fine', text: 'Dabei seit ' + when(p.joined) + ' · zuletzt aktiv ' + when(p.last) + ' · Wertung ' + fmt(p.rating) + ' (' + p.wins + ' S / ' + p.losses + ' N) · ' + p.friends + ' Freunde' }),
       banned && p.ban_reason ? el('span', { class: 'fine ad-reason', text: 'Grund: ' + p.ban_reason }) : null));
@@ -184,7 +184,8 @@ function playerCard(p) {
   if (!edit) card.appendChild(el('p', { class: 'fine ad-locked', text: '🔒 ' + (p.role === 'owner' ? 'Den Owner' : 'Admins') + ' kann nur der Owner bearbeiten.' }));
   else {
     card.appendChild(el('div', { class: 'rrow ad-acts' },
-      el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: p.hidden ? 'Wieder in Ranglisten' : 'Aus Ranglisten nehmen',
+      /* Dev-Konten bleiben immer ausgeblendet */
+      p.dev ? null : el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: p.hidden ? 'Wieder in Ranglisten' : 'Aus Ranglisten nehmen',
         onclick: function () { rpcAct('admin_set_hidden', { name: name, hide: !p.hidden }, p.hidden ? name + ' steht wieder in den Ranglisten.' : name + ' ist aus den Ranglisten genommen.'); } }),
       p.wins + p.losses + p.draws > 0 || p.rating !== 1000
         ? sure('rating:' + name, 'Wertung zurücksetzen', 'Wirklich auf 1.000?', function () { rpcAct('admin_reset_rating', { name: name }, 'Wertung von ' + name + ' zurückgesetzt.'); })
@@ -195,6 +196,10 @@ function playerCard(p) {
       el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: p.note ? 'Notiz bearbeiten' : 'Notiz', onclick: function () { noteFor = noteFor === name ? null : name; redraw(); } }),
       el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: '🎁 Geschenk', 'aria-expanded': String(giftFor === name), onclick: function () { giftFor = giftFor === name ? null : name; userRename = null; redraw(); } }),
       el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Namen ändern', 'aria-expanded': String(userRename === name), onclick: function () { userRename = userRename === name ? null : name; giftFor = null; redraw(); } }),
+      /* Dev-Konto: überall ausgeblendet, im Spiel alles offen. Nur der Owner schaltet es um. */
+      owner() ? (p.dev
+        ? sure('dev:' + name, 'Dev-Konto aufheben', 'Wirklich aufheben?', function () { rpcAct('admin_set_dev', { name: name, make: false }, name + ' ist kein Dev-Konto mehr (bleibt aus den Ranglisten ausgeblendet).'); })
+        : sure('dev:' + name, '🛠 Zum Dev-Konto', 'Wirklich Dev-Konto?', function () { rpcAct('admin_set_dev', { name: name, make: true }, name + ' ist jetzt ein Dev-Konto: überall ausgeblendet, im Spiel alles offen.'); })) : null,
       /* Admin-Rechte vergibt und entzieht nur der Owner */
       owner() && !p.me && p.role !== 'owner'
         ? (p.role
@@ -279,6 +284,9 @@ function noteBox(p) {
       el('span', { class: 'fine', text: 'Strg + Enter speichert' })));
 }
 
+function numIn(v, min, max, label) {
+  return el('input', { class: 'name-in sm ad-amt', type: 'number', min: String(min), max: String(max), step: '1', inputmode: 'numeric', value: String(v), 'aria-label': label });
+}
 function saveRow(p, s, edit) {
   var meta = [MODES[s.mode] || s.mode, s.mode === 'sandbox' ? '' : tierName(s.unlocked), s.stars ? V.legend.tag(s.stars) + ' ' + V.legend.rankOf(s.stars).name : '', s.level ? 'Level ' + s.level : '', s.tp ? s.tp + ' Bonus-Talentpunkte' : '',
     'Umsatz ' + V.short(s.wagered || 0), '⏱ ' + V.clock(s.play_ms || 0), 'gespeichert ' + when(s.updated_at)].filter(Boolean).join(' · ');
@@ -310,20 +318,32 @@ function saveRow(p, s, edit) {
     rpcAct('admin_set_chips', { sid: s.id, amount: v }, s.name + ' von ' + p.username + ': jetzt ' + fmt(v) + ' Chips.');
   }
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter') setTo(input.value); });
-  function stars(n) { rpcAct('admin_set_stars', { sid: s.id, n: n }, s.name + ': jetzt ' + n + ' Legenden-Stern' + (n === 1 ? '' : 'e') + '.'); }
-  function tp(n) { rpcAct('admin_add_tp', { sid: s.id, n: n }, s.name + ': ' + (n > 0 ? '+' : '') + n + ' Talentpunkt' + (Math.abs(n) === 1 ? '' : 'e') + '.'); }
+  /* Talentpunkte und Sterne direkt als Zahl: ein Aufruf, ein Eintrag im Protokoll */
+  var tpIn = numIn(s.tp || 0, 0, 1000, 'Bonus-Talentpunkte für ' + s.name);
+  var stIn = numIn(s.stars || 0, 0, 99, 'Legenden-Sterne für ' + s.name);
+  function setTp() {
+    var v = Math.round(Number(tpIn.value)), n = v - (s.tp || 0);
+    if (!isFinite(v) || v < 0 || v > 1000) { V.toast('Talentpunkte zwischen 0 und 1.000.', 'bad'); return; }
+    if (!n) return;
+    rpcAct('admin_add_tp', { sid: s.id, n: n }, s.name + ': jetzt ' + v + ' Bonus-Talentpunkte (' + (n > 0 ? '+' : '') + n + ').');
+  }
+  function setStars() {
+    var v = Math.round(Number(stIn.value));
+    if (!isFinite(v) || v < 0 || v > 99) { V.toast('Sterne zwischen 0 und 99.', 'bad'); return; }
+    if (v === (s.stars || 0)) return;
+    rpcAct('admin_set_stars', { sid: s.id, n: v }, s.name + ': jetzt ' + v + ' Legenden-Stern' + (v === 1 ? '' : 'e') + '.');
+  }
+  tpIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') setTp(); });
+  stIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') setStars(); });
   return el('div', { class: 'ad-save' }, info,
+    el('div', { class: 'ad-nums ad-keep' },
+      el('div', { class: 'ad-num' }, el('span', { text: 'Chips' }), input,
+        el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Setzen', onclick: function () { setTo(input.value); } })),
+      el('div', { class: 'ad-num' }, el('span', { text: 'Bonus-TP' }), tpIn,
+        el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Setzen', onclick: setTp })),
+      s.mode === 'career' ? el('div', { class: 'ad-num' }, el('span', { text: '★ Sterne' }), stIn,
+        el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Setzen', onclick: setStars })) : null),
     el('div', { class: 'ad-set' },
-      input,
-      el('button', { class: 'btn gold sm', type: 'button', disabled: busy, text: 'Setzen', onclick: function () { setTo(input.value); } }),
-      el('span', { class: 'ad-tp', title: 'Bonus-Talentpunkte' },
-        el('button', { class: 'btn ghost sm', type: 'button', disabled: busy || !s.tp, text: '−', 'aria-label': 'Einen Talentpunkt abziehen', onclick: function () { tp(-1); } }),
-        el('span', { class: 'fine', text: 'TP' }),
-        el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: '+', 'aria-label': 'Einen Talentpunkt schenken', onclick: function () { tp(1); } })),
-      s.mode === 'career' ? el('span', { class: 'ad-tp', title: 'Legenden-Sterne' },
-        el('button', { class: 'btn ghost sm', type: 'button', disabled: busy || !s.stars, text: '−', 'aria-label': 'Einen Legenden-Stern abziehen', onclick: function () { stars(s.stars - 1); } }),
-        el('span', { class: 'fine', text: '★ ' + (s.stars || 0) }),
-        el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: '+', 'aria-label': 'Einen Legenden-Stern geben', onclick: function () { stars((s.stars || 0) + 1); } })) : null,
       el('button', { class: 'btn ghost sm', type: 'button', disabled: busy, text: 'Umbenennen', onclick: function () { renaming = s.id; confirm = null; redraw(); } }),
       sure('del:' + s.id, 'Löschen', 'Wirklich löschen?', function () { rpcAct('admin_delete_save', { sid: s.id }, 'Spielstand „' + s.name + '“ von ' + p.username + ' gelöscht.'); })));
 }

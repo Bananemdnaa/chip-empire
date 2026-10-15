@@ -86,7 +86,7 @@ function fresh(mode) {
     quests: { daily: { key: '', list: [], chest: false }, weekly: { key: '', list: [], chest: false } },
     qstats: { rounds: 0, wins: 0, naturals: 0, straights: 0, frees: 0, crash10: 0, dailies: 0, wheelHits: 0, diceHits: 0, duckWins: 0, plinkoBalls: 0, towerTops: 0, vaultBig: 0, hiloBest: 0, miles: {}, init: 0 },
     turbo: false, crashAuto: '2.00', crashAutoOn: false, metaInit: 0, metaVer: 0, plinkoRisk: 'mid', towerDiff: 'mid', vaultMines: 3, towerFloors: 9, vaultSize: 5,
-    fxLow: false, hostTalk: true, tipsOn: true, onb: 0, feats: {},
+    fxLow: false, hostTalk: true, tipsOn: true, onb: 0, feats: {}, devAll: true,
     stars: 0, season: { key: '', net: 0, best: 0, rounds: 0 }, seasonPrev: { key: '', net: 0, best: 0, rounds: 0 }, seasonClaimed: '', trophies: 0
   };
 }
@@ -120,7 +120,7 @@ function load(id) {
   f.room = clamp(f.room, 0, f.unlocked);
   if (!f.free || !isNum(f.free.n) || f.free.n < 0) f.free = { n: 0, bet: 0, won: 0 };
   if (!GAME_TIER.hasOwnProperty(f.game)) f.game = 'slots';
-  if (['imperium', 'talente', 'quests', 'arena', 'stufen', 'meister', 'profil', 'stats', 'haus', 'hilfe'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
+  if (['imperium', 'talente', 'quests', 'arena', 'stufen', 'meister', 'profil', 'stats', 'haus', 'hilfe', 'dev'].indexOf(f.sideTab) < 0 || (f.sideTab === 'imperium' && f.mode !== 'empire')) f.sideTab = 'quests';
   /* Ganz neue Karriere oder Imperium: Funktionen kommen nach und nach dazu (siehe guide.js).
      Ältere Spielstände haben onb = 0 und sehen alles wie bisher. */
   if (!d && f.mode !== 'sandbox') { f.onb = 1; f.feats = {}; }
@@ -176,7 +176,8 @@ function refund(n) { S.balance += n; S.escrow -= n; if (S.balance >= room().min)
 /* ---------- Karriere: Freischaltungen, Notgroschen, Tagesbonus ---------- */
 /* Karriere-Regeln gelten auch im Imperium-Modus */
 function isCareer() { return S.mode !== 'sandbox'; }
-function gameOpen(id) { return GAME_TIER.hasOwnProperty(id) && (!isCareer() || S.unlocked >= GAME_TIER[id]); }
+/* Dev-Konten (siehe dev.js) haben alle Spiele offen */
+function gameOpen(id) { return GAME_TIER.hasOwnProperty(id) && (!isCareer() || S.unlocked >= GAME_TIER[id] || !!(V.devTools && V.devTools.all())); }
 function gamesAt(t) { return Object.keys(GAME_TIER).filter(function (g) { return GAME_TIER[g] === t; }); }
 function isBroke() { return S.balance + S.escrow < E.TIERS[0].min; }
 function bailoutAmt() { return E.TIERS[S.unlocked].min * CAREER.bailoutMult * (1 + perk('legBail')); }

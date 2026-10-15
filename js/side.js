@@ -7,7 +7,7 @@ var tabsEl, body, confirmReset = false;
 var GNAME = V.GAME_NAME;
 function edge(g) { return V.GAME_BY[g] ? V.GAME_BY[g].edge : 0; }
 function catOf(g) { return V.GAME_BY[g] ? V.GAME_BY[g].cat : ''; }
-var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'meister', label: 'Meisterschaft' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'hilfe', label: 'Hilfe' }, { id: 'haus', label: 'Einstellungen' }];
+var TABS_ALL = [{ id: 'imperium', label: 'Imperium', empire: true }, { id: 'quests', label: 'Quests' }, { id: 'arena', label: 'Arena' }, { id: 'talente', label: 'Talente' }, { id: 'stufen', label: 'Stufen' }, { id: 'meister', label: 'Meisterschaft' }, { id: 'stats', label: 'Statistik' }, { id: 'profil', label: 'Zockerprofil' }, { id: 'hilfe', label: 'Hilfe' }, { id: 'haus', label: 'Einstellungen' }, { id: 'dev', label: '🛠 Dev', dev: true }];
 
 function build() {
   var host = V.$('#side');
@@ -21,7 +21,8 @@ function refresh() {
   if (!body) return;
   var S = V.S;
   /* Neue Spieler: Reiter erscheinen erst mit der Funktion (siehe guide.js) */
-  var TABS = TABS_ALL.filter(function (t) { return (!t.empire || S.mode === 'empire') && V.guide.tabOpen(t.id); });
+  var TABS = TABS_ALL.filter(function (t) { return (!t.empire || S.mode === 'empire') && (!t.dev || V.devTools.on) && V.guide.tabOpen(t.id); });
+  if (S.sideTab === 'dev' && !V.devTools.on) S.sideTab = 'stufen';
   if (S.sideTab === 'imperium' && S.mode !== 'empire') S.sideTab = 'quests';
   if (!V.guide.tabOpen(S.sideTab)) S.sideTab = 'stufen';
   V.tabs(tabsEl, TABS, S.sideTab, function (id) { S.sideTab = id; confirmReset = false; V.Snd.click(); V.save(); refresh(); });
@@ -33,6 +34,7 @@ function refresh() {
   else if (S.sideTab === 'profil') profil();
   else if (S.sideTab === 'stats') stats();
   else if (S.sideTab === 'hilfe') V.guide.tab(body);
+  else if (S.sideTab === 'dev') V.devTools.tab(body);
   else haus();
 }
 

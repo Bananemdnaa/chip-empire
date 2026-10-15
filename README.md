@@ -40,7 +40,8 @@ Alles geht mit Maus oder Finger. Am PC zusätzlich per Tastatur, `?` im Spiel ze
 ## Online-Konten (Supabase)
 
 Login per Benutzername und Passwort, Spielstände in der Cloud, Bestenlisten (Karriere, Imperium, Duelle), Freunde und Duelle. Im Profil lässt sich das Konto samt allen Online-Daten löschen.
-Admins können zusätzlich Spieler umbenennen, einzelnen Spielern Geschenke schicken, Legenden-Sterne setzen, und die Online-Liste aktualisiert sich alle 30 Sekunden.
+Admins können zusätzlich Spieler umbenennen, einzelnen Spielern Geschenke schicken, Chips, Bonus-Talentpunkte und Legenden-Sterne direkt als Zahl setzen (ein Protokolleintrag pro Änderung), und die Online-Liste aktualisiert sich alle 30 Sekunden.
+Dev-Konten zum Testen: Der Owner markiert ein Konto im Admin-Panel mit „Zum Dev-Konto“. Es ist dann überall ausgeblendet (Ranglisten, Duell-Rangliste, Wochen-Saison, Spielersuche, offene Herausforderungen, Admin-Statistik, Online-Liste) und hat im Spiel alles offen, dazu den Reiter „🛠 Dev“ mit Werkzeugen (Chips, Level, Talentpunkte, Sterne, Räume, Meisterschaft, Quests, Neuer-Spieler-Ablauf, Effekte). Direkt per Name herausfordern geht weiter, damit man Duelle testen kann.
 Das Datenbank-Schema liegt in `supabase/migrations/`. Jede Datei wird einmal (in Reihenfolge) im SQL-Editor von Supabase ausgeführt.
 Neue Migrationen vor dem Push des passenden Codes ausführen. Sie ergänzen nur, damit Spieler mit noch offenem altem Tab weiterspielen können. Das Spiel prüft beim Start, alle 3 Minuten und beim Zurückkehren in die App, ob eine neue Version online ist, und zeigt dann oben eine Leiste zum Neuladen.
 In Supabase muss unter Authentication der E-Mail-Login an und „Confirm email“ aus sein.
@@ -77,6 +78,7 @@ py -3 -m http.server 8765
 | `js/slots.js`, `roulette.js`, `blackjack.js`, `crash.js`, `wheel.js`, `dice.js`, `ducks.js`, `plinko.js`, `tower.js`, `hilo.js`, `vault.js` | Die elf Spiele |
 | `js/tracker.js` | Gewinn und Verlust: Sitzungsbilanz, Rundenbeträge, letzte Runden |
 | `js/legend.js` | Legende (Prestige), Legenden-Ränge und Wochen-Saison |
+| `js/dev.js` | Dev-Konten: alles offen, Reiter „🛠 Dev“ mit Testwerkzeugen |
 | `js/guide.js` | Neue Spieler: Funktionen nach und nach freischalten, Spielanleitung (Reiter „Hilfe“) |
 | `css/guide.css` | Freischalt-Karten, Spielanleitung, Einstellungen, Meister-Talente, Legenden-Ränge |
 | `js/chipbets.js` | Gemeinsamer Chip-Tisch für Spiele mit mehreren Wettfeldern |

@@ -169,6 +169,7 @@ async function startGame(id) {
   $('#app').classList.add('entering');
   document.title = V.slotName + ' · Chip Empire';
   $('#playerName').textContent = V.slotName;
+  V.devTools.init();
   if (!V.gameOpen(V.S.game)) V.S.game = 'slots';
   V.clampBets();
   V.games.forEach(function (g) { g.init(); });
@@ -192,7 +193,7 @@ async function startGame(id) {
   $('#menuBtn').addEventListener('click', toMenu);
   $('#roomBtn').addEventListener('click', function () { V.Snd.click(); openSide('stufen'); });
   $('#sndBtn').addEventListener('click', function () { V.S.sound = !V.S.sound; syncSound(); V.save(); if (V.S.sound) V.Snd.click(); });
-  applyPrefs(); V.guide.apply();
+  applyPrefs(); V.guide.apply(); $('#app').classList.toggle('is-dev', V.devTools.on);
   V.renderHost(); V.hud(); V.renderDopa(); syncSound();
   showGame(V.S.game);
   V.tutorial.maybeStart(V.slotId);

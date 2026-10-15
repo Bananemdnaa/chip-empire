@@ -39,7 +39,7 @@ var FEATS = [
 var TAB_FEAT = { quests: 'quests', talente: 'talente', meister: 'meister', arena: 'arena', stats: 'stats', profil: 'stats' };
 
 function S() { return V.S; }
-function has(id) { var s = S(); return !s.onb || !!(s.feats && s.feats[id]); }
+function has(id) { var s = S(); return !s.onb || !!(s.feats && s.feats[id]) || !!(V.devTools && V.devTools.all()); }
 function tabOpen(tab) { return !TAB_FEAT[tab] || has(TAB_FEAT[tab]); }
 
 /* Was noch fehlt, im Spiel ausblenden */

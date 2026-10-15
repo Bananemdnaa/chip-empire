@@ -74,3 +74,9 @@
 .ad-field span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .ad-field .name-in { width: 100%; }
 .ad-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
+/* Zahlen direkt eingeben: Chips, Bonus-Talentpunkte, Sterne */
+.ad-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 8px 0 6px; }
+.ad-num { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 3px 6px; align-items: center; }
+.ad-num > span { grid-column: 1 / -1; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ad-num .ad-amt { width: 100%; min-width: 0; margin: 0; }
+.tag.dev { color: #9FD8FF; border-color: rgba(159,216,255,.5); background: rgba(159,216,255,.1); }
