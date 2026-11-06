@@ -27,19 +27,23 @@ function shuffle(a) {
 /* comp = Anteil des Hausvorteils, der als Comps zurückfließt. So bleibt jedes Spiel auf Dauer ein Minus,
    auch mit Beziehung und Talent (höchstens etwa 57 % des erwarteten Verlusts kommen zurück). */
 var TIERS = [
-  { id: 0, name: 'Lobby',              wager: 0,        min: 10,    max: 1000,    comp: 0.10, reload: 10000,    bonus: 0 },
-  { id: 1, name: 'Bronze Lounge',      wager: 60000,    min: 50,    max: 2500,    comp: 0.15, reload: 25000,    bonus: 5000 },
-  { id: 2, name: 'Silver Salon',       wager: 300000,   min: 100,   max: 10000,   comp: 0.20, reload: 100000,   bonus: 10000 },
-  { id: 3, name: 'Gold Suite',         wager: 1500000,  min: 500,   max: 50000,   comp: 0.25, reload: 500000,   bonus: 50000 },
-  { id: 4, name: 'Platinum Penthouse', wager: 6000000,  min: 2000,  max: 250000,  comp: 0.30, reload: 2500000,  bonus: 200000 },
-  { id: 5, name: 'Black Room',         wager: 30000000, min: 10000, max: 1000000, comp: 0.35, reload: 10000000, bonus: 1000000 }
+  { id: 0, name: 'Lobby',              wager: 0,        min: 10,    max: 1000,     comp: 0.10, reload: 10000,    bonus: 0 },
+  { id: 1, name: 'Bronze Lounge',      wager: 60000,    min: 50,    max: 5000,     comp: 0.15, reload: 25000,    bonus: 5000 },
+  { id: 2, name: 'Silver Salon',       wager: 300000,   min: 100,   max: 25000,    comp: 0.20, reload: 100000,   bonus: 10000 },
+  { id: 3, name: 'Gold Suite',         wager: 1500000,  min: 500,   max: 150000,   comp: 0.25, reload: 500000,   bonus: 50000 },
+  { id: 4, name: 'Platinum Penthouse', wager: 6000000,  min: 2000,  max: 1000000,  comp: 0.30, reload: 2500000,  bonus: 200000 },
+  /* Black Room: kein Tischlimit, gesetzt wird höchstens, was du hast */
+  { id: 5, name: 'Black Room',         wager: 30000000, min: 10000, max: Infinity, comp: 0.35, reload: 10000000, bonus: 1000000 }
 ];
 function tierFor(wagered) {
   var t = 0;
   for (var i = 0; i < TIERS.length; i++) if (wagered >= TIERS[i].wager) t = i;
   return t;
 }
-var BET_LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000];
+var BET_LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000,
+  2000000, 5000000, 10000000, 20000000, 50000000, 100000000, 200000000, 500000000, 1000000000];
+/* Text für das Tischlimit, auch wenn es keins gibt */
+function limitText(T, f) { return isFinite(T.max) ? 'Einsatz ' + f(T.min) + ' bis ' + f(T.max) : 'Einsatz ab ' + f(T.min) + ' · kein Limit'; }
 var CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000];
 
 /* ---------- Slots: 5 Walzen x 3 Reihen, 10 Linien ---------- */
@@ -472,7 +476,7 @@ function recommend(profileKey, balance, unlocked) {
 
 return {
   setRng: setRng, rand: rand, randInt: randInt, shuffle: shuffle,
-  TIERS: TIERS, tierFor: tierFor, BET_LADDER: BET_LADDER, CHIP_VALUES: CHIP_VALUES,
+  TIERS: TIERS, tierFor: tierFor, limitText: limitText, BET_LADDER: BET_LADDER, CHIP_VALUES: CHIP_VALUES,
   SYM: SYM, SLOT_LINES: SLOT_LINES, SLOT_PAY: SLOT_PAY, SCATTER_PAY: SCATTER_PAY, FREE_SPINS: FREE_SPINS, FREE_MULT: FREE_MULT,
   SLOT_COUNTS: SLOT_COUNTS, SLOT_STRIPS: SLOT_STRIPS, buildStrip: buildStrip, lineWin: lineWin,
   slotResolve: slotResolve, slotPlay: slotPlay,

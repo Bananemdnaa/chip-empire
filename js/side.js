@@ -49,7 +49,7 @@ function stufen() {
       el('div', { class: 'tier-h' }, el('b', { text: T.name }), el('span', { class: 'tag', text: here ? 'Du bist hier' : locked ? 'Gesperrt' : 'Offen' })),
       el('div', { class: 'tier-l', text: h.name + ' · ' + h.role }),
       el('div', { class: 'tier-k' },
-        el('span', { text: 'Einsatz ' + short(T.min) + ' bis ' + short(T.max) }),
+        el('span', { text: E.limitText(T, short) }),
         el('span', { text: 'Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils' }),
         el('span', { text: i === 0 ? 'Startraum' : 'ab ' + short(T.wager) + ' Umsatz' }),
         T.bonus ? el('span', { text: 'Aufstiegsbonus ' + short(T.bonus) }) : null,

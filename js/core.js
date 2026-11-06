@@ -472,7 +472,7 @@ function settle(game, staked, ret, opt) {
     else if (S.lossStreak >= 5 && Math.random() < 0.6) say('lossStreak');
     else if (net < 0 && Math.random() < 0.5) say('loss');
   }
-  if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt, prevLoss: prevLoss, atMax: staked > 0 && staked >= room().max });
+  if (V.meta) V.meta.onRound({ game: game, staked: staked, ret: ret, net: net, opt: opt, prevLoss: prevLoss, atMax: staked > 0 && staked >= (isFinite(room().max) ? room().max : room().min * 1000) });
   if (V.track) V.track.round(game, staked, ret);
   if (V.legend) V.legend.round(staked, ret);
   if (staked > 0) allinResult(net);
@@ -538,7 +538,7 @@ function renderTier() {
   var T = room(), U = E.TIERS[S.unlocked];
   $('#app').setAttribute('data-tier', String(S.room));
   $('#tierName').textContent = T.name;
-  $('#tierLimits').textContent = 'Einsatz ' + fmt(T.min) + ' bis ' + fmt(T.max) + (isHard() ? ' · Hardcore' : ' · Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils');
+  $('#tierLimits').textContent = E.limitText(T, fmt) + (isHard() ? ' · Hardcore' : ' · Comps ' + Math.round(T.comp * 100) + ' % des Hausvorteils');
   var badge = $('#tierBadge');
   if (badge) { badge.setAttribute('data-tier', String(S.unlocked)); badge.textContent = RANK[S.unlocked]; badge.title = 'Deine Stufe: ' + U.name; }
   if ($('#roomName')) $('#roomName').textContent = T.name;
@@ -603,7 +603,9 @@ function ladder() {
   return E.BET_LADDER.filter(function (v) { return v >= r.min && v <= r.max; });
 }
 /* Einsätze sind frei wählbar, aber immer ein Vielfaches des Mindesteinsatzes und innerhalb der Raumlimits */
-function snapBet(v) { var r = room(); return clamp(Math.round(v / r.min) * r.min, r.min, r.max); }
+function snapBet(v) { var r = room(); return clamp(Math.round(v / r.min) * r.min, r.min, maxBet()); }
+/* Ohne Tischlimit ist das Guthaben die Grenze */
+function maxBet() { var r = room(); return isFinite(r.max) ? r.max : Math.max(r.min, Math.floor(S.balance / r.min) * r.min); }
 function clampBets() {
   Object.keys(S.bets).forEach(function (k) { S.bets[k] = snapBet(isNum(S.bets[k]) ? S.bets[k] : room().min); });
   var chips = chipList();
@@ -634,7 +636,7 @@ function betControl(key, onChange) {
     ['Min', function () { return room().min; }],
     ['½', function (v) { return v / 2; }],
     ['2×', function (v) { return v * 2; }],
-    ['Max', function () { return room().max; }]
+    ['Max', function () { return maxBet(); }]
   ];
   var wrap = el('div', { class: 'betctl' }, el('span', { class: 'lbl', text: 'Einsatz' }), el('div', { class: 'betrow' }, minus, out, plus));
   var pr = el('div', { class: 'presets' });
@@ -649,7 +651,7 @@ function betControl(key, onChange) {
   wrap.appendChild(pr);
   function set(v, exact) {
     var r = room();
-    S.bets[key] = exact ? clamp(Math.floor(v), r.min, r.max) : snapBet(v);
+    S.bets[key] = exact ? clamp(Math.floor(v), r.min, Math.max(r.min, Math.min(r.max, S.balance))) : snapBet(v);
     Snd.click(); render(); if (onChange) onChange(S.bets[key]); save();
   }
   /* Plus und Minus springen auf der gewohnten Leiter, auch von einem eigenen Betrag aus */
@@ -682,7 +684,7 @@ function betControl(key, onChange) {
     out.textContent = fmt(v);
     out.disabled = off;
     minus.disabled = off || v <= r.min;
-    plus.disabled = off || v >= r.max;
+    plus.disabled = off || v >= maxBet();
     pbtns.forEach(function (b) { b.disabled = off; });
     /* leuchtet, solange der Einsatz wirklich alles ist, was du hast */
     allin.classList.toggle('on', !off && v >= S.balance && S.balance >= r.min);
