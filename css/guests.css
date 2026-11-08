@@ -114,3 +114,11 @@
   /* Keno: Raster nicht breiter als nötig */
   .kn-grid { max-width: 520px; margin: 0 auto; }
 }
+
+/* Gleicher Samt-Hintergrund wie bei allen anderen Spielen (die Spielflächen selbst bleiben Filz, Brett oder Los) */
+#g-limbo.game, #g-keno.game, #g-scratch.game, #g-bacc.game, #g-fruit.game { background: radial-gradient(120% 90% at 50% 0%, #2A1420, #12070B 75%); }
+/* Tischspiele im selben Filz mit Holzrahmen wie Würfel und Roulette */
+.kn-board, .bc-felt { margin: 7px; background: radial-gradient(ellipse at 50% 30%, #157552, #0D4A34 70%);
+  box-shadow: 0 0 0 6px #4A2410, 0 0 0 7px var(--gold-lo), inset 0 0 40px rgba(0,0,0,.45); }
+.kn-board .rrow { justify-content: center; }
+.bc-side .lbl { font-family: var(--f-display); font-size: 17px; letter-spacing: .04em; text-transform: none; color: var(--gold-hi); }
